@@ -59,15 +59,18 @@ export const SPECIES = {
 
   cat: {
     label: 'gato',
-    bases: { sit: 70, biped: 30 },
+    bases: { quad: 74, biped: 26 },
     cast: {
-      crest:  { style: { cat: 88, none: 12 }, len: [.9, 1.35], tone: { skin: 100 } },
-      // a flatter muzzle than a dog's: cats are all cheeks
-      skull:  { muzzle: [.16, .28], shape: { round: 50, wide: 24, square: 14, lump: 12 } },
-      nose:   { style: { triangle: 74, button: 26 } },
+      crest:  { style: { cat: 92, none: 8 }, len: [1.1, 1.5], tone: { skin: 100 } },
+      // the muzzle sits almost mid-face on a cat, not down on the chin
+      skull:  { muzzle: [.18, .3], muzzleY: [.3, .46],
+                shape: { round: 54, wide: 24, square: 12, lump: 10 } },
+      nose:   { style: { triangle: 78, button: 22 } },
       // the W under the nose is the whole cat
-      mouth:  { style: { cat: 74, tiny: 12, tongue: 8, fangs: 6 } },
-      eyes:   { type: { dot: 64, happy: 22, closed: 8, saucer: 6 }, scale: [.85, 1.2] },
+      mouth:  { style: { cat: 80, tiny: 10, tongue: 6, fangs: 4 } },
+      // dots, crosses or shut lines — and set WIDE APART, out near the
+      // sides of the face where a cat's are
+      eyes:   { type: { dot: 66, closed: 18, xcross: 16 }, scale: [.8, 1.1], sx: [.6, .74] },
       brows:  { on: 0 },
       hair:   { style: { bald: 92, messy: 8 } },
       extras: { whiskers: .92, spots: .3, tears: .05, glasses: .04 },
@@ -164,7 +167,7 @@ const wpick = (rng, pairs) => {
   return pairs[pairs.length - 1][0];
 };
 
-export const BASES = ['biped', 'sit'];
+export const BASES = ['biped', 'sit', 'quad'];
 
 // A BASE is the skeleton, not the casting: 'biped' is the big-headed
 // two-legged doodle, 'sit' is the animal sitting on its haunches with

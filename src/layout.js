@@ -71,6 +71,7 @@ function headLayout(recipe, Ps, S, w) {
   // centre to the outline at angle `ang`.
   const round = Ps.skull.round || 0;
   const muzzle = Ps.skull.muzzle || 0;
+  const muzzleY = Ps.skull.muzzleY ?? .68;
   if (round > 0) {
     const shape = Ps.skull.shape || 'round';
     const cyR = S * (chinY - skullY) / 2;
@@ -133,7 +134,7 @@ function headLayout(recipe, Ps, S, w) {
   const M = muzzle > 0
     ? { on: true,
         cx: turn * w * .12,
-        cy: S * chinY * (1 + muzzle * .3) * .68,
+        cy: S * chinY * (1 + muzzle * .3) * muzzleY,
         rx: w * (.34 + muzzle * .5),
         ry: S * chinY * (.18 + muzzle * .34) }
     : { on: false, cx: 0, cy: 0, rx: 0, ry: 0 };
@@ -193,6 +194,27 @@ function bodyLayout(Ps, S, w, base) {
   // Wider than tall, no legs to speak of, four paws on the floor: two
   // little ones at the front and two splayed at the sides. Every
   // anchor the paws need is published here.
+  // ---- QUADRUPED: standing on all fours, seen front-on ----
+  // A low horizontal body with four legs under it: the front pair
+  // near the middle, the back pair further out and a touch higher,
+  // which is what reads as "behind" without drawing perspective.
+  if (base === 'quad') {
+    const halfW = w * Math.max(.72, T.wF * 1.5);
+    const h = S * Math.max(.34, T.hF * .62);
+    const bot = top + h;
+    const legLen = S * .22;
+    return {
+      quad: true,
+      top, bot, h, halfW,
+      shoulderY: top + h * .4, shoulderX: halfW * .92,
+      hipY: bot, hipX: halfW * .5,
+      frontLegX: halfW * .46, backLegX: halfW * .95,
+      legTopY: bot - h * .1, legLen,
+      pawR: S * .075,
+      floorY: bot + legLen + S * .05,
+    };
+  }
+
   if (base === 'sit') {
     const halfW = w * Math.max(.62, T.wF * 1.35);
     const h = S * Math.max(.5, T.hF * .95);

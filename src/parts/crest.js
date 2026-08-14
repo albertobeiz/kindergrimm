@@ -143,12 +143,23 @@ export const Crest = {
       s.sline(inner, 1.2, .45);
 
     } else if (P.style === 'cat') {
-      // a triangle sitting on the crown, inner triangle echoed
-      const hh = S * .3 * P.len, ww = w * .3;
-      const tri = chaikin([[bx - sd * ww * .7, by + S * .1], [bx + sd * ww * .35, by - hh], [bx + sd * ww * .75, by + S * .06]], true, 1);
+      // A BIG triangle standing on the crown. Written symmetrically on
+      // purpose: inner edge toward the middle of the head, outer edge
+      // away, apex leaning outward. Getting the handedness wrong here
+      // puts the left ear on the right side of the head.
+      const hh = S * .52 * P.len;                 // tall: small ears read as bumps
+      const half = w * .3 * P.len;                // half the base width
+      const inner = bx - sd * half;               // toward the face
+      const outer = bx + sd * half;               // away from it
+      const apex = bx + sd * half * .45;          // the tip leans out
+      const tri = chaikin([[inner, by + S * .1], [apex, by - hh], [outer, by + S * .04]], true, 1);
       toneFill(tri);
-      s.stroke(chaikin([[bx - sd * ww * .3, by + S * .05], [bx + sd * ww * .3, by - hh * .5], [bx + sd * ww * .45, by + S * .03]], false, 1),
-        F.lwThin * .9, { taper: .35, alpha: .6 });
+      // the pink inside, a smaller triangle sharing the apex direction
+      const innerTri = chaikin([[inner + sd * half * .42, by + S * .05],
+                                [apex, by - hh * .58],
+                                [outer - sd * half * .3, by + S * .01]], true, 1);
+      s.paperFill(innerTri);
+      s.sline(innerTri.concat([innerTri[0]]), F.lwThin * .85, .45);
 
     } else if (P.style === 'bear') {
       // a round nub half-sunk into the skull

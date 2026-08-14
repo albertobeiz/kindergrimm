@@ -28,6 +28,9 @@ export const Skull = {
       // how far a snout pushes out of the head's own outline. 0 for
       // anything that should read as a person.
       muzzle: C.range(rng, 'muzzle', 0, 0),
+      // 0 = the middle of the face, 1 = down on the chin. A cat's
+      // muzzle sits almost mid-face; a dog's is lower.
+      muzzleY: C.range(rng, 'muzzleY', .55, .75),
       fur: C.chance(rng, 'fur', .22),
       jaw: rng.r(.9, 1.15),
       chinW: rng.r(.9, 1.3),
@@ -49,6 +52,7 @@ export const Skull = {
     round: { label: 'redondez', range: [0, 1] },
     shape: { label: 'forma', pick: ['round', 'square', 'tall', 'drop', 'pear', 'lump', 'wide', 'bumpy', 'wonky'] },
     muzzle: { label: 'hocico (silueta)', range: [0, .6] },
+    muzzleY: { label: 'hocico altura', range: [.2, .9] },
     fur: { label: 'peludo', bool: true },
     shroud: { label: 'sombra (relleno)', bool: true },
     jaw: { label: 'mandíbula', range: [.55, 1.2] },

@@ -70,7 +70,7 @@ export const Eyes = {
     ehJit: rng.r(.9, 1.1),
     fierce: rng.r(-.05, .55),
     gazeJit: rng.r(-.1, .1),
-    sx: rng.r(.42, .56),
+    sx: C.range(rng, 'sx', .42, .56),
     sink: rng.r(.5, .85),
     lashes: rng.chance(.22),        // a few lashes flicking off the top
     glint: rng.chance(.82),

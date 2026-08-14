@@ -95,7 +95,11 @@ export const Torso = {
 
     // the silhouette: shape families, all drawn as one closed path
     let pts;
-    if (B.sit) {
+    if (B.quad) {
+      // ON ALL FOURS: a low horizontal barrel, wider than tall
+      pts = [[-hw, top + B.h * .3], [-hw * .72, top], [hw * .72, top], [hw, top + B.h * .3],
+             [hw * .94, bot], [-hw * .94, bot]];
+    } else if (B.sit) {
       // SITTING: one mass, narrow at the shoulders and spreading to a
       // wide base — the haunches. No legs are drawn: the paws are a
       // part of their own and the rest is a bag sitting on the floor.
@@ -457,5 +461,55 @@ export const Paws = {
         for (let k = -1; k <= 1; k++)
           s.sline([[x + k * r * .42, y - r * .5], [x + k * r * .46, y + r * .1]], 1.1, .4);
     }
+  },
+};
+
+// =================================================================
+// QUAD LEGS — the four-legged base. Four stubby legs under a
+// horizontal body, each ending in a cat's paw: a rounded pad with
+// two toe lines. The back pair sits further out and slightly higher,
+// which reads as "behind" without drawing any perspective.
+// =================================================================
+export const QuadLegs = {
+  id: 'quadlegs', label: 'patas', order: -3, depth: -.3, region: 'body',
+  base: ['quad'],
+  gen: (rng, C) => ({
+    thick: C.range(rng, 'thick', .8, 1.2),
+    toes: C.chance(rng, 'toes', .7),
+    back: C.chance(rng, 'back', .85),      // are the hind legs visible
+  }),
+  meta: () => ({
+    thick: { label: 'grosor', range: [.5, 1.6] },
+    toes: { label: 'deditos', bool: true },
+    back: { label: 'patas traseras', bool: true },
+  }),
+  bones: (P, F) => [{ name: 'quadlegs', x: 0, y: -F.B.legTopY / U }],
+  size: (P, F) => [(F.B.halfW * 2.9) / U, (F.B.legLen * 2 + F.s * .5) / U],
+  draw(s, P, st, F) {
+    const B = F.B, S = F.s;
+    const r = B.pawR, th = S * .07 * P.thick;
+
+    const leg = (x, y0, len, scale) => {
+      const spine = chaikin([[x, y0], [x + s.jr(-.01, .01) * S, y0 + len * .6], [x, y0 + len]], false, 2);
+      const shape = limbShape(spine, th * scale, th * scale * .92);
+      F.media.tone(s, shape, { style: 'light', gap: S * .04 });
+      F.media.edge(s, shape.concat([shape[0]]), F.lwThin * 1.2, { amp: .7 });
+      // the paw: a pad wider than tall, with the toe lines that make it a cat's
+      const pad = s.blobPts(x, y0 + len + r * .28, r * 1.15 * scale, r * .78 * scale, s.jr(-.1, .1), .35);
+      s.paperFill(pad);
+      if (F.colors.skin) F.media.skin(s, pad, F.colors.skin, { gap: S * .035 });
+      F.media.edge(s, pad.concat([pad[0]]), F.lwThin * 1.25, { amp: .6 });
+      if (P.toes)
+        for (let k = -1; k <= 1; k++)
+          s.sline([[x + k * r * .38 * scale, y0 + len - r * .1],
+                   [x + k * r * .42 * scale, y0 + len + r * .5]], 1.1, .42);
+    };
+
+    // hind pair first: further out, a little shorter, drawn behind
+    if (P.back)
+      for (const sd of [-1, 1])
+        leg(sd * B.backLegX, B.legTopY - B.h * .06, B.legLen * .86, .92);
+    for (const sd of [-1, 1])
+      leg(sd * B.frontLegX, B.legTopY, B.legLen, 1);
   },
 };
