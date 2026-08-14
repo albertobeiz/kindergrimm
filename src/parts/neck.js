@@ -25,7 +25,6 @@ export const Neck = {
     adam: rng.chance(.2),
     tendons: rng.chance(.3),
     collar: wpick(rng, COLLARS),
-    shoulders: rng.chance(.35),
   }),
   meta: () => ({
     len: { label: 'largo', range: [.1, .7] },
@@ -35,7 +34,6 @@ export const Neck = {
     shade: { label: 'sombra', bool: true },
     adam: { label: 'nuez', bool: true },
     tendons: { label: 'tendones', bool: true },
-    shoulders: { label: 'hombros', bool: true },
   }),
   bones: (P, F) => [{ name: 'neck', x: F.turn * F.w * .1 / U, y: -(F.s * F.P.skull.chinY * .8) / U }],
   size: (P, F) => [(F.w * 3.4) / U, (F.s * (1.1 + P.len * 1.6)) / U],
@@ -118,16 +116,5 @@ export const Neck = {
       F.media.edge(s, rag.concat([rag[0]]), F.lwThin * 1.1, { amp: 1.2 });
     }
 
-    if (P.shoulders) {
-      for (const sd of [-1, 1]) {
-        // they slope away and stop: a bust, not a pair of wires
-        const sh = chaikin([[sd * hw * 1.05 + lean, bot - S * .02],
-                            [sd * w * .72 + lean, bot + S * .14],
-                            [sd * w * 1.05 + lean, bot + S * .3]], false, 2);
-        s.stroke(sh, F.lwMain * .85, { taper: .3, alpha: .8 });
-        if (s.chance(.6) && F.media.underdraw)
-          s.hatch(sd * w * .72 + lean, bot + S * .22, w * .4, S * .1, -.4 * sd, 3, .13);
-      }
-    }
   },
 };

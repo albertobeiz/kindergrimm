@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { PAPER } from './sketch.js';
 import { addPaper } from './paper.js';
-import { newRecipe, buildFace, rerollPart, regenUnlocked, ensureParams } from './facerig.js';
+import { newRecipe, buildCharacter, rerollPart, regenUnlocked, ensureParams } from './rig.js';
 import { MEDIA_IDS } from './media.js';
 import { createAnimator } from './anim.js';
 import { initUI } from './editor.js';
@@ -14,10 +14,13 @@ const stage = document.getElementById('stage');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(PAPER);
 
-const HALF_H = 1.15;             // room for the neck and shoulders
+// The character's origin is the centre of the HEAD, so the body hangs
+// below it: frame a little low to keep the feet in shot.
+const HALF_H = 1.5;
+const CAM_Y = -.45;
 const camera = new THREE.OrthographicCamera(-1, 1, HALF_H, -HALF_H, .1, 100);
-camera.position.set(0, .05, 10);
-camera.lookAt(0, .05, 0);
+camera.position.set(0, CAM_Y, 10);
+camera.lookAt(0, CAM_Y, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
@@ -52,7 +55,7 @@ function rebuild() {
   requestAnimationFrame(() => {
     rebuildQueued = false;
     if (face) { scene.remove(face.group); face.dispose(); }
-    face = buildFace(app.recipe());
+    face = buildCharacter(app.recipe());
     scene.add(face.group);
     applyHighlight();
     ui.refresh();

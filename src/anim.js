@@ -96,6 +96,13 @@ export function createAnimator(getFace, opts) {
         e.bone.scale.y += (target - e.bone.scale.y) * Math.min(1, dt * 22);
       }
 
+      // the chest is where breathing actually shows
+      for (const e of face.byId('torso'))
+        e.bone.scale.set(1 + breath * .016 * amp, 1 + breath * .011 * amp, 1);
+      // arms hang and swing a little, out of phase with each other
+      for (const e of face.byId('arms'))
+        e.bone.rotation.z = Math.sin(tt * .8 + (e.side > 0 ? 1.7 : 0)) * .05 * amp * -e.side;
+
       // ---- per-bone parallax: depth decides how much a part rides ----
       const browLift = (opts.talk ? Math.sin(t * 9 + 1) * .008 : 0)
         + gy * .022;                        // brows ride with the eyes

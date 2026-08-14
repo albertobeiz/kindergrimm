@@ -1,7 +1,7 @@
 // Panel UI. Owns no state of its own: it reads/writes the recipe and
 // calls app.rebuild() after every change. Part controls are generated
 // from each part def's meta() so new params show up automatically.
-import { PARTS } from './facerig.js';
+import { PARTS } from './rig.js';
 import { MEDIA } from './media.js';
 
 const $ = id => document.getElementById(id);

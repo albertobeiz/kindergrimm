@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { PAPER, Sketch, chaikin } from './sketch.js';
 import { setRender } from './part.js';
 import { addPaper } from './paper.js';
-import { newRecipe, buildFace, ensureParams } from './facerig.js';
+import { newRecipe, buildCharacter, ensureParams } from './rig.js';
 import { MEDIA, MEDIA_IDS } from './media.js';
 import { createAnimator } from './anim.js';
 
@@ -20,7 +20,9 @@ setRender({ u: 118, frames: 2 });
 THREE.ColorManagement.enabled = false;
 
 const COLS = 7, ROWS = 5, N = COLS * ROWS;
-const CELL_W = 1.0, CELL_H = 1.25, FACE_SCALE = .82;
+const CELL_W = 1.0, CELL_H = 1.45, FACE_SCALE = .62;
+// the character hangs below its origin, so lift it to sit in the cell
+const CHAR_LIFT = .42 * FACE_SCALE;
 const HALF_H = ROWS * CELL_H / 2 + .26;
 const TOP_MARGIN = .18;          // the HUD sits over this strip
 
@@ -78,10 +80,10 @@ function drawCell(i, recipe = null) {
     recipe.media = media === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : media;
   }
   ensureParams(recipe);
-  const face = buildFace(recipe);
+  const face = buildCharacter(recipe);
   const holder = new THREE.Group();
   const [x, y] = cellPos(i);
-  holder.position.set(x, y, 0);
+  holder.position.set(x, y + CHAR_LIFT, 0);
   holder.scale.setScalar(FACE_SCALE);
   holder.add(face.group);          // the animator owns face.group's transform
   scene.add(holder);
@@ -226,9 +228,13 @@ renderer.setAnimationLoop(now => {
   const t = now / 1000, dt = Math.min(.1, (now - last) / 1000);
   last = now;
 
-  // one face per frame keeps the page interactive while it fills
+  // Fill the page on a time budget rather than one per frame: a
+  // character costs ~20ms to draw, so this is normally one or two a
+  // frame, but if the browser is handing out slow frames (a
+  // background tab) it draws more of them instead of taking a minute.
   if (queue.length) {
-    drawCell(queue.shift());
+    const until = performance.now() + 24;
+    do { drawCell(queue.shift()); } while (queue.length && performance.now() < until);
     countEl.textContent = queue.length ? `dibujando… ${N - queue.length}/${N}` : '';
   } else if (t > nextLife) {
     nextLife = t + .5 + Math.random() * .9;
