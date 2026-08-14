@@ -63,18 +63,21 @@ function paw(s, F, cx, cy, r, kind, sd) {
 export const Torso = {
   id: 'torso', label: 'torso', order: -2, depth: -.25, region: 'body',
   gen: rng => ({
-    shape: wpick(rng, [['bean', 30], ['round', 24], ['square', 16], ['pear', 20], ['tiny', 10]]),
+    shape: wpick(rng, [['bean', 22], ['round', 18], ['square', 14], ['pear', 16],
+                       ['tiny', 10], ['barrel', 12], ['drop', 8]]),
     // Isaac proportions: the body is a small blob under a huge head
-    wF: rng.r(.4, .62),           // half width, against the head half width
-    hF: rng.r(.48, .78),          // height, against the head scale
+    wF: rng.r(.36, .7),           // half width, against the head half width
+    hF: rng.r(.42, .88),          // height, against the head scale
+    lean: rng.r(-.06, .06),       // the whole body tips a little
     pattern: wpick(rng, [['none', 34], ['stripes', 22], ['belly', 18], ['buttons', 14], ['pocket', 12]]),
     clothOn: rng.chance(.45), clothIdx: rng.ri(0, 7),
     tone: wpick(rng, [['light', 46], ['hatch', 22], ['scribble', 18], ['black', 14]]),
   }),
   meta: () => ({
-    shape: { label: 'forma', pick: ['bean', 'round', 'square', 'pear', 'tiny'] },
+    shape: { label: 'forma', pick: ['bean', 'round', 'square', 'pear', 'tiny', 'barrel', 'drop'] },
     wF: { label: 'ancho', range: [.3, 1.0] },
     hF: { label: 'alto', range: [.3, 1.3] },
+    lean: { label: 'inclinación', range: [-.2, .2] },
     pattern: { label: 'estampado', pick: ['none', 'stripes', 'belly', 'buttons', 'pocket'] },
     tone: { label: 'tono', pick: ['light', 'hatch', 'scribble', 'black'] },
     clothOn: { label: 'ropa color', bool: true },
@@ -102,9 +105,20 @@ export const Torso = {
         const a = i / 14 * Math.PI * 2;
         pts.push([Math.cos(a) * hw, (top + bot) / 2 + Math.sin(a) * B.h / 2]);
       }
+    } else if (P.shape === 'barrel') {
+      // straight sides bulging at the middle: a little tank
+      pts = [[-hw * .88, top], [hw * .88, top], [hw * 1.06, top + B.h * .5],
+             [hw * .9, bot], [-hw * .9, bot], [-hw * 1.06, top + B.h * .5]];
+    } else if (P.shape === 'drop') {
+      // narrow shoulders over a heavy bottom, the opposite of pear
+      pts = [[-hw * .44, top], [hw * .44, top], [hw * .95, top + B.h * .55],
+             [hw * .7, bot], [-hw * .7, bot], [-hw * .95, top + B.h * .55]];
     } else { // bean: shoulders narrower than the belly
       pts = [[-hw * .78, top], [hw * .78, top], [hw, top + B.h * .5], [hw * .82, bot], [-hw * .82, bot], [-hw, top + B.h * .5]];
     }
+    // the whole body tips: the lean grows toward the shoulders, so the
+    // base stays flat on the floor
+    if (P.lean) pts = pts.map(([x, y]) => [x + P.lean * (bot - y), y]);
     pts = chaikin(pts, true, 2);
 
     F.media.tone(s, pts, { style: P.tone, col: F.colors.cloth, gap: S * .05 });
@@ -141,24 +155,33 @@ export const Arms = {
   // order -1: in front of the torso, but BEHIND the head — a raised
   // arm must pass behind the face, never across it
   id: 'arms', label: 'brazos', order: -1, depth: -.15, region: 'body',
-  // every character has arms — they are half the pose
+  // Every character has arms — they are half the pose. Every style
+  // here is an IDLE: nothing reaches for the sky, because a standing
+  // doodle with its arms up reads as jumping, not waiting.
   gen: rng => ({
-    style: wpick(rng, [['stub', 48], ['noodle', 24], ['up', 12], ['wing', 16]]),
+    style: wpick(rng, [['stub', 34], ['noodle', 18], ['wing', 14],
+                       ['hips', 14], ['clasped', 12], ['behind', 8]]),
     len: rng.r(.55, .95),         // stubby: hands end beside the belly
     droop: rng.r(.35, 1.0),       // hanging close, like the reference
+    // nobody draws both arms the same: the right one wanders a little
+    asym: rng.r(-.22, .28),
     hand: wpick(rng, [['mitten', 58], ['dot', 26], ['claw', 16]]),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ['stub', 'noodle', 'up', 'wing'] },
+    style: { label: 'estilo', pick: ['stub', 'noodle', 'wing', 'hips', 'clasped', 'behind'] },
     len: { label: 'largo', range: [.4, 1.8] },
-    droop: { label: 'caída', range: [-.6, 1.2] },
+    droop: { label: 'caída', range: [-.2, 1.2] },
+    asym: { label: 'asimetría', range: [-.5, .5] },
     hand: { label: 'mano', pick: ['mitten', 'dot', 'claw'] },
   }),
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'arm' + (sd < 0 ? 'L' : 'R'),
     x: sd * F.B.shoulderX / U, y: -F.B.shoulderY / U, side: sd,
   })),
-  size: (P, F) => [(F.B.halfW * 2.6 * P.len) / U, (F.B.h * 2.2 * P.len) / U],
+  // wide enough for a hand tucked across the belly, tall enough for a
+  // long droop; the canvas is centred on the shoulder
+  size: (P, F) => [(F.B.halfW * 3.4 + F.B.h * 1.6 * P.len) / U,
+                   (F.B.h * 2.2 * P.len + F.s * .3) / U],
   draw(s, P, st, F, bone) {
     const sd = bone.side, B = F.B, S = F.s;
     const x0 = sd * B.shoulderX, y0 = B.shoulderY;
@@ -176,16 +199,37 @@ export const Arms = {
     }
 
     // Where the hand ends up. Arms hang CLOSE to the body at rest —
-    // held out wide reads as a jumping jack, not an idle.
-    const up = P.style === 'up';
-    const dropY = up ? -L * .85 : L * (.55 + P.droop * .55);
-    const outX = sd * L * (up ? .42 : .32);
-    const mid = P.style === 'noodle'
-      ? [x0 + outX * .3 + sd * L * .22, y0 + dropY * .45]       // a loose curve
-      : [x0 + outX * .5, y0 + dropY * .5];
+    // held out wide reads as a jumping jack, not an idle. The right
+    // arm is drawn a touch differently from the left, on purpose.
+    const asym = sd > 0 ? P.asym : 0;
+    const droop = Math.max(.15, P.droop + asym);
+    let dropY = L * (.55 + droop * .55);
+    let outX = sd * L * .32;
+    let mid;
+
+    if (P.style === 'hips') {
+      // elbow out, hand tucked back onto the waist
+      outX = sd * B.halfW * .82;
+      dropY = B.hipY - y0 - S * .04;
+      mid = [x0 + sd * L * .72, y0 + dropY * .42];
+    } else if (P.style === 'clasped') {
+      // both hands meet over the belly
+      outX = -sd * B.shoulderX * .48;
+      dropY = L * (.62 + droop * .35);
+      mid = [x0 + sd * L * .34, y0 + dropY * .55];
+    } else if (P.style === 'behind') {
+      // tucked away: barely more than a shoulder and a knuckle
+      outX = sd * L * .12;
+      dropY = L * (.34 + droop * .2);
+      mid = [x0 + sd * L * .22, y0 + dropY * .5];
+    } else if (P.style === 'noodle') {
+      mid = [x0 + outX * .3 + sd * L * .22, y0 + dropY * .45];   // a loose curve
+    } else {
+      mid = [x0 + outX * .5, y0 + dropY * .5];
+    }
 
     const spine = chaikin([[x0, y0], mid, [x0 + outX, y0 + dropY]], false, 2);
-    const thick = P.style === 'noodle' ? S * .055 : S * .085;
+    const thick = P.style === 'noodle' ? S * .055 : P.style === 'behind' ? S * .07 : S * .085;
     const shape = limbShape(spine, thick, thick * .82);
     F.media.tone(s, shape, { style: 'light', gap: S * .05 });
     F.media.edge(s, shape.concat([shape[0]]), F.lwThin * 1.25, { amp: .8 });
