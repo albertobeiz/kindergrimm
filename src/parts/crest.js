@@ -21,6 +21,7 @@ const STYLES = [
 ];
 const ALL = STYLES.map(p => p[0]);
 const PAIRED = new Set(['horns', 'antlers', 'bunny', 'floppy', 'cat', 'bear', 'stalks', 'frills']);
+const EARS = new Set(['cat', 'bunny', 'floppy', 'bear']);
 
 // the inner-ear arc of a bear nub: a smile across its lower half
 function circlePtsArc(cx, cy, r) {
@@ -55,6 +56,9 @@ export const Crest = {
     len: C.range(rng, 'len', .85, 1.35),
     curve: C.range(rng, 'curve', -.5, .9),   // <0 sweeps forward, >0 curls back
     spread: C.range(rng, 'spread', .5, .78),
+    // nobody draws the second ear the same as the first
+    tilt: C.range(rng, 'tilt', -.3, .5),
+    earAsym: rng.r(-.22, .22),
     nSpikes: rng.ri(5, 8),
     branches: rng.ri(2, 3),
   }),
@@ -64,13 +68,19 @@ export const Crest = {
     len: { label: 'largo', range: [.5, 2.0] },
     curve: { label: 'curva', range: [-.9, 1.4] },
     spread: { label: 'apertura', range: [.3, 1.0] },
+    tilt: { label: 'inclinación', range: [-.6, .9] },
+    earAsym: { label: 'asimetría', range: [-.4, .4] },
   }),
   skip: P => P.style === 'none',
   bones: (P, F) => {
     const topY = -F.s * F.P.skull.skullY * .84;
-    if (!PAIRED.has(P.style)) return [{ name: 'crest', x: F.turn * F.w * .12 / U, y: -topY / U }];
+    // An ear grows out of the BACK of the skull, so it draws behind it
+    // and the head's own outline crosses its base. Horns and crowns
+    // sit on top and stay in front.
+    const order = EARS.has(P.style) ? 0 : 7;
+    if (!PAIRED.has(P.style)) return [{ name: 'crest', order, x: F.turn * F.w * .12 / U, y: -topY / U }];
     return [-1, 1].map(sd => ({
-      name: 'horn' + (sd < 0 ? 'L' : 'R'),
+      name: 'horn' + (sd < 0 ? 'L' : 'R'), order,
       x: sd * F.w * P.spread / U, y: -topY / U, side: sd,
     }));
   },
@@ -147,11 +157,12 @@ export const Crest = {
       // purpose: inner edge toward the middle of the head, outer edge
       // away, apex leaning outward. Getting the handedness wrong here
       // puts the left ear on the right side of the head.
-      const hh = S * .52 * P.len;                 // tall: small ears read as bumps
-      const half = w * .3 * P.len;                // half the base width
+      const m = 1 + (sd > 0 ? P.earAsym : -P.earAsym * .6);   // uneven pair
+      const hh = S * .36 * P.len * m;
+      const half = w * .23 * P.len * m;           // half the base width
       const inner = bx + sd * half;               // toward the face
       const outer = bx - sd * half;               // away from it
-      const apex = bx - sd * half * .45;          // the tip leans out
+      const apex = bx - sd * half * (.45 + P.tilt);          // the tip leans
       // NOT smoothed: chaikin rounds the corners off and a rounded
       // triangle is a blob. A cat ear is three straight edges.
       const tri = [[inner, by + S * .1], [apex, by - hh], [outer, by + S * .04]];

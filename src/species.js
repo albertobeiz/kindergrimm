@@ -61,7 +61,7 @@ export const SPECIES = {
     label: 'gato',
     bases: { quad: 100 },
     cast: {
-      crest:  { style: { cat: 92, none: 8 }, len: [1.1, 1.5], tone: { skin: 100 } },
+      crest:  { style: { cat: 92, none: 8 }, len: [.8, 1.25], tone: { skin: 100 } },
       // the muzzle sits almost mid-face on a cat, not down on the chin
       skull:  { muzzle: [.18, .3], muzzleY: [.3, .46],
                 shape: { round: 54, wide: 24, square: 12, lump: 10 } },
