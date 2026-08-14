@@ -60,7 +60,7 @@ export const Crest = {
   }),
   meta: () => ({
     style: { label: 'estilo', pick: ALL },
-    tone: { label: 'material', pick: ['bone', 'dark', 'ringed'] },
+    tone: { label: 'material', pick: ['bone', 'dark', 'ringed', 'skin'] },
     len: { label: 'largo', range: [.5, 2.0] },
     curve: { label: 'curva', range: [-.9, 1.4] },
     spread: { label: 'apertura', range: [.3, 1.0] },
@@ -85,7 +85,12 @@ export const Crest = {
 
     const STYLE = { dark: 'black', ringed: 'hatch', bone: 'light' };
     const toneFill = (pts, ridges) => {
-      F.media.tone(s, pts, { style: STYLE[P.tone] ?? 'hatch', gap: S * .05 });
+      // 'skin' is what an ear wants: the same colour as the head it
+      // grows out of. Horns and antlers are the ones made of bone.
+      if (P.tone === 'skin' && F.colors.skin) {
+        s.paperFill(pts);
+        F.media.skin(s, pts, F.colors.skin, { gap: S * .045 });
+      } else F.media.tone(s, pts, { style: STYLE[P.tone] ?? 'hatch', gap: S * .05 });
       F.media.edge(s, pts.concat([pts[0]]), F.lwThin * 1.25, { amp: .9 });
       // growth rings across the horn
       if (ridges) for (const [a, b] of ridges) s.sline([a, b], 1.2, P.tone === 'dark' ? 0 : .45,

@@ -317,10 +317,13 @@ export const Mouth = {
         s.hatch(mx + mw * .88, my, S * .05, bh * 1.4, -.2, 3, .3);
       }
     } else if (P.style === 'cat') {
-      // two arcs meeting under the nose
-      const cw = mw * .62, dip = S * .032;
-      s.stroke(chaikin([[mx - cw, my - dip * .6], [mx - cw * .5, my + dip], [mx, my - dip * .3]], false, 1), lw * 1.15, { taper: .3 });
-      s.stroke(chaikin([[mx, my - dip * .3], [mx + cw * .5, my + dip], [mx + cw, my - dip * .6]], false, 1), lw * 1.15, { taper: .3 });
+      // The W. On a muzzle it spans the pale patch, which is the
+      // single mark that makes a cat a cat.
+      const M = F.L.M;
+      const cw = M.on ? M.rx * .78 : mw * .62;
+      const dip = (M.on ? M.ry * .34 : S * .032);
+      s.stroke(chaikin([[mx - cw, my - dip * .7], [mx - cw * .5, my + dip], [mx, my - dip * .5]], false, 1), lw * 1.25, { taper: .3 });
+      s.stroke(chaikin([[mx, my - dip * .5], [mx + cw * .5, my + dip], [mx + cw, my - dip * .7]], false, 1), lw * 1.25, { taper: .3 });
       if (open) s.inkFill([[mx - cw * .3, my + dip * .6], [mx + cw * .3, my + dip * .6], [mx, my + dip * 2.2]], .8);
     } else if (P.style === 'tiny') {
       s.stroke([[mx - mw * .28, my], [mx + mw * .28, my + s.jr(-.01, .01) * S]], lw * 1.25, { taper: .3, over: S * .012 });

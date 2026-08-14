@@ -262,8 +262,11 @@ export const Eyes = {
 
 export const Brows = {
   id: 'brows', label: 'cejas', order: 4, depth: .9,
-  gen: rng => ({
-    on: rng.chance(.45),
+  // An animal has no eyebrows. The profile turns these off entirely
+  // (`brows: { on: 0 }`) and that alone stops a cat looking like a
+  // person in a cat hat.
+  gen: (rng, C) => ({
+    on: C.chance(rng, 'on', .45),
     a: rng.r(-.15, .55),
     thF: rng.r(.018, .05),
     yF: rng.r(.1, .2),

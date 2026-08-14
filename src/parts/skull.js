@@ -116,9 +116,10 @@ export const Skull = {
     if (P.muzzle > 0) {
       const M = F.L.M;
       const lobe = s.blobPts(M.cx, M.cy, M.rx, M.ry, s.jr(-.08, .08), .35);
+      // left as bare paper on purpose: on an animal the muzzle is the
+      // PALE patch of the face, so it stays out of the skin fill
       s.paperFill(lobe);
       if (P.shroud) F.media.tone(s, lobe, { style: 'black', gap: S * .05 });
-      else if (F.colors.skin) F.media.skin(s, lobe, F.colors.skin, { gap: S * .04 });
       F.media.edge(s, lobe.concat([lobe[0]]), F.lwMain * .8, { amp: .8 });
       // the crease where the muzzle meets the cheeks
       if (F.media.underdraw)

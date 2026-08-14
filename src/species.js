@@ -40,14 +40,16 @@ export const SPECIES = {
   dog: {
     label: 'perro',
     cast: {
-      crest:  { style: { floppy: 62, bear: 22, none: 16 } },
+      crest:  { style: { floppy: 62, bear: 22, none: 16 }, tone: { skin: 100 } },
       // the muzzle is in the SKULL's outline; the nose is just the
       // dark button sitting on the end of it
       skull:  { muzzle: [.26, .44], shape: { round: 40, wide: 26, lump: 18, drop: 16 } },
       nose:   { style: { button: 62, triangle: 38 } },
-      mouth:  { style: { tongue: 30, wobble: 22, zigzag: 18, cat: 14, buckteeth: 10, tiny: 6 } },
-      eyes:   { type: { dot: 30, saucer: 28, sleepy: 16, happy: 12, wide: 8, closed: 6 } },
-      hair:   { style: { bald: 76, messy: 14, curly: 10 } },
+      mouth:  { style: { cat: 44, tongue: 24, wobble: 18, buckteeth: 8, tiny: 6 } },
+      // an animal face is two dots and a muzzle. No irises, no lashes.
+      eyes:   { type: { dot: 62, happy: 20, closed: 10, saucer: 8 }, scale: [.85, 1.25] },
+      brows:  { on: 0 },
+      hair:   { style: { bald: 88, messy: 8, curly: 4 } },
       extras: { spots: .55, tears: .04, whiskers: 0, glasses: .04 },
       tail:   { style: { wag: 54, curl: 30, puff: 16 } },
       torso:  { shape: { bean: 34, barrel: 26, round: 24, pear: 16 } },
@@ -57,13 +59,15 @@ export const SPECIES = {
   cat: {
     label: 'gato',
     cast: {
-      crest:  { style: { cat: 84, none: 16 }, len: [.9, 1.35] },
+      crest:  { style: { cat: 88, none: 12 }, len: [.9, 1.35], tone: { skin: 100 } },
       // a flatter muzzle than a dog's: cats are all cheeks
-      skull:  { muzzle: [.14, .26], shape: { round: 44, wide: 24, square: 18, lump: 14 } },
-      nose:   { style: { triangle: 78, button: 22 } },
-      mouth:  { style: { cat: 52, tiny: 18, wobble: 12, fangs: 12, tongue: 6 } },
-      eyes:   { type: { saucer: 30, angry: 20, dot: 18, sleepy: 14, happy: 10, spiral: 8 } },
-      hair:   { style: { bald: 84, messy: 16 } },
+      skull:  { muzzle: [.16, .28], shape: { round: 50, wide: 24, square: 14, lump: 12 } },
+      nose:   { style: { triangle: 74, button: 26 } },
+      // the W under the nose is the whole cat
+      mouth:  { style: { cat: 74, tiny: 12, tongue: 8, fangs: 6 } },
+      eyes:   { type: { dot: 64, happy: 22, closed: 8, saucer: 6 }, scale: [.85, 1.2] },
+      brows:  { on: 0 },
+      hair:   { style: { bald: 92, messy: 8 } },
       extras: { whiskers: .92, spots: .3, tears: .05, glasses: .04 },
       tail:   { style: { curl: 58, wag: 32, puff: 10 } },
       torso:  { shape: { bean: 40, tiny: 24, round: 22, drop: 14 } },
@@ -73,11 +77,12 @@ export const SPECIES = {
   rabbit: {
     label: 'conejo',
     cast: {
-      crest:  { style: { bunny: 90, none: 10 }, len: [1.1, 1.6] },
+      crest:  { style: { bunny: 90, none: 10 }, len: [1.1, 1.6], tone: { skin: 100 } },
       nose:   { style: { triangle: 62, button: 38 } },
-      mouth:  { style: { buckteeth: 58, tiny: 18, wobble: 14, cat: 10 } },
-      eyes:   { type: { saucer: 32, dot: 24, wide: 18, sparkle: 12, happy: 8, closed: 6 } },
-      hair:   { style: { bald: 88, messy: 12 } },
+      mouth:  { style: { buckteeth: 52, cat: 24, tiny: 14, wobble: 10 } },
+      eyes:   { type: { dot: 58, happy: 18, saucer: 14, closed: 10 }, scale: [.9, 1.3] },
+      brows:  { on: 0 },
+      hair:   { style: { bald: 92, messy: 8 } },
       skull:  { muzzle: [.1, .2], shape: { round: 40, tall: 26, drop: 20, pear: 14 } },
       extras: { whiskers: .7, spots: .3, tears: .12, glasses: .05 },
       tail:   { style: { puff: 82, none: 18 } },
@@ -88,11 +93,12 @@ export const SPECIES = {
   bird: {
     label: 'pájaro',
     cast: {
-      crest:  { style: { sprout: 34, frills: 26, spikes: 20, none: 20 } },
+      crest:  { style: { sprout: 34, frills: 26, spikes: 20, none: 20 }, tone: { skin: 70, bone: 30 } },
       nose:   { style: { none: 100 } },                    // the beak IS the face
       mouth:  { style: { beak: 88, tiny: 12 }, beakLen: [.9, 1.5] },
-      eyes:   { type: { dot: 40, saucer: 26, wide: 16, spiral: 10, closed: 8 } },
-      hair:   { style: { bald: 66, spiky: 20, messy: 14 } },
+      eyes:   { type: { dot: 66, happy: 14, closed: 12, saucer: 8 }, scale: [.8, 1.15] },
+      brows:  { on: 0 },
+      hair:   { style: { bald: 72, spiky: 18, messy: 10 } },
       // a small beak-forward head, and the wings are their own part
       skull:  { muzzle: [.08, .18], shape: { round: 46, drop: 26, tall: 16, lump: 12 } },
       arms:   { style: { behind: 100 } },   // hidden under the wings
