@@ -94,6 +94,9 @@ export function buildCharacter(recipe) {
 
   for (const def of PARTS) {
     const P = F.P[def.id];
+    // a part can belong to a species: wings are for birds, and no
+    // amount of dice-loading turns an arm into one
+    if (def.species && !def.species.includes(recipe.species)) continue;
     if (def.skip?.(P, F)) continue;
     const pivot = def.pivot ?? [.5, .5];
     const [wU, hU] = def.size(P, F);

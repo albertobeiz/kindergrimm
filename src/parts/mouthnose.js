@@ -1,7 +1,7 @@
 // Nose and mouth, both leaning toward where the head points.
 // The mouth's 'open' state (used by the talk animation) is what the
 // jaw swaps to; dark styles open into a maw instead of a mouth.
-import { chaikin } from '../sketch.js';
+import { chaikin, PAPER } from '../sketch.js';
 import { U } from '../part.js';
 
 const wpick = (rng, pairs) => {
@@ -35,28 +35,43 @@ export const Nose = {
     snoutTip: { label: 'hocico caído', range: [-.25, .3] },
   }),
   skip: P => P.style === 'none',
-  bones: (P, F) => [{ name: 'nose', x: F.L.nx * .7 / U, y: -(F.s * .29) / U }],
-  size: (P, F) => [(F.w * 1.4) / U, (F.s * .7) / U],
+  // noseY comes from the layout: on a muzzled head it lands on the
+  // snout, otherwise mid-face
+  bones: (P, F) => [{ name: 'nose', x: F.L.nx * .7 / U, y: -F.L.noseY / U }],
+  size: (P, F) => [(F.w * 1.4 * Math.max(1, P.snoutLen)) / U, (F.s * .8 * Math.max(1, P.snoutFat)) / U],
   draw(s, P, st, F) {
     const S = F.s, w = F.w, ts = F.ts, at = F.at;
     const { fx, nx } = F.L;
+    // ny is the layout's nose anchor: on a muzzled head it sits on the
+    // snout, otherwise mid-face. Everything below is drawn around it.
+    const ny = F.L.noseY;
 
     if (P.style === 'button') {
-      // a soft round nose, the friendliest mark on the face
-      const r = w * .085;
-      const b = s.blobPts(nx, S * .3, r, r * s.jr(.8, .95), s.jr(-.2, .2), .4);
+      const r = w * .085 * (F.L.M.on ? 1.7 : 1);
+      if (F.L.M.on) {
+        // on a muzzle it is an animal's nose: solid, dark, wider than
+        // tall, with one wet highlight
+        const b = s.blobPts(nx, ny, r * 1.15, r * .82, s.jr(-.12, .12), .4);
+        F.media.tone(s, b, { style: 'black', gap: r * .5 });
+        s.stroke(b.concat([b[0]]), F.lwThin * 1.1, { taper: .12, amp: .5 });
+        s.ctx.fillStyle = PAPER;
+        s.wobbly(nx - r * .4, ny - r * .3, r * .2, r * .16); s.ctx.fill();
+        return;
+      }
+      // a soft round nose, the friendliest mark on a human face
+      const b = s.blobPts(nx, ny, r, r * s.jr(.8, .95), s.jr(-.2, .2), .4);
       s.paperFill(b);
       s.stroke(b.concat([b[0]]), F.lwThin * 1.2, { taper: .12, amp: .5 });
       s.ctx.fillStyle = s.inkA(.5);
-      s.wobbly(nx - r * .3, S * .3 - r * .25, r * .22, r * .2); s.ctx.fill();
+      s.wobbly(nx - r * .3, ny - r * .25, r * .22, r * .2); s.ctx.fill();
       return;
     }
     if (P.style === 'triangle') {
       // the cat nose: a small solid wedge with a line dropping from it
-      const r = w * .075;
-      const tri = [[nx - r, S * .26], [nx + r, S * .26], [nx, S * .26 + r * 1.15]];
+      const r = w * .075 * (F.L.M.on ? 1.5 : 1);
+      const tri = [[nx - r, ny - S * .03], [nx + r, ny - S * .03], [nx, ny - S * .03 + r * 1.15]];
       s.poly(tri, true); s.ctx.fillStyle = s.inkA(.9); s.ctx.fill();
-      s.sline([[nx, S * .26 + r * 1.1], [nx, S * .26 + r * 2.1]], 1.2, .5);
+      s.sline([[nx, ny - S * .03 + r * 1.1], [nx, ny - S * .03 + r * 2.1]], 1.2, .5);
       return;
     }
     if (P.style === 'snout') {
@@ -64,7 +79,7 @@ export const Nose = {
       // snout params are what separate a greyhound from a bulldog —
       // same code, a family of shapes.
       const rx = w * .2 * P.snoutLen, ry = S * .1 * P.snoutFat;
-      const cy = S * .34 + S * P.snoutTip;
+      const cy = ny + S * .04 + S * P.snoutTip;
       const sn = s.blobPts(nx, cy, rx, ry, s.jr(-.15, .15), .45);
       s.paperFill(sn);
       s.stroke(sn.concat([sn[0]]), F.lwThin * 1.25, { taper: .12, amp: .6 });
@@ -84,20 +99,20 @@ export const Nose = {
       // no bridge, just the hole: two dark slits leaning with the turn
       for (const sd of [-1, 1]) {
         const cx = nx + sd * w * .085 + ts * w * .02 * at;
-        const slit = chaikin([[cx + sd * w * .035, S * .27], [cx + sd * w * .012, S * .37], [cx - sd * w * .02, S * .43]], false, 2);
-        const back = chaikin([[cx - sd * w * .01, S * .43], [cx - sd * w * .005, S * .34], [cx + sd * w * .012, S * .27]], false, 2);
+        const slit = chaikin([[cx + sd * w * .035, ny - S * .02], [cx + sd * w * .012, ny + S * .08], [cx - sd * w * .02, ny + S * .14]], false, 2);
+        const back = chaikin([[cx - sd * w * .01, ny + S * .14], [cx - sd * w * .005, ny + S * .05], [cx + sd * w * .012, ny - S * .02]], false, 2);
         const shape = [...slit, ...back];
         F.media.tone(s, shape, { style: 'black', gap: w * .1 });
         F.media.edge(s, shape.concat([shape[0]]), F.lwThin * .95, { amp: .8 });
       }
-      if (F.media.underdraw) s.hatch(nx, S * .33, w * .3, S * .16, -1.1, 3, .13);
+      if (F.media.underdraw) s.hatch(nx, ny + S * .04, w * .3, S * .16, -1.1, 3, .13);
       return;
     }
 
-    s.stroke(chaikin([[fx * .85 + w * .01, S * .12], [nx + w * .01, S * .3], [nx + ts * w * .07 * at + w * .02, S * .42]], false, 1),
+    s.stroke(chaikin([[fx * .85 + w * .01, ny - S * .17], [nx + w * .01, ny], [nx + ts * w * .07 * at + w * .02, ny + S * .13]], false, 1),
       F.lwThin, { taper: .3 });
-    if (P.nostril) s.sline([[nx + w * .02, S * .43], [nx - ts * w * .07, S * .455]], 1.1, .5);
-    s.hatch(nx - w * .07, S * .38, S * .03, S * .05, -1.1, 2, .11);
+    if (P.nostril) s.sline([[nx + w * .02, ny + S * .14], [nx - ts * w * .07, ny + S * .165]], 1.1, .5);
+    s.hatch(nx - w * .07, ny + S * .09, S * .03, S * .05, -1.1, 2, .11);
   },
 };
 

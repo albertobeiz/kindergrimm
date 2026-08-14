@@ -97,6 +97,8 @@ export const MyPart = {
                          //   1 = a front feature, 0 = the skull, <0 = behind
   region: 'head',        // 'head' (default) moves with sway/gaze/breath;
                          //   'body' stays PLANTED on the floor
+  species: ['bird'],     // optional: this part EXISTS only for these
+                         //   species. Omit and everyone can have it.
   pivot: [.5, .5],       // optional: where the bone sits on the canvas
                          //   [.5,1] = top edge (part hangs downward)
   states: ['idle'],      // optional: extra pre-drawn textures (see §6)
@@ -259,6 +261,31 @@ them.
 **The real job a species does is coherence.** Left to chance, floppy
 ears, a snout and a wagging tail would almost never land on the same
 character. Guaranteeing they arrive together is what a species *is*.
+
+### But casting alone is not enough
+
+Loading the dice gets you a human with animal accessories — *a kid in
+a costume*. What actually makes a dog a dog is that **the head is a
+different shape**, and a bird has parts a person simply does not. So a
+species has three levers, in increasing cost:
+
+| Lever | Cost | Example |
+|---|---|---|
+| **weights** — bias existing choices | free, data only | dogs get floppy ears and spots |
+| **skull shape** — the head's own outline | one param + one branch | `muzzle` puts a snout in the silhouette |
+| **its own part** — `species: ['bird']` | a new part file | wings; no dice roll turns an arm into one |
+
+The rule of thumb: reach for a new part only when the shape could not
+belong to anybody else. Wings qualify. A snout did not — it became a
+param on the skull, so a monster can have one too.
+
+**The muzzle is the worked example.** `skull.muzzle` does two things:
+it swells the silhouette a little, and it tells `Skull.draw` to lay a
+LOBE with its own contour over the jaw. A smooth bulge alone reads as
+a long chin; the second outline is what reads as a snout. And because
+`layout.js` publishes where that lobe landed (`F.L.M`), the nose and
+the mouth sit **on** it — `F.L.noseY` and `F.L.my` already account for
+it, so those parts never learn what a muzzle is.
 
 ### Adding a species
 

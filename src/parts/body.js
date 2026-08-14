@@ -343,3 +343,54 @@ export const Tail = {
     F.media.edge(s, shape.concat([shape[0]]), F.lwThin * 1.2, { amp: .8 });
   },
 };
+
+// =================================================================
+// WINGS — a SPECIES-SPECIFIC part. `species: ['bird']` means the rig
+// skips it entirely for anyone else: no amount of dice-loading turns
+// an arm into a wing, so some shapes have to belong to somebody.
+// =================================================================
+export const Wings = {
+  id: 'wings', label: 'alas', order: -1, depth: -.15, region: 'body',
+  species: ['bird'],
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', [['folded', 54], ['open', 28], ['tucked', 18]]),
+    len: C.range(rng, 'len', .9, 1.4),
+    feathers: rng.ri(3, 5),
+  }),
+  meta: () => ({
+    style: { label: 'estilo', pick: ['folded', 'open', 'tucked'] },
+    len: { label: 'largo', range: [.5, 2] },
+    feathers: { label: 'plumas', range: [2, 6], step: 1 },
+  }),
+  bones: (P, F) => [-1, 1].map(sd => ({
+    name: 'wing' + (sd < 0 ? 'L' : 'R'),
+    x: sd * F.B.shoulderX / U, y: -F.B.shoulderY / U, side: sd,
+  })),
+  size: (P, F) => [(F.B.halfW * 2.4 + F.B.h * 1.4 * P.len) / U, (F.B.h * 2.6 * P.len) / U],
+  draw(s, P, st, F, bone) {
+    const sd = bone.side, B = F.B, S = F.s;
+    const x0 = sd * B.shoulderX, y0 = B.shoulderY;
+    const L = B.h * (P.style === 'tucked' ? .5 : .78) * P.len;
+    const out = P.style === 'open' ? 1.15 : .55;   // open wings reach out and up
+    const lift = P.style === 'open' ? -.55 : .05;
+
+    // the wing plate, then feathers cut into its trailing edge
+    const tipX = x0 + sd * L * out, tipY = y0 + L * (lift + .55);
+    const plate = chaikin([
+      [x0 - sd * S * .02, y0 - S * .05],
+      [x0 + sd * L * out * .75, y0 + L * lift * .8],
+      [tipX, tipY],
+      [x0 + sd * L * .12, y0 + L * .5],
+    ], true, 2);
+    F.media.tone(s, plate, { style: 'light', col: F.colors.cloth, gap: S * .05 });
+    F.media.edge(s, plate.concat([plate[0]]), F.lwThin * 1.3, { amp: .8 });
+
+    // the feather lines fan from the shoulder toward the tip
+    for (let k = 1; k <= P.feathers; k++) {
+      const u = k / (P.feathers + 1);
+      s.sline([[x0 + sd * S * .02, y0 + L * .12],
+               [x0 + sd * L * out * (.35 + u * .65), y0 + L * (lift * .5 + .22 + u * .42)]],
+        F.lwThin * .9, .45);
+    }
+  },
+};

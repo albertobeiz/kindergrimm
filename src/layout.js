@@ -70,6 +70,7 @@ function headLayout(recipe, Ps, S, w) {
   // then add a case to `radius` below returning the distance from the
   // centre to the outline at angle `ang`.
   const round = Ps.skull.round || 0;
+  const muzzle = Ps.skull.muzzle || 0;
   if (round > 0) {
     const shape = Ps.skull.shape || 'round';
     const cyR = S * (chinY - skullY) / 2;
@@ -83,13 +84,28 @@ function headLayout(recipe, Ps, S, w) {
         const n = 5.5;
         return 1 / Math.pow(Math.pow(Math.abs(cA / rxR), n) + Math.pow(Math.abs(sA / ryR), n), 1 / n);
       }
-      const r = 1 / Math.hypot(cA / rxR, sA / ryR);
+      let r = 1 / Math.hypot(cA / rxR, sA / ryR);
       // drop: the crown pinches toward a point, the jowls stay full
-      if (shape === 'drop' && sA < 0) return r * (1 - .30 * Math.pow(-sA, 1.6));
+      if (shape === 'drop' && sA < 0) r *= 1 - .30 * Math.pow(-sA, 1.6);
       // pear: narrow brow over heavy cheeks — the classic blob creature
-      if (shape === 'pear') return r * (1 - .26 * Math.pow(Math.max(0, -sA), 1.3) + .1 * Math.pow(Math.max(0, sA), 1.5));
+      else if (shape === 'pear') r *= 1 - .26 * Math.pow(Math.max(0, -sA), 1.3) + .1 * Math.pow(Math.max(0, sA), 1.5);
       // lump: one side swells, like it was drawn without lifting the pen
-      if (shape === 'lump') return r * (1 + .12 * Math.sin(ang * 2 + 1) + .07 * Math.sin(ang * 3));
+      else if (shape === 'lump') r *= 1 + .12 * Math.sin(ang * 2 + 1) + .07 * Math.sin(ang * 3);
+      // bumpy / wonky: the outline itself is the creature. Monsters
+      // are not a face on a ball, they are a shape that has a face.
+      else if (shape === 'bumpy') r *= 1 + .17 * Math.sin(ang * 3 + 1.2) + .1 * Math.sin(ang * 5 + .4);
+      else if (shape === 'wonky') r *= 1 + .26 * Math.pow(Math.max(0, Math.cos(ang - .9)), 2) - .1 * Math.pow(Math.max(0, Math.cos(ang + 1.9)), 2);
+
+      // THE MUZZLE, and the reason animals stopped looking like kids
+      // in a costume: the snout is part of the head's outline, not a
+      // shape stamped on the front of it.
+      // The silhouette only swells a little — the muzzle itself is a
+      // LOBE the skull draws over the jaw (see Skull.draw), because a
+      // smooth bulge reads as a long chin, not as a snout.
+      if (muzzle > 0) {
+        const d = ang - Math.PI / 2;                    // 0 = straight down
+        r *= 1 + muzzle * .45 * Math.exp(-(d * d) / (2 * .62 * .62));
+      }
       return r;
     };
     const roundPt = p => {
@@ -112,11 +128,21 @@ function headLayout(recipe, Ps, S, w) {
   const capPts = chaikin([...hairlinePts, [.80 * w, -S * skullY * .72],
                           [turn * w * .12, -S * skullY * 1.0], [-.80 * w, -S * skullY * .72]], true, 2);
 
-  return { right, left, chin, skullTop, facePoly, outlineOpen, hairlinePts, capPts };
+  // where the muzzle lobe ended up, so the nose and the mouth can sit
+  // ON it instead of floating on a flat face
+  const M = muzzle > 0
+    ? { on: true,
+        cx: turn * w * .12,
+        cy: S * chinY * (1 + muzzle * .3) * .68,
+        rx: w * (.34 + muzzle * .5),
+        ry: S * chinY * (.18 + muzzle * .34) }
+    : { on: false, cx: 0, cy: 0, rx: 0, ry: 0 };
+
+  return { right, left, chin, skullTop, facePoly, outlineOpen, hairlinePts, capPts, M };
 }
 
 // ---------------- the features ----------------
-function featureLayout(recipe, Ps, S, w, turn, at, ts, press) {
+function featureLayout(recipe, Ps, S, w, turn, at, ts, press, M) {
   const rEy = geomRng(recipe, 'eyes');
   const E = Ps.eyes;
   const fx = turn * w * .3;                     // the face's own centre line
@@ -133,7 +159,12 @@ function featureLayout(recipe, Ps, S, w, turn, at, ts, press) {
 
   const nx = turn * w * .5;
   const mw = w * .30 * (1 - .25 * at) * Ps.mouth.wF;
-  const my = S * Ps.mouth.myF, mx = fx * 1.15;
+  const mx = fx * 1.15;
+  // A muzzle owns the lower face: the nose sits on top of it and the
+  // mouth underneath. Without one they fall back to the flat-face
+  // positions. Parts read these and never work it out themselves.
+  const noseY = M.on ? M.cy - M.ry * .42 : S * .29;
+  const my = M.on ? M.cy + M.ry * .46 : S * Ps.mouth.myF;
 
   const rEx = geomRng(recipe, 'extras');
   const shadowSide = -ts;
@@ -141,7 +172,7 @@ function featureLayout(recipe, Ps, S, w, turn, at, ts, press) {
   const modSide = at > .3 ? ts : (rEx.chance(.5) ? -1 : 1);
 
   return { fx, sx, ew0, eh, gaze, browY, lashW, eyeX, eyeW, ey0, ecxJit,
-           nx, mw, my, mx, shadowSide, markSide, modSide };
+           nx, mw, my, mx, noseY, shadowSide, markSide, modSide };
 }
 
 // ---------------- the body ----------------
@@ -153,8 +184,10 @@ function featureLayout(recipe, Ps, S, w, turn, at, ts, press) {
 function bodyLayout(Ps, S, w) {
   const T = Ps.torso ?? { wF: .5, hF: .65 };
   const chinY = Ps.skull.chinY;
+  // a muzzle pushes the chin down, and the body has to get out of its way
+  const muzzle = Ps.skull.muzzle || 0;
 
-  const top = S * chinY - S * .14;               // the head overlaps the body
+  const top = S * chinY * (1 + muzzle * .62) - S * .14;   // the head overlaps the body
   const halfW = w * T.wF;
   const h = S * T.hF;
   const bot = top + h;
@@ -184,7 +217,7 @@ export function buildLayout(recipe, Ps) {
   const press = Ps.skull.press;                  // how hard the pencil is pressed
 
   const head = headLayout(recipe, Ps, S, w);
-  const feats = featureLayout(recipe, Ps, S, w, turn, at, ts, press);
+  const feats = featureLayout(recipe, Ps, S, w, turn, at, ts, press, head.M);
   const B = bodyLayout(Ps, S, w);
 
   // the casting: which of the muted colours this character gets, if any

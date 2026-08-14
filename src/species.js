@@ -41,11 +41,13 @@ export const SPECIES = {
     label: 'perro',
     cast: {
       crest:  { style: { floppy: 62, bear: 22, none: 16 } },
-      nose:   { style: { snout: 74, button: 26 }, snoutLen: [1.15, 1.6], snoutTip: [.02, .18] },
+      // the muzzle is in the SKULL's outline; the nose is just the
+      // dark button sitting on the end of it
+      skull:  { muzzle: [.26, .44], shape: { round: 40, wide: 26, lump: 18, drop: 16 } },
+      nose:   { style: { button: 62, triangle: 38 } },
       mouth:  { style: { tongue: 30, wobble: 22, zigzag: 18, cat: 14, buckteeth: 10, tiny: 6 } },
       eyes:   { type: { dot: 30, saucer: 28, sleepy: 16, happy: 12, wide: 8, closed: 6 } },
       hair:   { style: { bald: 76, messy: 14, curly: 10 } },
-      skull:  { shape: { round: 40, wide: 26, lump: 18, drop: 16 } },
       extras: { spots: .55, tears: .04, whiskers: 0, glasses: .04 },
       tail:   { style: { wag: 54, curl: 30, puff: 16 } },
       torso:  { shape: { bean: 34, barrel: 26, round: 24, pear: 16 } },
@@ -56,11 +58,12 @@ export const SPECIES = {
     label: 'gato',
     cast: {
       crest:  { style: { cat: 84, none: 16 }, len: [.9, 1.35] },
+      // a flatter muzzle than a dog's: cats are all cheeks
+      skull:  { muzzle: [.14, .26], shape: { round: 44, wide: 24, square: 18, lump: 14 } },
       nose:   { style: { triangle: 78, button: 22 } },
       mouth:  { style: { cat: 52, tiny: 18, wobble: 12, fangs: 12, tongue: 6 } },
       eyes:   { type: { saucer: 30, angry: 20, dot: 18, sleepy: 14, happy: 10, spiral: 8 } },
       hair:   { style: { bald: 84, messy: 16 } },
-      skull:  { shape: { round: 44, wide: 22, square: 18, drop: 16 } },
       extras: { whiskers: .92, spots: .3, tears: .05, glasses: .04 },
       tail:   { style: { curl: 58, wag: 32, puff: 10 } },
       torso:  { shape: { bean: 40, tiny: 24, round: 22, drop: 14 } },
@@ -75,7 +78,7 @@ export const SPECIES = {
       mouth:  { style: { buckteeth: 58, tiny: 18, wobble: 14, cat: 10 } },
       eyes:   { type: { saucer: 32, dot: 24, wide: 18, sparkle: 12, happy: 8, closed: 6 } },
       hair:   { style: { bald: 88, messy: 12 } },
-      skull:  { shape: { round: 40, tall: 26, drop: 20, pear: 14 } },
+      skull:  { muzzle: [.1, .2], shape: { round: 40, tall: 26, drop: 20, pear: 14 } },
       extras: { whiskers: .7, spots: .3, tears: .12, glasses: .05 },
       tail:   { style: { puff: 82, none: 18 } },
       torso:  { shape: { pear: 34, bean: 30, round: 24, tiny: 12 } },
@@ -90,8 +93,9 @@ export const SPECIES = {
       mouth:  { style: { beak: 88, tiny: 12 }, beakLen: [.9, 1.5] },
       eyes:   { type: { dot: 40, saucer: 26, wide: 16, spiral: 10, closed: 8 } },
       hair:   { style: { bald: 66, spiky: 20, messy: 14 } },
-      skull:  { shape: { round: 46, drop: 26, tall: 16, lump: 12 } },
-      arms:   { style: { wing: 88, stub: 12 } },
+      // a small beak-forward head, and the wings are their own part
+      skull:  { muzzle: [.08, .18], shape: { round: 46, drop: 26, tall: 16, lump: 12 } },
+      arms:   { style: { behind: 100 } },   // hidden under the wings
       legs:   { style: { noodle: 62, stub: 38 }, foot: { claw: 84, oval: 16 }, len: [.7, 1.3] },
       extras: { spots: .35, tears: .06, whiskers: 0, glasses: .05 },
       tail:   { style: { puff: 44, wag: 30, none: 26 } },
@@ -107,7 +111,10 @@ export const SPECIES = {
       mouth:  { style: { maw: 30, zigzag: 22, fangs: 20, void: 12, drool: 10, stitch: 6 } },
       eyes:   { type: { hollow: 24, void: 20, sunken: 16, spiral: 12, xcross: 12, angry: 10, wide: 6 } },
       hair:   { style: { bald: 58, messy: 18, spiky: 16, curly: 8 } },
-      skull:  { shape: { lump: 30, pear: 22, square: 18, wide: 16, drop: 14 } },
+      // the outline IS the monster: lumpy, lopsided, occasionally
+      // carrying a muzzle it should not have
+      skull:  { shape: { bumpy: 24, wonky: 20, lump: 18, pear: 14, wide: 12, drop: 12 },
+                muzzle: [0, .3], fur: .4 },
       arms:   { style: { stub: 34, noodle: 26, wing: 18, hips: 12, clasped: 10 }, hand: { claw: 56, mitten: 30, dot: 14 } },
       extras: { spots: .5, tears: .12, whiskers: 0, glasses: .04 },
       tail:   { style: { spike: 40, wag: 26, curl: 20, none: 14 } },
@@ -120,7 +127,8 @@ export const SPECIES = {
     cast: {
       // a shape cut out of the dark: the head is filled in, and the
       // only light left is whatever is looking at you
-      skull:  { shroud: .82, shape: { tall: 28, drop: 26, lump: 24, pear: 22 } },
+      skull:  { shroud: .82, shape: { tall: 26, drop: 22, lump: 20, wonky: 18, bumpy: 14 },
+                muzzle: [0, .22] },
       crest:  { style: { horns: 30, spikes: 24, antlers: 20, stalks: 14, none: 12 }, tone: { dark: 70, bone: 30 } },
       nose:   { style: { none: 70, skull: 30 } },
       mouth:  { style: { maw: 26, void: 24, stitch: 20, fangs: 16, zigzag: 14 } },

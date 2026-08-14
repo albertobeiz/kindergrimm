@@ -22,8 +22,12 @@ export const Skull = {
       // brick just reads as another ball
       round: rng.r(.82, .97),
       // the shape family is the doodle's identity
-      shape: C.pick(rng, 'shape', [['round', 22], ['square', 18], ['tall', 15],
-                                   ['drop', 15], ['pear', 14], ['lump', 9], ['wide', 7]]),
+      shape: C.pick(rng, 'shape', [['round', 20], ['square', 16], ['tall', 13],
+                                   ['drop', 13], ['pear', 12], ['lump', 8],
+                                   ['wide', 7], ['bumpy', 6], ['wonky', 5]]),
+      // how far a snout pushes out of the head's own outline. 0 for
+      // anything that should read as a person.
+      muzzle: C.range(rng, 'muzzle', 0, 0),
       fur: C.chance(rng, 'fur', .22),
       jaw: rng.r(.9, 1.15),
       chinW: rng.r(.9, 1.3),
@@ -43,7 +47,8 @@ export const Skull = {
     wf: { label: 'ancho', range: [.48, 1.0] },
     turn: { label: 'giro ¾', range: [-.9, .9] },
     round: { label: 'redondez', range: [0, 1] },
-    shape: { label: 'forma', pick: ['round', 'square', 'tall', 'drop', 'pear', 'lump', 'wide'] },
+    shape: { label: 'forma', pick: ['round', 'square', 'tall', 'drop', 'pear', 'lump', 'wide', 'bumpy', 'wonky'] },
+    muzzle: { label: 'hocico (silueta)', range: [0, .6] },
     fur: { label: 'peludo', bool: true },
     shroud: { label: 'sombra (relleno)', bool: true },
     jaw: { label: 'mandíbula', range: [.55, 1.2] },
@@ -103,6 +108,24 @@ export const Skull = {
       F.media.edge(s, outlineOpen, F.lwMain, { over: S * .035, taper: .12 });
     }
     if (P.darkSkin && !F.colors.skin && F.media.underdraw) s.hatchFill(facePoly, S * .08, -1.05, .08, 1);
+
+    // THE MUZZLE. Drawn by the skull, not by the nose: it is part of
+    // the head, so it fills with the same skin and shares its contour.
+    // Its own outline is what makes it read as a snout instead of a
+    // long chin — the silhouette bulge alone was not enough.
+    if (P.muzzle > 0) {
+      const M = F.L.M;
+      const lobe = s.blobPts(M.cx, M.cy, M.rx, M.ry, s.jr(-.08, .08), .35);
+      s.paperFill(lobe);
+      if (P.shroud) F.media.tone(s, lobe, { style: 'black', gap: S * .05 });
+      else if (F.colors.skin) F.media.skin(s, lobe, F.colors.skin, { gap: S * .04 });
+      F.media.edge(s, lobe.concat([lobe[0]]), F.lwMain * .8, { amp: .8 });
+      // the crease where the muzzle meets the cheeks
+      if (F.media.underdraw)
+        for (const sd of [-1, 1])
+          s.sline([[M.cx + sd * M.rx * .96, M.cy - M.ry * .3],
+                   [M.cx + sd * M.rx * .72, M.cy - M.ry * .85]], 1.2, .3);
+    }
 
     // the shadow side of the face — pencil work, so oil paint skips it
     if (!F.media.underdraw) { /* the paint itself carries the value */ }

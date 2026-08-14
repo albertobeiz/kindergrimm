@@ -21,10 +21,13 @@ phantom `SyntaxError`.
 - Adding a part = one file in `src/parts/` + one line in
   `src/parts/index.js`. Do not edit `rig.js` for this.
 - Adding a **species** = one entry of weights in `src/species.js`.
-  No drawing code. A species only loads the dice at generation time;
-  it never reaches into `draw()`.
-- If a species needs a shape that does not exist, add it as a normal
-  variant of an existing part first — then every species can use it.
+  A species loads the dice at generation time; it never reaches into
+  `draw()`.
+- But weights alone give you *a kid in a costume*. A species that
+  needs a different HEAD gets a skull param the profile sets (see
+  `muzzle`), and a species that needs a shape nobody else could have
+  gets its own part with `species: ['bird']`. Prefer the cheaper
+  lever: a snout is a param, wings are a part.
 - Draw through `F.media.tone / skin / edge`. Never call `pencilFill`,
   `washFill`, `oilFill` etc. from a part.
 - Size from `F.s`, `F.w`, `F.B.*`. No raw pixel constants.
