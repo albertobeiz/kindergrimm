@@ -7,7 +7,7 @@
 //   talk:   mouth idle/open swaps + a little jaw stretch
 //   sway/breath: the whole head drifts and swells; features
 //           parallax against it by their depth
-import { BOIL_FRAMES } from './part.js';
+import { BOIL_FRAMES, U } from './part.js';
 
 const DIRS = ['left', 'right', 'up', 'down'];
 const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
@@ -42,9 +42,25 @@ export function createAnimator(getFace, opts) {
       const swayX = opts.sway ? Math.sin(tt * .55) * .010 * amp : 0;
       const swayY = opts.sway ? Math.cos(tt * .37) * .005 * amp : 0;
       const breath = opts.breath ? Math.sin(tt * 1.15) : 0;   // ~11 breaths/min
+
+      // ---- the breath, taken by the WHOLE body ----
+      // The body stretches up and narrows as it fills, ANCHORED AT THE
+      // FEET so they never leave the floor, and the head rides on top
+      // of however far the chest rose.
+      let headRide = 0;
+      if (face.bodyGroup) {
+        const feetY = -face.F.B.floorY / U;          // local y of the soles
+        const chestY = -face.F.B.top / U;
+        const sy = 1 + breath * .022 * amp;
+        face.bodyGroup.scale.set(1 - breath * .009 * amp, sy, 1);
+        face.bodyGroup.position.y = feetY * (1 - sy);
+        headRide = (chestY - feetY) * (sy - 1);
+      }
+
       head.rotation.z = opts.sway ? Math.sin(tt * .6) * .017 * amp : 0;
-      head.position.y = (opts.sway ? Math.sin(tt * 1.1) * .004 * amp : 0) + breath * .006 * amp;
-      head.scale.setScalar(1 + breath * .005 * amp);
+      head.position.y = (opts.sway ? Math.sin(tt * 1.1) * .004 * amp : 0)
+        + breath * .004 * amp + headRide;
+      head.scale.setScalar(1 + breath * .004 * amp);
 
       // blink: quick shut, scheduled at random, sometimes doubled
       if (opts.blink) {
@@ -100,12 +116,12 @@ export function createAnimator(getFace, opts) {
         e.bone.scale.y += (target - e.bone.scale.y) * Math.min(1, dt * 22);
       }
 
-      // the chest is where breathing actually shows
+      // the chest swells a little more than the rest of the body
       for (const e of face.byId('torso'))
-        e.bone.scale.set(1 + breath * .016 * amp, 1 + breath * .011 * amp, 1);
+        e.bone.scale.set(1 + breath * .012 * amp, 1, 1);
       // arms hang and swing a little, out of phase with each other
       for (const e of face.byId('arms'))
-        e.bone.rotation.z = Math.sin(tt * .8 + (e.side > 0 ? 1.7 : 0)) * .05 * amp * -e.side;
+        e.bone.rotation.z = Math.sin(tt * .8 + (e.side > 0 ? 1.7 : 0)) * .04 * amp * -e.side;
 
       // ---- per-bone parallax: depth decides how much a part rides ----
       // Head parts only: body bones hold their base position, and get

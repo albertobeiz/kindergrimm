@@ -141,19 +141,19 @@ export const Arms = {
   // order -1: in front of the torso, but BEHIND the head — a raised
   // arm must pass behind the face, never across it
   id: 'arms', label: 'brazos', order: -1, depth: -.15, region: 'body',
+  // every character has arms — they are half the pose
   gen: rng => ({
-    style: wpick(rng, [['stub', 42], ['noodle', 22], ['up', 12], ['wing', 12], ['none', 12]]),
+    style: wpick(rng, [['stub', 48], ['noodle', 24], ['up', 12], ['wing', 16]]),
     len: rng.r(.55, .95),         // stubby: hands end beside the belly
-    droop: rng.r(.2, .9),         // hanging by default, like the reference
-    hand: wpick(rng, [['mitten', 52], ['dot', 22], ['claw', 14], ['none', 12]]),
+    droop: rng.r(.35, 1.0),       // hanging close, like the reference
+    hand: wpick(rng, [['mitten', 58], ['dot', 26], ['claw', 16]]),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ['stub', 'noodle', 'up', 'wing', 'none'] },
+    style: { label: 'estilo', pick: ['stub', 'noodle', 'up', 'wing'] },
     len: { label: 'largo', range: [.4, 1.8] },
     droop: { label: 'caída', range: [-.6, 1.2] },
-    hand: { label: 'mano', pick: ['mitten', 'dot', 'claw', 'none'] },
+    hand: { label: 'mano', pick: ['mitten', 'dot', 'claw'] },
   }),
-  skip: P => P.style === 'none',
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'arm' + (sd < 0 ? 'L' : 'R'),
     x: sd * F.B.shoulderX / U, y: -F.B.shoulderY / U, side: sd,
@@ -175,13 +175,14 @@ export const Arms = {
       return;
     }
 
-    // where the hand ends up: out and down, or up over the head
+    // Where the hand ends up. Arms hang CLOSE to the body at rest —
+    // held out wide reads as a jumping jack, not an idle.
     const up = P.style === 'up';
-    const dropY = up ? -L * .85 : L * (.35 + P.droop * .6);
-    const outX = sd * L * (up ? .5 : .75);
+    const dropY = up ? -L * .85 : L * (.55 + P.droop * .55);
+    const outX = sd * L * (up ? .42 : .32);
     const mid = P.style === 'noodle'
-      ? [x0 + outX * .4 + sd * L * .28, y0 + dropY * .45]       // a loose curve
-      : [x0 + outX * .55, y0 + dropY * .5];
+      ? [x0 + outX * .3 + sd * L * .22, y0 + dropY * .45]       // a loose curve
+      : [x0 + outX * .5, y0 + dropY * .5];
 
     const spine = chaikin([[x0, y0], mid, [x0 + outX, y0 + dropY]], false, 2);
     const thick = P.style === 'noodle' ? S * .055 : S * .085;
@@ -199,17 +200,17 @@ export const Arms = {
 // =================================================================
 export const Legs = {
   id: 'legs', label: 'piernas', order: -3, depth: -.35, region: 'body',
+  // every character stands on something — no floating blobs
   gen: rng => ({
-    style: wpick(rng, [['stub', 48], ['noodle', 16], ['none', 20], ['wide', 16]]),
+    style: wpick(rng, [['stub', 54], ['noodle', 18], ['wide', 28]]),
     len: rng.r(.3, .7),           // tiny: the reference barely has legs
-    foot: wpick(rng, [['oval', 58], ['mitten', 22], ['none', 12], ['claw', 8]]),
+    foot: wpick(rng, [['oval', 62], ['mitten', 26], ['claw', 12]]),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ['stub', 'noodle', 'none', 'wide'] },
+    style: { label: 'estilo', pick: ['stub', 'noodle', 'wide'] },
     len: { label: 'largo', range: [.3, 1.8] },
-    foot: { label: 'pie', pick: ['oval', 'mitten', 'none', 'claw'] },
+    foot: { label: 'pie', pick: ['oval', 'mitten', 'claw'] },
   }),
-  skip: P => P.style === 'none',
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'leg' + (sd < 0 ? 'L' : 'R'),
     x: sd * F.B.hipX / U, y: -F.B.hipY / U, side: sd,
