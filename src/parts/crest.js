@@ -65,7 +65,7 @@ export const Crest = {
   meta: () => ({
     style: { label: 'estilo', pick: ALL },
     tone: { label: 'material', pick: ['bone', 'dark', 'ringed', 'skin'] },
-    len: { label: 'largo', range: [.5, 2.0] },
+    len: { label: 'largo', range: [.5, 2.4] },
     curve: { label: 'curva', range: [-.9, 1.4] },
     spread: { label: 'apertura', range: [.3, 1.0] },
     tilt: { label: 'inclinación', range: [-.6, .9] },
@@ -182,22 +182,25 @@ export const Crest = {
       s.sline(circlePtsArc(bx, by - r * .3, r * .55), 1.3, .45);
 
     } else if (P.style === 'floppy') {
-      // an ear that gave up: it leaves the skull sideways and falls
+      // an ear that gave up: it leaves the skull sideways and falls.
+      // A long ear has to get WIDER too — length alone turns a dog's
+      // ear into a noodle hanging off its head.
       const L = S * .66 * P.len;
+      const fat = .55 + .45 * P.len;
       const spine = chaikin([
         [bx - sd * w * .04, by + S * .1],
         [bx + sd * w * (.30 + P.curve * .12), by + L * .18],
         [bx + sd * w * (.34 + P.curve * .2), by + L * .72],
         [bx + sd * w * .22, by + L],
       ], false, 2);
-      toneFill(tapered(spine, S * .2, S * .13));
+      toneFill(tapered(spine, S * .2 * fat, S * .13 * fat));
       // the inner fold, following the same fall a little shorter
       const inner = chaikin([
         [bx + sd * w * .04, by + S * .16],
         [bx + sd * w * (.26 + P.curve * .12), by + L * .3],
         [bx + sd * w * .22, by + L * .78],
       ], false, 2);
-      s.paperFill(tapered(inner, S * .08, S * .045));
+      s.paperFill(tapered(inner, S * .08 * fat, S * .045 * fat));
       s.sline(inner, 1.2, .4);
 
     } else if (P.style === 'stalks') {

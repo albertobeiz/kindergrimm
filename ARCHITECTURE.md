@@ -97,7 +97,7 @@ export const MyPart = {
                          //   1 = a front feature, 0 = the skull, <0 = behind
   region: 'head',        // 'head' (default) moves with sway/gaze/breath;
                          //   'body' stays PLANTED on the floor
-  species: ['bird'],     // optional: this part EXISTS only for these
+  species: ['nightmare'],// optional: this part EXISTS only for these
                          //   species. Omit and everyone can have it.
   pivot: [.5, .5],       // optional: where the bone sits on the canvas
                          //   [.5,1] = top edge (part hangs downward)
@@ -266,18 +266,18 @@ character. Guaranteeing they arrive together is what a species *is*.
 
 Loading the dice gets you a human with animal accessories — *a kid in
 a costume*. What actually makes a dog a dog is that **the head is a
-different shape**, and a bird has parts a person simply does not. So a
+different shape**, and a nightmare has parts a person simply does not. So a
 species has three levers, in increasing cost:
 
 | Lever | Cost | Example |
 |---|---|---|
 | **weights** — bias existing choices | free, data only | dogs get floppy ears and spots |
 | **skull shape** — the head's own outline | one param + one branch | `muzzle` puts a snout in the silhouette |
-| **its own part** — `species: ['bird']` | a new part file | wings; no dice roll turns an arm into one |
+| **its own part** — `species: ['nightmare']` | a new part file | wings; no dice roll turns an arm into one |
 
 The rule of thumb: reach for a new part only when the shape could not
 belong to anybody else. Wings qualify. A snout did not — it became a
-param on the skull, so a monster can have one too.
+param on the skull, so any species can have one.
 
 **The muzzle is the worked example.** `skull.muzzle` does two things:
 it swells the silhouette a little, and it tells `Skull.draw` to lay a

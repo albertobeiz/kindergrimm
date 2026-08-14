@@ -41,11 +41,14 @@ export const SPECIES = {
     label: 'perro',
     bases: { quad: 100 },
     cast: {
-      crest:  { style: { floppy: 68, bear: 20, none: 12 }, tone: { skin: 100 },
-                len: [1.25, 1.7], spread: [.86, 1.0] },
+      // EARS FIRST: on a dog they are the biggest thing on the head.
+      // The nub-shaped ones (bear) read as a bald cat, so they are the
+      // exception here, not a fifth of the litter.
+      crest:  { style: { floppy: 84, bear: 10, none: 6 }, tone: { skin: 100 },
+                len: [1.7, 2.3], spread: [.92, 1.08] },
       // the muzzle is in the SKULL's outline; the nose is just the
       // dark button sitting on the end of it
-      skull:  { s: [.82, 1.02], muzzle: [.26, .44],
+      skull:  { s: [.62, .8], muzzle: [.26, .44],
                 shape: { round: 40, wide: 26, lump: 18, drop: 16 } },
       nose:   { style: { button: 74, triangle: 26 }, size: [1.5, 2.1] },
       mouth:  { style: { cat: 44, tongue: 24, wobble: 18, buckteeth: 8, tiny: 6 } },
@@ -65,7 +68,7 @@ export const SPECIES = {
     cast: {
       crest:  { style: { cat: 92, none: 8 }, len: [.8, 1.25], tone: { skin: 100 } },
       // the muzzle sits almost mid-face on a cat, not down on the chin
-      skull:  { s: [.84, 1.04], muzzle: [.18, .3], muzzleY: [.3, .46],
+      skull:  { s: [.66, .84], muzzle: [.18, .3], muzzleY: [.3, .46],
                 shape: { round: 54, wide: 24, square: 12, lump: 10 } },
       nose:   { style: { triangle: 78, button: 22 }, size: [.9, 1.2] },
       // the W under the nose is the whole cat
@@ -78,26 +81,6 @@ export const SPECIES = {
       extras: { whiskers: .92, spots: .3, tears: .05, glasses: .04 },
       tail:   { style: { curl: 58, wag: 32, puff: 10 } },
       torso:  { shape: { bean: 40, tiny: 24, round: 22, drop: 14 } },
-    },
-  },
-
-  monster: {
-    label: 'monstruo',
-    bases: { sit: 22, biped: 78 },
-    cast: {
-      crest:  { style: { horns: 34, spikes: 20, stalks: 16, frills: 14, antlers: 10, crown: 6 } },
-      nose:   { style: { none: 48, skull: 26, snout: 16, triangle: 10 } },
-      mouth:  { style: { maw: 30, zigzag: 22, fangs: 20, void: 12, drool: 10, stitch: 6 } },
-      eyes:   { type: { hollow: 24, void: 20, sunken: 16, spiral: 12, xcross: 12, angry: 10, wide: 6 } },
-      hair:   { style: { bald: 58, messy: 18, spiky: 16, curly: 8 } },
-      // the outline IS the monster: lumpy, lopsided, occasionally
-      // carrying a muzzle it should not have
-      skull:  { shape: { bumpy: 24, wonky: 20, lump: 18, pear: 14, wide: 12, drop: 12 },
-                muzzle: [0, .3], fur: .4 },
-      arms:   { style: { stub: 34, noodle: 26, wing: 18, hips: 12, clasped: 10 }, hand: { claw: 56, mitten: 30, dot: 14 } },
-      extras: { spots: .5, tears: .12, whiskers: 0, glasses: .04 },
-      tail:   { style: { spike: 40, wag: 26, curl: 20, none: 14 } },
-      torso:  { shape: { bean: 28, barrel: 26, pear: 24, drop: 22 } },
     },
   },
 
@@ -116,6 +99,8 @@ export const SPECIES = {
       hair:   { style: { bald: 62, messy: 22, long: 16 } },
       arms:   { style: { noodle: 42, stub: 24, behind: 18, clasped: 16 }, hand: { claw: 62, dot: 24, mitten: 14 }, len: [.8, 1.3] },
       legs:   { style: { noodle: 56, stub: 44 } },
+      // the only owner of the wings part, and not every one of them
+      wings:  { style: { folded: 40, open: 26, none: 20, tucked: 14 } },
       extras: { tears: .55, spots: .2, whiskers: 0, glasses: 0 },
       tail:   { style: { spike: 46, none: 30, curl: 24 } },
       torso:  { shape: { tiny: 30, drop: 26, bean: 24, pear: 20 }, tone: { black: 70, hatch: 20, scribble: 10 } },

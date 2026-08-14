@@ -369,14 +369,15 @@ export const Tail = {
 // =================================================================
 export const Wings = {
   id: 'wings', label: 'alas', order: -1, depth: -.15, region: 'body',
-  species: ['monster'], base: ['biped'],
+  species: ['nightmare'], base: ['biped'],
   gen: (rng, C) => ({
-    style: C.pick(rng, 'style', [['folded', 54], ['open', 28], ['tucked', 18]]),
+    style: C.pick(rng, 'style', [['folded', 40], ['open', 24], ['none', 22], ['tucked', 14]]),
     len: C.range(rng, 'len', .9, 1.4),
     feathers: rng.ri(3, 5),
   }),
+  skip: P => P.style === 'none',
   meta: () => ({
-    style: { label: 'estilo', pick: ['folded', 'open', 'tucked'] },
+    style: { label: 'estilo', pick: ['folded', 'open', 'tucked', 'none'] },
     len: { label: 'largo', range: [.5, 2] },
     feathers: { label: 'plumas', range: [2, 6], step: 1 },
   }),

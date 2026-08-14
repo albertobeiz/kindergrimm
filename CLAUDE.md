@@ -26,7 +26,7 @@ phantom `SyntaxError`.
 - But weights alone give you *a kid in a costume*. A species that
   needs a different HEAD gets a skull param the profile sets (see
   `muzzle`), and a species that needs a shape nobody else could have
-  gets its own part with `species: ['bird']`. Prefer the cheaper
+  gets its own part with `species: ['nightmare']`. Prefer the cheaper
   lever: a snout is a param, wings are a part.
 - Draw through `F.media.tone / skin / edge`. Never call `pencilFill`,
   `washFill`, `oilFill` etc. from a part.
