@@ -3,7 +3,38 @@
 // (paper-colored speckle, invisible against the page, breaking up the
 // graphite so it reads as pigment sitting in the grain).
 import * as THREE from 'three';
-import { PAPER, PR } from './sketch.js';
+import { PAPER, PR, Sketch } from './sketch.js';
+
+// a floor: one long pencil line with a few grass ticks and scuffs
+// under it. Scenes stand characters on this using F.B.floorY.
+export function makeFloorLine(widthU) {
+  const PXW = Math.min(2048, Math.round(widthU * 150)), PXH = 44;
+  const s = new Sketch(PXW, PXH);
+  s.boil((Math.random() * 1e9) | 0);
+  const y = 14;
+  const pts = [];
+  for (let x = 8; x <= PXW - 8; x += 60) pts.push([x, y + s.jr(-1.5, 1.5)]);
+  s.sline(pts, 2.4, .5);
+  // the odd second pass where the pencil went back over it
+  if (s.chance(.7)) {
+    const a = s.jr(.15, .7), b = a + s.jr(.1, .25);
+    s.sline(pts.slice((pts.length * a) | 0, (pts.length * b) | 0 + 2), 2, .3);
+  }
+  for (let i = 0; i < PXW / 38; i++) {
+    const x = s.jr(12, PXW - 12);
+    if (s.chance(.6)) s.sline([[x, y + 3], [x + s.jr(-4, 4), y + s.jr(9, 18)]], 1.3, .35);
+    else s.sline([[x - s.jr(3, 7), y + s.jr(6, 10)], [x + s.jr(3, 7), y + s.jr(6, 10)]], 1.2, .25);
+  }
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(widthU, PXH / 150),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(s.canvas), transparent: true, depthWrite: false }),
+  );
+  mesh.renderOrder = -50;
+  // the drawn line is above the canvas centre; scenes place the mesh
+  // at (floor target - lineDy) so the LINE is where the feet land
+  mesh.userData.lineDy = (PXH / 2 - y) / 150;
+  return mesh;
+}
 
 export function addPaper(scene, halfH) {
   const W = 1200, H = 900;

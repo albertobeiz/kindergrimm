@@ -72,6 +72,12 @@ export function buildCharacter(recipe) {
   const F = buildLayout(recipe, Ps);
 
   const group = new THREE.Group();
+  // Two sub-groups so the animator can act them separately: the HEAD
+  // sways, cocks toward a glance and rides the breath; the BODY stays
+  // planted on the floor. A part opts into the body with region:'body'.
+  const headGroup = new THREE.Group();
+  const bodyGroup = new THREE.Group();
+  group.add(bodyGroup, headGroup);
   const entries = [];
 
   for (const def of PARTS) {
@@ -106,18 +112,19 @@ export function buildCharacter(recipe) {
       bone.position.set(b.x, b.y, 0);
       bone.userData.base = { x: b.x, y: b.y };  // the animator moves off this
       bone.add(part.mesh);
-      group.add(bone);
+      (def.region === 'body' ? bodyGroup : headGroup).add(bone);
 
       entries.push({
         id: def.id, def, bone, part,
         side: b.side ?? 1,
         depth: b.depth ?? def.depth ?? 0,
+        region: def.region ?? 'head',
       });
     }
   }
 
   return {
-    group, entries, F, recipe,
+    group, headGroup, bodyGroup, entries, F, recipe,
     byId: id => entries.filter(e => e.id === id),
     dispose() { entries.forEach(e => e.part.dispose()); },
   };

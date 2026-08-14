@@ -2,7 +2,8 @@
 // One face built from a recipe, one bone per part, click to select.
 import * as THREE from 'three';
 import { PAPER } from './sketch.js';
-import { addPaper } from './paper.js';
+import { addPaper, makeFloorLine } from './paper.js';
+import { U } from './part.js';
 import { newRecipe, buildCharacter, rerollPart, regenUnlocked, ensureParams } from './rig.js';
 import { MEDIA_IDS } from './media.js';
 import { createAnimator } from './anim.js';
@@ -38,6 +39,14 @@ addEventListener('resize', onResize);
 
 addPaper(scene, HALF_H);
 
+// the character stands ON a drawn floor line, whatever its proportions
+const FLOOR_Y = -1.05;
+{
+  const fl = makeFloorLine(3.4);
+  fl.position.set(0, FLOOR_Y - fl.userData.lineDy, -1);
+  scene.add(fl);
+}
+
 // ---- app state --------------------------------------------------
 const recipe = newRecipe();
 recipe.media = MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0];
@@ -56,6 +65,9 @@ function rebuild() {
     rebuildQueued = false;
     if (face) { scene.remove(face.group); face.dispose(); }
     face = buildCharacter(app.recipe());
+    // feet on the floor: the origin is the head's centre, so lift the
+    // character by how far its own feet hang below that
+    face.group.position.y = FLOOR_Y + face.F.B.floorY / U;
     scene.add(face.group);
     applyHighlight();
     ui.refresh();

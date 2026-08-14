@@ -61,11 +61,12 @@ function paw(s, F, cx, cy, r, kind, sd) {
 // TORSO — one bone, the anchor the limbs hang from
 // =================================================================
 export const Torso = {
-  id: 'torso', label: 'torso', order: -2, depth: -.25,
+  id: 'torso', label: 'torso', order: -2, depth: -.25, region: 'body',
   gen: rng => ({
-    shape: wpick(rng, [['bean', 30], ['round', 22], ['square', 20], ['pear', 18], ['tiny', 10]]),
-    wF: rng.r(.46, .78),          // half width, against the head half width
-    hF: rng.r(.55, .95),          // height, against the head scale
+    shape: wpick(rng, [['bean', 30], ['round', 24], ['square', 16], ['pear', 20], ['tiny', 10]]),
+    // Isaac proportions: the body is a small blob under a huge head
+    wF: rng.r(.4, .62),           // half width, against the head half width
+    hF: rng.r(.48, .78),          // height, against the head scale
     pattern: wpick(rng, [['none', 34], ['stripes', 22], ['belly', 18], ['buttons', 14], ['pocket', 12]]),
     clothOn: rng.chance(.45), clothIdx: rng.ri(0, 7),
     tone: wpick(rng, [['light', 46], ['hatch', 22], ['scribble', 18], ['black', 14]]),
@@ -92,7 +93,9 @@ export const Torso = {
     } else if (P.shape === 'pear') {
       pts = [[-hw * .62, top], [hw * .62, top], [hw * 1.05, bot - B.h * .3], [hw * .8, bot], [-hw * .8, bot], [-hw * 1.05, bot - B.h * .3]];
     } else if (P.shape === 'tiny') {
-      pts = [[-hw * .6, top], [hw * .6, top], [hw * .66, top + B.h * .55], [-hw * .66, top + B.h * .55]];
+      // narrow, not short: every silhouette must reach `bot`, because
+      // the hips (and so the legs and the floor) are measured from it
+      pts = [[-hw * .6, top], [hw * .6, top], [hw * .5, bot], [-hw * .5, bot]];
     } else if (P.shape === 'round') {
       pts = [];
       for (let i = 0; i < 14; i++) {
@@ -137,11 +140,11 @@ export const Torso = {
 export const Arms = {
   // order -1: in front of the torso, but BEHIND the head — a raised
   // arm must pass behind the face, never across it
-  id: 'arms', label: 'brazos', order: -1, depth: -.15,
+  id: 'arms', label: 'brazos', order: -1, depth: -.15, region: 'body',
   gen: rng => ({
-    style: wpick(rng, [['stub', 34], ['noodle', 26], ['up', 18], ['wing', 12], ['none', 10]]),
-    len: rng.r(.75, 1.3),
-    droop: rng.r(-.2, .8),        // <0 raised, >0 hanging
+    style: wpick(rng, [['stub', 42], ['noodle', 22], ['up', 12], ['wing', 12], ['none', 12]]),
+    len: rng.r(.55, .95),         // stubby: hands end beside the belly
+    droop: rng.r(.2, .9),         // hanging by default, like the reference
     hand: wpick(rng, [['mitten', 52], ['dot', 22], ['claw', 14], ['none', 12]]),
   }),
   meta: () => ({
@@ -195,11 +198,11 @@ export const Arms = {
 // LEGS — one bone per side. 'none' leaves a blob sitting on the floor
 // =================================================================
 export const Legs = {
-  id: 'legs', label: 'piernas', order: -3, depth: -.35,
+  id: 'legs', label: 'piernas', order: -3, depth: -.35, region: 'body',
   gen: rng => ({
-    style: wpick(rng, [['stub', 40], ['noodle', 24], ['none', 22], ['wide', 14]]),
-    len: rng.r(.6, 1.25),
-    foot: wpick(rng, [['oval', 46], ['mitten', 28], ['none', 16], ['claw', 10]]),
+    style: wpick(rng, [['stub', 48], ['noodle', 16], ['none', 20], ['wide', 16]]),
+    len: rng.r(.3, .7),           // tiny: the reference barely has legs
+    foot: wpick(rng, [['oval', 58], ['mitten', 22], ['none', 12], ['claw', 8]]),
   }),
   meta: () => ({
     style: { label: 'estilo', pick: ['stub', 'noodle', 'none', 'wide'] },

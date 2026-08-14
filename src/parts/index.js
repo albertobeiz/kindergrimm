@@ -18,19 +18,18 @@ import { Mouth, Nose } from './mouthnose.js';
 import { Hair } from './hair.js';
 import { Extras } from './extras.js';
 import { Horns } from './horns.js';
-import { Neck } from './neck.js';
 import { Torso, Arms, Legs } from './body.js';
 
 export const PARTS = [
-  // --- body: behind and below the head ---
+  // --- body (region:'body'): behind and below the head, planted on
+  // the floor — the animator moves the head, the body stays put ---
   Legs,
   Torso,
   Arms,     // in front of the torso, still behind the head
   // --- head ---
   Hair,     // the back mass draws behind the skull (see its bones())
   Horns,
-  Neck,
-  Skull,
+  Skull,    // no neck: the head sits straight on the body, Isaac-style
   Ears,
   Eyes,
   Brows,

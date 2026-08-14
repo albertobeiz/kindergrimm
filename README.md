@@ -30,8 +30,8 @@ be saved, shared and rebuilt inside a game at runtime.
 - `src/layout.js` — every measurement two parts have to agree on: the
   head outline, the eye anchors, the body block.
 - `src/parts/*.js` — one file per feature family (skull, eyes, mouth,
-  hair, horns/ears, neck, body, extras). `parts/index.js` is the
-  registry: the ordered list of what is switched on.
+  hair, horns/ears, body, extras). `parts/index.js` is the registry:
+  the ordered list of what is switched on.
 - `src/rig.js` — recipe → bones → meshes. Generic: it knows nothing
   about eyes or arms, so adding a part never touches it.
 - `src/anim.js` — boil, blink, gaze saccades, talk, sway and breath.

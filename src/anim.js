@@ -32,16 +32,19 @@ export function createAnimator(getFace, opts) {
         e.part.setFrame(opts.boil ? ((t * e.part.fps * speed + e.part.off) | 0) % BOIL_FRAMES : 0);
 
       // ---- the head as a whole ----
+      // Only the HEAD group sways, cocks and rides the breath — the
+      // body group stays planted so the feet never leave the floor.
       // phase desynchronizes a crowd (35 heads breathing in unison
       // reads as the PAGE moving); amp lets a scene push the idle
       const tt = t + (opts.phase ?? 0);
       const amp = opts.amp ?? 1;
+      const head = face.headGroup ?? face.group;
       const swayX = opts.sway ? Math.sin(tt * .55) * .010 * amp : 0;
       const swayY = opts.sway ? Math.cos(tt * .37) * .005 * amp : 0;
       const breath = opts.breath ? Math.sin(tt * 1.15) : 0;   // ~11 breaths/min
-      face.group.rotation.z = opts.sway ? Math.sin(tt * .6) * .017 * amp : 0;
-      face.group.position.y = (opts.sway ? Math.sin(tt * 1.1) * .004 * amp : 0) + breath * .006 * amp;
-      face.group.scale.setScalar(1 + breath * .005 * amp);
+      head.rotation.z = opts.sway ? Math.sin(tt * .6) * .017 * amp : 0;
+      head.position.y = (opts.sway ? Math.sin(tt * 1.1) * .004 * amp : 0) + breath * .006 * amp;
+      head.scale.setScalar(1 + breath * .005 * amp);
 
       // blink: quick shut, scheduled at random, sometimes doubled
       if (opts.blink) {
@@ -80,10 +83,11 @@ export function createAnimator(getFace, opts) {
       gx += gvx * dt;
       gy += gvy * dt;
 
-      // the whole head cocks toward whatever it is looking at
-      face.group.rotation.z += -gx * .075 * amp;
-      face.group.position.x = gx * .022 * amp;
-      face.group.position.y += gy * .016 * amp;
+      // the head cocks toward whatever it is looking at — the head,
+      // not the character: the body has its feet on the floor
+      head.rotation.z += -gx * .075 * amp;
+      head.position.x = gx * .022 * amp;
+      head.position.y += gy * .016 * amp;
 
       // talk: jittery open/idle swaps + a little jaw stretch
       if (opts.talk) {
@@ -104,9 +108,12 @@ export function createAnimator(getFace, opts) {
         e.bone.rotation.z = Math.sin(tt * .8 + (e.side > 0 ? 1.7 : 0)) * .05 * amp * -e.side;
 
       // ---- per-bone parallax: depth decides how much a part rides ----
+      // Head parts only: body bones hold their base position, and get
+      // their life from the torso breath and the arm swing above.
       const browLift = (opts.talk ? Math.sin(t * 9 + 1) * .008 : 0)
         + gy * .022;                        // brows ride with the eyes
       for (const e of face.entries) {
+        if (e.region === 'body') continue;
         const base = e.bone.userData.base;
         e.bone.position.x = base.x + (swayX + gx * .055) * e.depth;
         e.bone.position.y = base.y + (swayY + gy * .042) * e.depth + breath * .003 * e.depth

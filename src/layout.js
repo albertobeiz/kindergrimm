@@ -146,22 +146,32 @@ function featureLayout(recipe, Ps, S, w, turn, at, ts, press) {
 
 // ---------------- the body ----------------
 // One small block of numbers the torso, arms and legs all agree on.
-// Everything hangs off where the neck stops.
+// There is no neck: the head sits straight ON the body, overlapping
+// its top — the Isaac silhouette. `floorY` is where the feet end, so
+// scenes can stand every character on a floor line whatever its
+// proportions are.
 function bodyLayout(Ps, S, w) {
-  const T = Ps.torso ?? { wF: .6, hF: .8 };
-  const neckLen = Ps.neck?.len ?? .16;
+  const T = Ps.torso ?? { wF: .5, hF: .65 };
   const chinY = Ps.skull.chinY;
 
-  const top = S * (chinY + neckLen) - S * .04;   // tucked under the neck
+  const top = S * chinY - S * .14;               // the head overlaps the body
   const halfW = w * T.wF;
   const h = S * T.hF;
   const bot = top + h;
+  const hipY = bot - h * .06;
+
+  const Lg = Ps.legs ?? { style: 'stub', len: .4, foot: 'oval' };
+  const legLen = Lg.style === 'none' ? 0 : h * .5 * Lg.len;
+  const footH = Lg.style === 'none' ? S * .02 : (Lg.foot === 'none' ? S * .02 : S * .062);
+  const floorY = (Lg.style === 'none' ? bot : hipY + legLen) + footH;
+
   return {
     top, bot, h, halfW,
-    shoulderY: top + h * .18,
-    shoulderX: halfW * .92,
-    hipY: bot - h * .05,
-    hipX: halfW * .44,
+    shoulderY: top + h * .22,
+    shoulderX: halfW * .95,
+    hipY,
+    hipX: halfW * .42,
+    floorY,
   };
 }
 

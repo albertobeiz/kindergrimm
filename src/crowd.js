@@ -9,8 +9,8 @@
 // down the sheet instead of freezing for several seconds.
 import * as THREE from 'three';
 import { PAPER, Sketch, chaikin } from './sketch.js';
-import { setRender } from './part.js';
-import { addPaper } from './paper.js';
+import { setRender, U } from './part.js';
+import { addPaper, makeFloorLine } from './paper.js';
 import { newRecipe, buildCharacter, ensureParams } from './rig.js';
 import { MEDIA, MEDIA_IDS } from './media.js';
 import { createAnimator } from './anim.js';
@@ -21,10 +21,10 @@ THREE.ColorManagement.enabled = false;
 
 const COLS = 7, ROWS = 5, N = COLS * ROWS;
 const CELL_W = 1.0, CELL_H = 1.45, FACE_SCALE = .62;
-// the character hangs below its origin, so lift it to sit in the cell
-const CHAR_LIFT = .42 * FACE_SCALE;
 const HALF_H = ROWS * CELL_H / 2 + .26;
 const TOP_MARGIN = .18;          // the HUD sits over this strip
+// every row is a shelf: a drawn floor line all its characters stand on
+const rowFloorY = row => -(row - (ROWS - 1) / 2) * CELL_H - CELL_H * .40;
 
 const params = new URLSearchParams(location.search);
 // 'todos' draws each face in a different medium — the range on one page
@@ -58,6 +58,11 @@ function onResize() {
 addEventListener('resize', onResize);
 
 addPaper(scene, HALF_H);
+for (let r = 0; r < ROWS; r++) {
+  const fl = makeFloorLine(COLS * CELL_W + .5);
+  fl.position.set(0, rowFloorY(r) - fl.userData.lineDy, -1);
+  scene.add(fl);
+}
 
 // ---- the page of faces ------------------------------------------
 const cells = new Array(N).fill(null);
@@ -82,8 +87,9 @@ function drawCell(i, recipe = null) {
   ensureParams(recipe);
   const face = buildCharacter(recipe);
   const holder = new THREE.Group();
-  const [x, y] = cellPos(i);
-  holder.position.set(x, y + CHAR_LIFT, 0);
+  const [x] = cellPos(i);
+  // land the feet on this row's floor line, whatever the proportions
+  holder.position.set(x, rowFloorY(i / COLS | 0) + (face.F.B.floorY / U) * FACE_SCALE, 0);
   holder.scale.setScalar(FACE_SCALE);
   holder.add(face.group);          // the animator owns face.group's transform
   scene.add(holder);

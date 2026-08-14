@@ -82,6 +82,8 @@ export const MyPart = {
   order: 3,              // draw order: higher is drawn IN FRONT
   depth: 1,              // parallax: how much it rides when the head moves
                          //   1 = a front feature, 0 = the skull, <0 = behind
+  region: 'head',        // 'head' (default) moves with sway/gaze/breath;
+                         //   'body' stays PLANTED on the floor
   pivot: [.5, .5],       // optional: where the bone sits on the canvas
                          //   [.5,1] = top edge (part hangs downward)
   states: ['idle'],      // optional: extra pre-drawn textures (see §6)
@@ -167,6 +169,21 @@ its own texture, so animating is a texture swap — free at runtime.
 The animator also moves bones (`e.bone.position/rotation/scale`) —
 that is how sway, breath, arm swing and the gaze parallax work. Bones
 remember their rest position in `bone.userData.base`.
+
+The rig splits bones into `headGroup` and `bodyGroup` by each part's
+`region`. All head motion (sway, the gaze head-cock, the breath lift)
+is applied to `headGroup` only; the body stays planted so the feet
+never leave the floor. Body parts get their life explicitly (the torso
+swells with the breath, the arms swing) — if you add a body part and
+want it to move, add its behaviour to `anim.js`, don't give it
+`region:'head'`.
+
+**The floor:** `F.B.floorY` is how far (in px) the character's feet
+hang below the head centre, whatever its proportions. Scenes stand a
+character on a drawn line with
+`group.position.y = floorLineY + F.B.floorY / U`. If your part extends
+below the feet, extend `bodyLayout()` so `floorY` still tells the
+truth.
 
 ---
 
