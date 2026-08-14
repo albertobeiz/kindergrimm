@@ -22,6 +22,7 @@ export const Nose = {
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', NOSES),
     nostril: rng.chance(.6),
+    size: C.range(rng, 'size', .9, 1.2),
     // a snout is a family, not one drawing: greyhound to bulldog
     snoutLen: C.range(rng, 'snoutLen', .75, 1.5),
     snoutFat: C.range(rng, 'snoutFat', .8, 1.3),
@@ -30,6 +31,7 @@ export const Nose = {
   meta: () => ({
     style: { label: 'estilo', pick: NOSES.map(p => p[0]) },
     nostril: { label: 'aleta', bool: true },
+    size: { label: 'tamaño', range: [.6, 2.4] },
     snoutLen: { label: 'hocico largo', range: [.5, 2] },
     snoutFat: { label: 'hocico grueso', range: [.6, 1.6] },
     snoutTip: { label: 'hocico caído', range: [-.25, .3] },
@@ -47,7 +49,7 @@ export const Nose = {
     const ny = F.L.noseY;
 
     if (P.style === 'button') {
-      const r = w * .085 * (F.L.M.on ? 1.7 : 1);
+      const r = w * .085 * (F.L.M.on ? 1.7 : 1) * (P.size ?? 1);
       if (F.L.M.on) {
         // on a muzzle it is an animal's nose: solid, dark, wider than
         // tall, with one wet highlight
@@ -66,7 +68,7 @@ export const Nose = {
     }
     if (P.style === 'triangle') {
       // the cat nose: a small solid wedge with a line dropping from it
-      const r = w * .075 * (F.L.M.on ? 1.5 : 1);
+      const r = w * .075 * (F.L.M.on ? 1.5 : 1) * (P.size ?? 1);
       const tri = [[nx - r, ny - S * .03], [nx + r, ny - S * .03], [nx, ny - S * .03 + r * 1.15]];
       s.poly(tri, true); s.ctx.fillStyle = s.inkA(.9); s.ctx.fill();
       s.sline([[nx, ny - S * .03 + r * 1.1], [nx, ny - S * .03 + r * 2.1]], 1.2, .5);

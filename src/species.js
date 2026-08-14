@@ -39,13 +39,15 @@ export const SPECIES = {
 
   dog: {
     label: 'perro',
-    bases: { sit: 62, biped: 38 },
+    bases: { quad: 100 },
     cast: {
-      crest:  { style: { floppy: 62, bear: 22, none: 16 }, tone: { skin: 100 } },
+      crest:  { style: { floppy: 68, bear: 20, none: 12 }, tone: { skin: 100 },
+                len: [1.25, 1.7], spread: [.86, 1.0] },
       // the muzzle is in the SKULL's outline; the nose is just the
       // dark button sitting on the end of it
-      skull:  { muzzle: [.26, .44], shape: { round: 40, wide: 26, lump: 18, drop: 16 } },
-      nose:   { style: { button: 62, triangle: 38 } },
+      skull:  { s: [.82, 1.02], muzzle: [.26, .44],
+                shape: { round: 40, wide: 26, lump: 18, drop: 16 } },
+      nose:   { style: { button: 74, triangle: 26 }, size: [1.5, 2.1] },
       mouth:  { style: { cat: 44, tongue: 24, wobble: 18, buckteeth: 8, tiny: 6 } },
       // an animal face is two dots and a muzzle. No irises, no lashes.
       eyes:   { type: { dot: 62, happy: 20, closed: 10, saucer: 8 }, scale: [.85, 1.25] },
@@ -63,9 +65,9 @@ export const SPECIES = {
     cast: {
       crest:  { style: { cat: 92, none: 8 }, len: [.8, 1.25], tone: { skin: 100 } },
       // the muzzle sits almost mid-face on a cat, not down on the chin
-      skull:  { muzzle: [.18, .3], muzzleY: [.3, .46],
+      skull:  { s: [.84, 1.04], muzzle: [.18, .3], muzzleY: [.3, .46],
                 shape: { round: 54, wide: 24, square: 12, lump: 10 } },
-      nose:   { style: { triangle: 78, button: 22 } },
+      nose:   { style: { triangle: 78, button: 22 }, size: [.9, 1.2] },
       // the W under the nose is the whole cat
       mouth:  { style: { cat: 80, tiny: 10, tongue: 6, fangs: 4 } },
       // dots, crosses or shut lines — and set WIDE APART, out near the
