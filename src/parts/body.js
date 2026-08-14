@@ -363,13 +363,13 @@ export const Tail = {
 };
 
 // =================================================================
-// WINGS — a SPECIES-SPECIFIC part. `species: ['bird']` means the rig
+// WINGS — a SPECIES-SPECIFIC part. `species: [...]` means the rig
 // skips it entirely for anyone else: no amount of dice-loading turns
 // an arm into a wing, so some shapes have to belong to somebody.
 // =================================================================
 export const Wings = {
   id: 'wings', label: 'alas', order: -1, depth: -.15, region: 'body',
-  species: ['bird'], base: ['biped'],
+  species: ['monster'], base: ['biped'],
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['folded', 54], ['open', 28], ['tucked', 18]]),
     len: C.range(rng, 'len', .9, 1.4),

@@ -152,12 +152,14 @@ export const Crest = {
       const inner = bx + sd * half;               // toward the face
       const outer = bx - sd * half;               // away from it
       const apex = bx - sd * half * .45;          // the tip leans out
-      const tri = chaikin([[inner, by + S * .1], [apex, by - hh], [outer, by + S * .04]], true, 1);
+      // NOT smoothed: chaikin rounds the corners off and a rounded
+      // triangle is a blob. A cat ear is three straight edges.
+      const tri = [[inner, by + S * .1], [apex, by - hh], [outer, by + S * .04]];
       toneFill(tri);
       // the pink inside, a smaller triangle sharing the apex direction
-      const innerTri = chaikin([[inner - sd * half * .42, by + S * .05],
-                                [apex, by - hh * .58],
-                                [outer + sd * half * .3, by + S * .01]], true, 1);
+      const innerTri = [[inner - sd * half * .42, by + S * .05],
+                        [apex, by - hh * .58],
+                        [outer + sd * half * .3, by + S * .01]];
       s.paperFill(innerTri);
       s.sline(innerTri.concat([innerTri[0]]), F.lwThin * .85, .45);
 

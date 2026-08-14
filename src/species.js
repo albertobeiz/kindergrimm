@@ -79,43 +79,6 @@ export const SPECIES = {
     },
   },
 
-  rabbit: {
-    label: 'conejo',
-    bases: { sit: 58, biped: 42 },
-    cast: {
-      crest:  { style: { bunny: 90, none: 10 }, len: [1.1, 1.6], tone: { skin: 100 } },
-      nose:   { style: { triangle: 62, button: 38 } },
-      mouth:  { style: { buckteeth: 52, cat: 24, tiny: 14, wobble: 10 } },
-      eyes:   { type: { dot: 58, happy: 18, saucer: 14, closed: 10 }, scale: [.9, 1.3] },
-      brows:  { on: 0 },
-      hair:   { style: { bald: 92, messy: 8 } },
-      skull:  { muzzle: [.1, .2], shape: { round: 40, tall: 26, drop: 20, pear: 14 } },
-      extras: { whiskers: .7, spots: .3, tears: .12, glasses: .05 },
-      tail:   { style: { puff: 82, none: 18 } },
-      torso:  { shape: { pear: 34, bean: 30, round: 24, tiny: 12 } },
-    },
-  },
-
-  bird: {
-    label: 'pájaro',
-    bases: { sit: 45, biped: 55 },
-    cast: {
-      crest:  { style: { sprout: 34, frills: 26, spikes: 20, none: 20 }, tone: { skin: 70, bone: 30 } },
-      nose:   { style: { none: 100 } },                    // the beak IS the face
-      mouth:  { style: { beak: 88, tiny: 12 }, beakLen: [.9, 1.5] },
-      eyes:   { type: { dot: 66, happy: 14, closed: 12, saucer: 8 }, scale: [.8, 1.15] },
-      brows:  { on: 0 },
-      hair:   { style: { bald: 72, spiky: 18, messy: 10 } },
-      // a small beak-forward head, and the wings are their own part
-      skull:  { muzzle: [.08, .18], shape: { round: 46, drop: 26, tall: 16, lump: 12 } },
-      arms:   { style: { behind: 100 } },   // hidden under the wings
-      legs:   { style: { noodle: 62, stub: 38 }, foot: { claw: 84, oval: 16 }, len: [.7, 1.3] },
-      extras: { spots: .35, tears: .06, whiskers: 0, glasses: .05 },
-      tail:   { style: { puff: 44, wag: 30, none: 26 } },
-      torso:  { shape: { drop: 34, round: 28, bean: 22, tiny: 16 } },
-    },
-  },
-
   monster: {
     label: 'monstruo',
     bases: { sit: 22, biped: 78 },
