@@ -3,6 +3,7 @@
 // from each part def's meta() so new params show up automatically.
 import { PARTS } from './rig.js';
 import { MEDIA } from './media.js';
+import { SPECIES } from './species.js';
 
 const $ = id => document.getElementById(id);
 
@@ -18,6 +19,11 @@ export function initUI(app) {
     if (e.key === 'r' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))
       app.regen((Math.random() * 1e9) | 0);
   });
+  $('species').add(new Option('todas (al azar)', 'todas'));
+  for (const [id, sp] of Object.entries(SPECIES)) $('species').add(new Option(sp.label, id));
+  // a species change re-casts every unlocked part: same seed, new animal
+  $('species').onchange = () => app.setSpecies($('species').value);
+
   $('media').add(new Option('todos (al azar)', 'todos'));
   for (const m of Object.values(MEDIA)) $('media').add(new Option(m.label, m.id));
   $('media').onchange = () => { app.setMedia($('media').value); };
@@ -119,6 +125,7 @@ export function initUI(app) {
   function refresh() {
     const r = app.recipe();
     $('seed').value = r.seed;
+    $('species').value = app.speciesMode();
     $('media').value = app.mediaMode();
     $('color').value = r.color || 'auto';
     $('recipe-box').value = JSON.stringify(r, null, 2);

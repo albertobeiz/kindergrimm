@@ -61,12 +61,12 @@ function starPts(cx, cy, r, n = 5, inner = .44, rot = -Math.PI / 2) {
 export const Eyes = {
   id: 'eyes', label: 'ojos', order: 3, depth: 1,
   states: ['open', 'closed', 'left', 'right', 'up', 'down'],
-  gen: rng => ({
-    type: wpick(rng, TYPES),
+  gen: (rng, C) => ({
+    type: C.pick(rng, 'type', TYPES),
     // the doodle habit of drawing each eye without checking the other
-    type2: rng.chance(.4) ? wpick(rng, TYPES) : 'none',
+    type2: rng.chance(.4) ? C.pick(rng, 'type', TYPES) : 'none',
     scaleR: rng.r(.8, 1.25),
-    scale: rng.r(1.1, 1.7),
+    scale: C.range(rng, 'scale', 1.1, 1.7),
     ehJit: rng.r(.9, 1.1),
     fierce: rng.r(-.05, .55),
     gazeJit: rng.r(-.1, .1),

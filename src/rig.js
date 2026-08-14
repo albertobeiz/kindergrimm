@@ -25,40 +25,52 @@ import { makeRng, hashStr } from './rng.js';
 import { makePart, U } from './part.js';
 import { buildLayout } from './layout.js';
 import { PARTS, PART_BY_ID } from './parts/index.js';
+import { castingFor } from './species.js';
 
 export { PARTS };
 
 export function newRecipe(seed = (Math.random() * 1e9) | 0) {
-  return { seed, color: 'auto', media: 'graphite', parts: {} };
+  return { seed, species: 'human', color: 'auto', media: 'graphite', parts: {} };
 }
 
 const partRng = (recipe, id) =>
   makeRng(hashStr(`${recipe.seed}:${id}:${recipe.parts[id]?.rr || 0}`));
 
+// A part's gen() is handed a CASTING helper scoped to that part: it
+// answers pick/range/chance with the species' opinion when it has one
+// and the part's own default when it does not. The species only ever
+// biases GENERATION — once params exist they are plain numbers, so a
+// saved recipe rebuilds identically without it.
+const castFor = recipe => castingFor(recipe.species);
+
 // fill in whatever is missing — a new recipe, or an old recipe from
 // before a part type existed
 export function ensureParams(recipe) {
   recipe.media ??= 'graphite';
+  recipe.species ??= 'human';
+  const cast = castFor(recipe);
   for (const def of PARTS) {
     const slot = recipe.parts[def.id] ??= {};
-    slot.params ??= def.gen(partRng(recipe, def.id));
+    slot.params ??= def.gen(partRng(recipe, def.id), cast(def.id));
   }
 }
 
 export function rerollPart(recipe, id) {
   const slot = recipe.parts[id];
   slot.rr = (slot.rr || 0) + 1;
-  slot.params = PART_BY_ID[id].gen(partRng(recipe, id));
+  slot.params = PART_BY_ID[id].gen(partRng(recipe, id), castFor(recipe)(id));
 }
 
-// re-derive every unlocked part (a new seed, or the same one again)
+// re-derive every unlocked part (a new seed, a new species, or the
+// same one again)
 export function regenUnlocked(recipe, seed = recipe.seed) {
   recipe.seed = seed;
+  const cast = castFor(recipe);
   for (const def of PARTS) {
     const slot = recipe.parts[def.id] ??= {};
     if (slot.lock && slot.params) continue;
     slot.rr = 0;
-    slot.params = def.gen(partRng(recipe, def.id));
+    slot.params = def.gen(partRng(recipe, def.id), cast(def.id));
   }
 }
 

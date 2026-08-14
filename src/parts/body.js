@@ -60,20 +60,22 @@ function paw(s, F, cx, cy, r, kind, sd) {
 // =================================================================
 // TORSO — one bone, the anchor the limbs hang from
 // =================================================================
+const TORSOS = [['bean', 22], ['round', 18], ['square', 14], ['pear', 16],
+                ['tiny', 10], ['barrel', 12], ['drop', 8]];
+
 export const Torso = {
   id: 'torso', label: 'torso', order: -2, depth: -.25, region: 'body',
-  gen: rng => ({
-    shape: wpick(rng, [['bean', 22], ['round', 18], ['square', 14], ['pear', 16],
-                       ['tiny', 10], ['barrel', 12], ['drop', 8]]),
+  gen: (rng, C) => ({
+    shape: C.pick(rng, 'shape', TORSOS),
     // Isaac proportions: the body is a small blob under a huge head.
     // Both are ratios AGAINST the head, so shrinking them is what
     // makes a character read as big-headed — not scaling the skull.
-    wF: rng.r(.34, .6),           // half width, against the head half width
-    hF: rng.r(.36, .68),          // height, against the head scale
-    lean: rng.r(-.06, .06),       // the whole body tips a little
-    pattern: wpick(rng, [['none', 34], ['stripes', 22], ['belly', 18], ['buttons', 14], ['pocket', 12]]),
+    wF: C.range(rng, 'wF', .34, .6),   // half width, against the head half width
+    hF: C.range(rng, 'hF', .36, .68),  // height, against the head scale
+    lean: rng.r(-.06, .06),            // the whole body tips a little
+    pattern: C.pick(rng, 'pattern', [['none', 34], ['stripes', 22], ['belly', 18], ['buttons', 14], ['pocket', 12]]),
     clothOn: rng.chance(.45), clothIdx: rng.ri(0, 7),
-    tone: wpick(rng, [['light', 46], ['hatch', 22], ['scribble', 18], ['black', 14]]),
+    tone: C.pick(rng, 'tone', [['light', 46], ['hatch', 22], ['scribble', 18], ['black', 14]]),
   }),
   meta: () => ({
     shape: { label: 'forma', pick: ['bean', 'round', 'square', 'pear', 'tiny', 'barrel', 'drop'] },
@@ -160,14 +162,14 @@ export const Arms = {
   // Every character has arms — they are half the pose. Every style
   // here is an IDLE: nothing reaches for the sky, because a standing
   // doodle with its arms up reads as jumping, not waiting.
-  gen: rng => ({
-    style: wpick(rng, [['stub', 34], ['noodle', 18], ['wing', 14],
-                       ['hips', 14], ['clasped', 12], ['behind', 8]]),
-    len: rng.r(.55, .95),         // stubby: hands end beside the belly
-    droop: rng.r(.35, 1.0),       // hanging close, like the reference
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', [['stub', 34], ['noodle', 18], ['wing', 14],
+                                 ['hips', 14], ['clasped', 12], ['behind', 8]]),
+    len: C.range(rng, 'len', .55, .95),    // stubby: hands end beside the belly
+    droop: C.range(rng, 'droop', .35, 1.0), // hanging close, like the reference
     // nobody draws both arms the same: the right one wanders a little
     asym: rng.r(-.22, .28),
-    hand: wpick(rng, [['mitten', 58], ['dot', 26], ['claw', 16]]),
+    hand: C.pick(rng, 'hand', [['mitten', 58], ['dot', 26], ['claw', 16]]),
   }),
   meta: () => ({
     style: { label: 'estilo', pick: ['stub', 'noodle', 'wing', 'hips', 'clasped', 'behind'] },
@@ -247,10 +249,10 @@ export const Arms = {
 export const Legs = {
   id: 'legs', label: 'piernas', order: -3, depth: -.35, region: 'body',
   // every character stands on something — no floating blobs
-  gen: rng => ({
-    style: wpick(rng, [['stub', 54], ['noodle', 18], ['wide', 28]]),
-    len: rng.r(.3, .7),           // tiny: the reference barely has legs
-    foot: wpick(rng, [['oval', 62], ['mitten', 26], ['claw', 12]]),
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', [['stub', 54], ['noodle', 18], ['wide', 28]]),
+    len: C.range(rng, 'len', .3, .7),   // tiny: the reference barely has legs
+    foot: C.pick(rng, 'foot', [['oval', 62], ['mitten', 26], ['claw', 12]]),
   }),
   meta: () => ({
     style: { label: 'estilo', pick: ['stub', 'noodle', 'wide'] },
@@ -283,5 +285,61 @@ export const Legs = {
     } else {
       paw(s, F, tip[0], tip[1] + S * .02, S * .07, P.foot, sd);
     }
+  },
+};
+
+// =================================================================
+// TAIL — one bone, sticking out from behind one hip. Drawn behind
+// everything, and wagged by the animator.
+// =================================================================
+export const Tail = {
+  id: 'tail', label: 'rabo', order: -4, depth: -.4, region: 'body',
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', [['none', 62], ['wag', 14], ['curl', 12], ['puff', 8], ['spike', 4]]),
+    len: C.range(rng, 'len', .8, 1.4),
+    side: rng.chance(.5) ? -1 : 1,
+  }),
+  meta: () => ({
+    style: { label: 'estilo', pick: ['none', 'wag', 'curl', 'puff', 'spike'] },
+    len: { label: 'largo', range: [.4, 2] },
+  }),
+  skip: P => P.style === 'none',
+  bones: (P, F) => [{
+    name: 'tail',
+    x: P.side * F.B.halfW * .82 / U,
+    y: -(F.B.hipY - F.B.h * .18) / U,
+    side: P.side,
+  }],
+  size: (P, F) => [(F.B.halfW * 2.6 * P.len + F.s * .3) / U, (F.B.h * 2.4 * P.len + F.s * .3) / U],
+  draw(s, P, st, F, bone) {
+    const sd = bone.side, B = F.B, S = F.s;
+    const x0 = sd * B.halfW * .82, y0 = B.hipY - B.h * .18;
+    const L = B.h * .8 * P.len;
+
+    if (P.style === 'puff') {
+      // a bobtail: one round tuft against the hip
+      const r = S * .1 * P.len;
+      const b = s.blobPts(x0 + sd * r * .5, y0 + r * .2, r, r * s.jr(.85, 1.05), s.jr(-.3, .3), .7);
+      F.media.tone(s, b, { style: 'light', col: F.colors.cloth, gap: S * .04 });
+      F.media.edge(s, b.concat([b[0]]), F.lwThin * 1.2, { amp: 1 });
+      return;
+    }
+
+    let spine;
+    if (P.style === 'curl') {
+      // up and over into a question mark
+      spine = chaikin([[x0, y0], [x0 + sd * L * .5, y0 - L * .25],
+                       [x0 + sd * L * .62, y0 - L * .8], [x0 + sd * L * .2, y0 - L * .95]], false, 2);
+    } else if (P.style === 'spike') {
+      spine = chaikin([[x0, y0], [x0 + sd * L * .55, y0 - L * .2], [x0 + sd * L * 1.0, y0 - L * .55]], false, 2);
+    } else { // wag: out and down, the default dog tail
+      spine = chaikin([[x0, y0], [x0 + sd * L * .55, y0 - L * .15], [x0 + sd * L * .85, y0 + L * .25]], false, 2);
+    }
+
+    const thick = P.style === 'spike' ? S * .075 : S * .06;
+    const tip = P.style === 'spike' ? S * .012 : S * .038;
+    const shape = limbShape(spine, thick, tip);
+    F.media.tone(s, shape, { style: 'light', col: F.colors.cloth, gap: S * .04 });
+    F.media.edge(s, shape.concat([shape[0]]), F.lwThin * 1.2, { amp: .8 });
   },
 };

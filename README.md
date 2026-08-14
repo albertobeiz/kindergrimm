@@ -27,6 +27,9 @@ be saved, shared and rebuilt inside a game at runtime.
 - `src/media.js` — what the character is made of. A medium answers
   `tone` / `skin` / `edge`, so parts describe shapes and never pick a
   technique.
+- `src/species.js` — what animal it is. A species is a table of loaded
+  dice (dog → floppy ears, snout, spots, no hair), not new drawings,
+  so adding one is data only.
 - `src/layout.js` — every measurement two parts have to agree on: the
   head outline, the eye anchors, the body block.
 - `src/parts/*.js` — one file per feature family (skull, eyes, mouth,

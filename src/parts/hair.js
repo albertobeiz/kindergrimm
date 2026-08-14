@@ -27,11 +27,11 @@ const TONES = [['black', 28], ['hatch', 20], ['scribble', 16], ['stipple', 13], 
 export const Hair = {
   id: 'hair', label: 'pelo', order: 6,
   skip: P => P.style === 'bald',
-  gen: rng => {
-    const style = wpick(rng, STYLES);
+  gen: (rng, C) => {
+    const style = C.pick(rng, 'style', STYLES);
     return {
       style,
-      tone: wpick(rng, TONES),
+      tone: C.pick(rng, 'tone', TONES),
       colOn: rng.chance(.22), colIdx: rng.ri(0, 5),
       bang: ({ bob: 'clumps', long: 'clumps', messy: 'ragged', ponytail: rng.chance(.5) ? 'clumps' : 'none' })[style] ?? 'none',
       bangN: rng.ri(5, 12),

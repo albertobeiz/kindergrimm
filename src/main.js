@@ -6,6 +6,7 @@ import { addPaper, makeFloorLine } from './paper.js';
 import { U } from './part.js';
 import { newRecipe, buildCharacter, rerollPart, regenUnlocked, ensureParams } from './rig.js';
 import { MEDIA_IDS } from './media.js';
+import { SPECIES_IDS } from './species.js';
 import { createAnimator } from './anim.js';
 import { initUI } from './editor.js';
 
@@ -57,6 +58,7 @@ const FLOOR_Y = -.92;
 // ---- app state --------------------------------------------------
 const recipe = newRecipe();
 recipe.media = MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0];
+recipe.species = SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0];
 ensureParams(recipe);
 let face = null;
 
@@ -81,27 +83,39 @@ function rebuild() {
   });
 }
 
-// 'todos' rolls a different medium every time the face is redrawn
-let mediaMode = 'todos';
+// 'todos'/'todas' roll a new one every time the character is redrawn
+let mediaMode = 'todos', speciesMode = 'todas';
 const rollMedia = () =>
   mediaMode === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : mediaMode;
+const rollSpecies = () =>
+  speciesMode === 'todas' ? SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0] : speciesMode;
 
 const app = {
   recipe: () => recipe,
   mediaMode: () => mediaMode,
+  speciesMode: () => speciesMode,
   setMedia(mode) { mediaMode = mode; recipe.media = rollMedia(); rebuild(); },
+  // a species change re-casts every unlocked part on the same seed
+  setSpecies(mode) {
+    speciesMode = mode;
+    recipe.species = rollSpecies();
+    regenUnlocked(recipe, recipe.seed);
+    rebuild();
+  },
   setRecipe(json) {
     for (const k of Object.keys(recipe)) delete recipe[k];
     Object.assign(recipe, json);
     ensureParams(recipe);
     mediaMode = recipe.media || 'graphite';
+    speciesMode = recipe.species || 'human';
     rebuild();
   },
   rebuild,
   reroll(id) { rerollPart(recipe, id); rebuild(); },
   regen(seed = (Math.random() * 1e9) | 0) {
-    regenUnlocked(recipe, seed);
+    recipe.species = rollSpecies();
     recipe.media = rollMedia();
+    regenUnlocked(recipe, seed);
     rebuild();
   },
   anim,

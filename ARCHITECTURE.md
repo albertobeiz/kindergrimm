@@ -8,23 +8,35 @@ one line in a registry, nothing else.
 
 ## 1. The one-paragraph version
 
-A character is a **recipe** (plain JSON). The **rig** hands the recipe
-to a **layout**, which computes every shared measurement once. Then
-each **part** is asked what bones it wants and draws itself onto a
-small canvas per bone. Those canvases become textures on flat planes
-hanging off `THREE.Group` bones, which the **animator** moves. Drawing
-is done by the **hand** (`sketch.js`) through a **medium**
-(`media.js`), so every part looks like it was made by the same person
-with the same pencil.
+A character is a **recipe** (plain JSON). The **rig** asks each
+**part** to generate its params — biased by the **species** profile —
+then hands everything to the **layout**, which computes every shared
+measurement once. Each part is then asked what bones it wants and
+draws itself onto a small canvas per bone. Those canvases become
+textures on flat planes hanging off `THREE.Group` bones, which the
+**animator** moves. Drawing is done by the **hand** (`sketch.js`)
+through a **medium** (`media.js`), so every part looks like it was
+made by the same person with the same pencil.
 
 ```
-recipe ──► layout.js ──► F  (all shared geometry, colours, medium)
-                          │
-        parts/index.js ───┼──► for each part: bones(P,F) ──► canvas per bone
-                          │                    draw(s,P,st,F,bone)
-                          ▼
-                       rig.js ──► THREE.Group of bones ──► anim.js
+                 species.js  (loads the dice)
+                      │
+recipe ──► gen() ─────┴──► params ──► layout.js ──► F (shared geometry,
+                                                       colours, medium)
+                                          │
+                  parts/index.js ─────────┼──► bones(P,F) ──► canvas per bone
+                                          │    draw(s,P,st,F,bone)
+                                          ▼
+                                       rig.js ──► bones ──► anim.js
 ```
+
+**Three levers, deliberately independent:**
+
+| Lever | Answers | Where |
+|---|---|---|
+| **species** | *what animal is it* | `species.js` — biases generation only |
+| **media** | *what is it made of* | `media.js` — graphite, oil, watercolour… |
+| **params** | *which individual is it* | the recipe itself |
 
 ---
 
@@ -34,6 +46,7 @@ recipe ──► layout.js ──► F  (all shared geometry, colours, medium)
 |---|---|---|
 | `src/sketch.js` | **The hand.** Strokes, fills, hatching, washes, oil daubs, geometry helpers. | you need a new *drawing technique* |
 | `src/media.js` | **The material.** graphite/ink/watercolour/oil/chalk/marker; each answers `tone`/`skin`/`edge`. | you add a new medium |
+| `src/species.js` | **The casting.** One table of loaded dice per species. | you add a species ← *data only* |
 | `src/layout.js` | **The skeleton.** Every shared measurement: head outline, eye anchors, body block `B`. | two parts must agree on a position |
 | `src/parts/*.js` | **The parts.** One file per feature family. | you add a part or a variant ← *usually this* |
 | `src/parts/index.js` | **The registry.** The ordered list of active parts. | you add a part file |
@@ -88,10 +101,19 @@ export const MyPart = {
                          //   [.5,1] = top edge (part hangs downward)
   states: ['idle'],      // optional: extra pre-drawn textures (see §6)
 
-  // params from a seeded rng — this is what makes one character differ
-  // from another. Keep every value a plain number/string/bool so the
-  // recipe stays JSON.
-  gen: rng => ({ style: rng.pick(['a', 'b']), size: rng.r(.5, 1.5) }),
+  // Params from a seeded rng — this is what makes one character
+  // differ from another. Keep every value a plain number/string/bool
+  // so the recipe stays JSON.
+  //
+  // C is the CASTING helper (§9): ask it for anything a species might
+  // want an opinion about, and it falls back to your default when the
+  // species is silent. Use the plain rng for the rest.
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', [['a', 60], ['b', 40]]),  // weighted list
+    size:  C.range(rng, 'size', .5, 1.5),                 // a number
+    on:    C.chance(rng, 'on', .4),                       // a yes/no
+    jitter: rng.r(-.1, .1),                               // nobody's business
+  }),
 
   // editor controls, one entry per param you want to expose
   meta: () => ({
@@ -190,7 +212,7 @@ truth.
 ## 7. Recipe
 
 ```json
-{ "seed": 12345, "media": "graphite", "color": "auto",
+{ "seed": 12345, "species": "dog", "media": "graphite", "color": "auto",
   "parts": { "eyes": { "params": { "type": "saucer" }, "lock": true, "rr": 2 } } }
 ```
 
@@ -200,11 +222,76 @@ game would ship.
 
 ---
 
-## 8. Recipes for common jobs
+## 8. Species — a casting profile, not code
+
+A dog is **not** a new set of drawings. It is the same catalogue of
+parts with the dice loaded toward floppy ears, a snout, spots and no
+hair. So a species is a table of weights, in `src/species.js`:
+
+```js
+dog: {
+  label: 'perro',
+  cast: {
+    crest:  { style: { floppy: 62, bear: 22, none: 16 } },
+    nose:   { style: { snout: 74, button: 26 }, snoutLen: [1.15, 1.6] },
+    extras: { spots: .55, tears: .04 },
+  },
+},
+```
+
+One table per part id. **The value's type says what it does:**
+
+| You write | It means |
+|---|---|
+| `{ a: 60, b: 40 }` an object | weighted pick — and options you leave out **cannot happen** |
+| `[1.1, 1.6]` an array | a number drawn from this range |
+| `.55` a number | a probability |
+
+Anything the profile does not mention keeps the part's own default, so
+a profile states **only what makes that species different**.
+
+**Species touches generation only.** Once params exist they are plain
+numbers, so a saved recipe rebuilds identically even if the profile
+changes or disappears — and you can still hand-edit any param
+afterwards. That is why species lives beside the parts and not inside
+them.
+
+**The real job a species does is coherence.** Left to chance, floppy
+ears, a snout and a wagging tail would almost never land on the same
+character. Guaranteeing they arrive together is what a species *is*.
+
+### Adding a species
+
+1. Copy the nearest entry in `species.js` and change the tables.
+2. If it needs a shape nobody has drawn yet (a beak, a tail), add that
+   as a normal **variant of an existing part** first — see §9 — and
+   then every species can use it.
+3. Nothing else. Both scenes pick the new species up automatically.
+
+### When a species needs a shape that varies
+
+If a species wants a *family* of a shape rather than one drawing, give
+that part params and let the profile set their range. The snout is the
+worked example: `snoutLen`, `snoutFat`, `snoutTip` turn one drawing
+into greyhound-to-bulldog, and then
+
+```js
+dog: { cast: { nose: { snoutLen: [1.15, 1.6] } } },   // long muzzles
+cat: { cast: { nose: { snoutLen: [.5,  .8 ] } } },    // flat faces
+```
+
+Add params where you want two characters (or two species) to *differ*.
+Don't parameterise for its own sake: every param is another knob in
+the editor and another thing randomness can ruin.
+
+## 9. Recipes for common jobs
 
 **Add a variant to an existing part** (easiest, most common): add the
 name to that part's weighted table in `gen`, add it to the `pick` list
-in `meta`, and add an `else if` branch in `draw`. Nothing else.
+in `meta`, and add an `else if` branch in `draw`. Nothing else. It is
+immediately available to every species.
+
+**Add a species:** see §8. Data only, no drawing.
 
 **Add a new part type:** copy `src/parts/body.js` (Torso is a
 single-bone part, Arms/Legs are mirrored pairs), fill in the contract

@@ -19,13 +19,20 @@ const NOSES = [
 
 export const Nose = {
   id: 'nose', label: 'nariz', order: 3, depth: 1.15,
-  gen: rng => ({
-    style: wpick(rng, NOSES),
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', NOSES),
     nostril: rng.chance(.6),
+    // a snout is a family, not one drawing: greyhound to bulldog
+    snoutLen: C.range(rng, 'snoutLen', .75, 1.5),
+    snoutFat: C.range(rng, 'snoutFat', .8, 1.3),
+    snoutTip: C.range(rng, 'snoutTip', -.1, .18),   // <0 upturned, >0 drooping
   }),
   meta: () => ({
     style: { label: 'estilo', pick: NOSES.map(p => p[0]) },
     nostril: { label: 'aleta', bool: true },
+    snoutLen: { label: 'hocico largo', range: [.5, 2] },
+    snoutFat: { label: 'hocico grueso', range: [.6, 1.6] },
+    snoutTip: { label: 'hocico caído', range: [-.25, .3] },
   }),
   skip: P => P.style === 'none',
   bones: (P, F) => [{ name: 'nose', x: F.L.nx * .7 / U, y: -(F.s * .29) / U }],
@@ -53,15 +60,24 @@ export const Nose = {
       return;
     }
     if (P.style === 'snout') {
-      // a muzzle pushed out front, two nostrils in it
-      const rx = w * .2, ry = S * .1;
-      const sn = s.blobPts(nx, S * .34, rx, ry, s.jr(-.15, .15), .45);
+      // a muzzle pushed out front, two nostrils in it. The three
+      // snout params are what separate a greyhound from a bulldog —
+      // same code, a family of shapes.
+      const rx = w * .2 * P.snoutLen, ry = S * .1 * P.snoutFat;
+      const cy = S * .34 + S * P.snoutTip;
+      const sn = s.blobPts(nx, cy, rx, ry, s.jr(-.15, .15), .45);
       s.paperFill(sn);
       s.stroke(sn.concat([sn[0]]), F.lwThin * 1.25, { taper: .12, amp: .6 });
+      // the dark button on the end, and the nostrils in it
+      const bx = nx, by = cy - ry * .34;
+      s.ctx.fillStyle = s.inkA(.8);
+      s.wobbly(bx, by, rx * .3, ry * .34); s.ctx.fill();
       for (const sd2 of [-1, 1]) {
-        s.ctx.fillStyle = s.inkA(.85);
-        s.wobbly(nx + sd2 * rx * .38, S * .33, rx * .13, ry * .22); s.ctx.fill();
+        s.ctx.fillStyle = s.inkA(.9);
+        s.wobbly(nx + sd2 * rx * .42, cy, rx * .1, ry * .18); s.ctx.fill();
       }
+      // the seam running down from the muzzle to the mouth
+      s.sline([[nx, cy + ry * .6], [nx + s.jr(-2, 2), cy + ry * 1.15]], 1.2, .45);
       return;
     }
     if (P.style === 'skull') {
@@ -91,15 +107,16 @@ const MOUTHS = [
   ['cat', 8], ['tongue', 7], ['buckteeth', 6], ['drool', 5], ['smirk', 5],
   ['grit', 5], ['frown', 4], ['stitch', 4], ['fangs', 4],
 ];
-const ALL = [...MOUTHS.map(p => p[0]), 'flat', 'open'];
+const ALL = [...MOUTHS.map(p => p[0]), 'beak', 'flat', 'open'];
 
 export const Mouth = {
   id: 'mouth', label: 'boca', order: 3, depth: 1, states: ['idle', 'open'], pivot: [.5, .7],
-  gen: rng => ({
-    style: wpick(rng, MOUTHS),
-    myF: rng.r(.42, .56),
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', MOUTHS),
+    myF: C.range(rng, 'myF', .42, .56),
     // doodle mouths swing wild: a dot of a mouth or a grin ear to ear
-    wF: rng.r(.55, 2.1),
+    wF: C.range(rng, 'wF', .55, 2.1),
+    beakLen: C.range(rng, 'beakLen', .8, 1.4),
     upperLip: rng.chance(.2),
     crease: rng.chance(.3),
     nTeeth: rng.ri(3, 5),
@@ -109,6 +126,7 @@ export const Mouth = {
     style: { label: 'estilo', pick: ALL },
     myF: { label: 'altura', range: [.45, .72] },
     wF: { label: 'ancho', range: [.5, 1.8] },
+    beakLen: { label: 'pico largo', range: [.5, 2] },
     upperLip: { label: 'labio', bool: true },
     crease: { label: 'pliegue', bool: true },
     nTeeth: { label: 'dientes', range: [2, 7], step: 1 },
@@ -155,6 +173,25 @@ export const Mouth = {
       }
       // the shadow the jaw casts under itself
       if (F.media.underdraw) s.hatch(mx, my + mry + S * .05, mrx * 1.5, S * .07, .1, 3, .14);
+      return;
+    }
+
+    if (P.style === 'beak') {
+      // Two wedges hinged at the corner. `open` swings the lower one
+      // down, so a bird can talk with the same machinery as a mouth.
+      const bl = Math.max(S * .1, mw * .95) * P.beakLen;
+      const bh = S * .075 * P.beakLen;
+      const hinge = [mx - bl * .42, my];
+      const tipX = mx + bl * .58, tipY = my + (open ? -bh * .15 : bh * .1);
+      const upper = chaikin([hinge, [mx + bl * .1, my - bh * .95], [tipX, tipY]], true, 1);
+      F.media.tone(s, upper, { style: 'light', col: F.colors.accent, gap: S * .04 });
+      F.media.edge(s, upper.concat([upper[0]]), lw * 1.15, { amp: .7 });
+      const drop = open ? bh * 1.5 : bh * .1;
+      const lower = chaikin([hinge, [mx + bl * .08, my + bh * .55 + drop], [tipX, tipY + drop * .55]], true, 1);
+      F.media.tone(s, lower, { style: 'light', col: F.colors.accent, gap: S * .04 });
+      F.media.edge(s, lower.concat([lower[0]]), lw * 1.05, { amp: .7 });
+      if (open) s.inkFill([hinge, [mx + bl * .3, my + bh * .2], [mx + bl * .05, my + bh * .5 + drop * .5]], .55);
+      s.sline([[hinge[0], hinge[1]], [tipX * .9, tipY]], 1.2, .35);
       return;
     }
 

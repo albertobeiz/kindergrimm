@@ -14,16 +14,17 @@ const wpick = (rng, pairs) => {
 
 export const Extras = {
   id: 'extras', label: 'extras', order: 5, depth: .7,
-  gen: rng => ({
-    mark: wpick(rng, [['none', 66], ['seam', 10], ['scar', 10], ['sutures', 8], ['barcode', 6]]),
-    mod: wpick(rng, [['none', 82], ['patch', 10], ['monocle', 5], ['cyber', 3]]),
-    tears: rng.chance(.35),
-    freckles: rng.chance(.2),
-    spots: rng.chance(.4),
+  gen: (rng, C) => ({
+    mark: C.pick(rng, 'mark', [['none', 66], ['seam', 10], ['scar', 10], ['sutures', 8], ['barcode', 6]]),
+    mod: C.pick(rng, 'mod', [['none', 82], ['patch', 10], ['monocle', 5], ['cyber', 3]]),
+    tears: C.chance(rng, 'tears', .35),
+    freckles: C.chance(rng, 'freckles', .2),
+    spots: C.chance(rng, 'spots', .4),
+    whiskers: C.chance(rng, 'whiskers', .06),
     studs: rng.chance(.12),
     bandage: rng.chance(.12),
     blush: rng.chance(.42),
-    glasses: rng.chance(.14),
+    glasses: C.chance(rng, 'glasses', .14),
     antenna: rng.chance(.05),
     accentIdx: rng.ri(0, 2),
     accidents: rng.chance(.28),
@@ -36,6 +37,7 @@ export const Extras = {
     tears: { label: 'lágrimas negras', bool: true },
     freckles: { label: 'pecas', bool: true },
     spots: { label: 'motas', bool: true },
+    whiskers: { label: 'bigotes', bool: true },
     studs: { label: 'piercings', bool: true },
     bandage: { label: 'tirita', bool: true },
     blush: { label: 'rubor', bool: true },
@@ -60,6 +62,18 @@ export const Extras = {
       s.sline([[eyeX(-1) + eyeW(-1) * 1.1, eh * .1], [eyeX(1) - eyeW(1) * 1.1, eh * .1]], F.lwThin * .9, .55);
     }
 
+    if (P.whiskers) {
+      // three per side, sprouting from beside the muzzle
+      const my2 = F.L.my - S * .06;
+      for (const sd of [-1, 1]) {
+        for (let k = 0; k < 3; k++) {
+          const a = -.22 + k * .22 + s.jr(-.05, .05);
+          const x0 = fx + sd * w * .22, y0 = my2 + k * S * .03;
+          s.stroke([[x0, y0], [x0 + sd * w * (.55 + k * .04), y0 + Math.sin(a) * S * .3]],
+            F.lwThin * .85, { taper: .4, alpha: s.jr(.55, .85) });
+        }
+      }
+    }
     if (P.spots) {
       // creature markings: a scatter of dots and empty rings, kept off
       // the middle of the face where the features live

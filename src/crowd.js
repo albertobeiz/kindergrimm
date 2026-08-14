@@ -13,6 +13,7 @@ import { setRender, U } from './part.js';
 import { addPaper, makeFloorLine } from './paper.js';
 import { newRecipe, buildCharacter, ensureParams } from './rig.js';
 import { MEDIA, MEDIA_IDS } from './media.js';
+import { SPECIES, SPECIES_IDS } from './species.js';
 import { createAnimator } from './anim.js';
 
 setRender({ u: 118, frames: 2 });
@@ -27,13 +28,19 @@ const TOP_MARGIN = .18;          // the HUD sits over this strip
 const rowFloorY = row => -(row - (ROWS - 1) / 2) * CELL_H - CELL_H * .40;
 
 const params = new URLSearchParams(location.search);
-// 'todos' draws each face in a different medium — the range on one page
+// 'todos'/'todas' mix them per character — the whole range on one page
 const media = [...MEDIA_IDS, 'todos'].includes(params.get('media')) ? params.get('media') : 'todos';
+const species = [...SPECIES_IDS, 'todas'].includes(params.get('species')) ? params.get('species') : 'todas';
 
-document.getElementById('medias').innerHTML =
-  [['todos', 'todos'], ...MEDIA_IDS.map(m => [m, MEDIA[m].label])]
-    .map(([val, label]) => `<a href="?media=${val}"${val === media ? ' class="sel"' : ''}>${label}</a>`)
-    .join(' · ');
+const links = (host, items, current, key) => {
+  document.getElementById(host).innerHTML = items.map(([val, label]) => {
+    const q = new URLSearchParams({ media, species });
+    q.set(key, val);
+    return `<a href="?${q}"${val === current ? ' class="sel"' : ''}>${label}</a>`;
+  }).join(' · ');
+};
+links('medias', [['todos', 'todos'], ...MEDIA_IDS.map(m => [m, MEDIA[m].label])], media, 'media');
+links('species', [['todas', 'todas'], ...SPECIES_IDS.map(s => [s, SPECIES[s].label])], species, 'species');
 
 const stage = document.getElementById('stage');
 const countEl = document.getElementById('count');
@@ -83,6 +90,7 @@ function drawCell(i, recipe = null) {
   if (!recipe) {
     recipe = newRecipe();
     recipe.media = media === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : media;
+    recipe.species = species === 'todas' ? SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0] : species;
   }
   ensureParams(recipe);
   const face = buildCharacter(recipe);

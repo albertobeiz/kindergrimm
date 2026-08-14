@@ -122,6 +122,9 @@ export function createAnimator(getFace, opts) {
       // arms hang and swing a little, out of phase with each other
       for (const e of face.byId('arms'))
         e.bone.rotation.z = Math.sin(tt * .8 + (e.side > 0 ? 1.7 : 0)) * .04 * amp * -e.side;
+      // the tail wags faster than anything else on the character
+      for (const e of face.byId('tail'))
+        e.bone.rotation.z = Math.sin(tt * 2.6) * .13 * amp * -e.side;
 
       // ---- per-bone parallax: depth decides how much a part rides ----
       // Head parts only: body bones hold their base position, and get

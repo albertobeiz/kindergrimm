@@ -20,6 +20,11 @@ phantom `SyntaxError`.
 
 - Adding a part = one file in `src/parts/` + one line in
   `src/parts/index.js`. Do not edit `rig.js` for this.
+- Adding a **species** = one entry of weights in `src/species.js`.
+  No drawing code. A species only loads the dice at generation time;
+  it never reaches into `draw()`.
+- If a species needs a shape that does not exist, add it as a normal
+  variant of an existing part first — then every species can use it.
 - Draw through `F.media.tone / skin / edge`. Never call `pencilFill`,
   `washFill`, `oilFill` etc. from a part.
 - Size from `F.s`, `F.w`, `F.B.*`. No raw pixel constants.

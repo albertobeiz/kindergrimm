@@ -6,22 +6,25 @@ import { U } from '../part.js';
 
 export const Skull = {
   id: 'skull', label: 'cráneo', order: 1, depth: 0,
-  gen: rng => {
+  gen: (rng, C) => {
     // a doodle head is drawn front-on in one go — it barely turns
     const facing = rng.pick(['straight', 'straight', 'straight', 'straight', 'mild']);
     const turn = facing === 'straight' ? rng.r(-.1, .1)
       : rng.r(.28, .5) * (rng.chance(.5) ? 1 : -1);
     return {
-      s: .5 * rng.r(1.08, 1.34),                 // all head, no face
-      wf: rng.r(.74, .98),
+      s: .5 * C.range(rng, 's', 1.08, 1.34),     // all head, no face
+      wf: C.range(rng, 'wf', .74, .98),
       turn,
+      // shroud: the head is filled in, and the only light left is
+      // whatever is looking out of it
+      shroud: C.chance(rng, 'shroud', 0),
       // non-round shapes need a near-full slide onto the target or the
       // brick just reads as another ball
       round: rng.r(.82, .97),
       // the shape family is the doodle's identity
-      shape: rng.pick(['round', 'round', 'square', 'square', 'tall', 'tall',
-                       'drop', 'drop', 'pear', 'pear', 'lump', 'wide']),
-      fur: rng.chance(.22),
+      shape: C.pick(rng, 'shape', [['round', 22], ['square', 18], ['tall', 15],
+                                   ['drop', 15], ['pear', 14], ['lump', 9], ['wide', 7]]),
+      fur: C.chance(rng, 'fur', .22),
       jaw: rng.r(.9, 1.15),
       chinW: rng.r(.9, 1.3),
       skullY: rng.r(.88, 1.02),
@@ -42,6 +45,7 @@ export const Skull = {
     round: { label: 'redondez', range: [0, 1] },
     shape: { label: 'forma', pick: ['round', 'square', 'tall', 'drop', 'pear', 'lump', 'wide'] },
     fur: { label: 'peludo', bool: true },
+    shroud: { label: 'sombra (relleno)', bool: true },
     jaw: { label: 'mandíbula', range: [.55, 1.2] },
     chinW: { label: 'mentón', range: [.3, 1.3] },
     skullY: { label: 'frente', range: [.7, 1.0] },
@@ -70,7 +74,11 @@ export const Skull = {
     }
 
     s.paperFill(facePoly);
-    if (F.colors.skin) {
+    if (P.shroud) {
+      // filled in: whatever the eyes draw in paper now reads as the
+      // only light coming out of the head
+      F.media.tone(s, facePoly, { style: 'black', gap: S * .05 });
+    } else if (F.colors.skin) {
       // colored in by hand — never quite on the drawing, whatever the medium
       const dx = s.jr(-.035, .035) * S, dy = s.jr(-.03, .03) * S, sc = s.jr(.95, 1.03);
       const skinPoly = facePoly.map(q => [q[0] * sc + dx, q[1] * sc + dy]);

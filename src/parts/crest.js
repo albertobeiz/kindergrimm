@@ -15,12 +15,12 @@ const wpick = (rng, pairs) => {
 // What grows out of a doodle skull: mostly EARS, then horns, then the
 // odd sprout, eye stalk, halo or bolt.
 const STYLES = [
-  ['none', 20], ['cat', 12], ['bunny', 11], ['bear', 10], ['horns', 10],
-  ['sprout', 7], ['spikes', 7], ['stalks', 6], ['frills', 5], ['flower', 4],
-  ['halo', 3], ['bolt', 3], ['antlers', 3], ['crown', 2],
+  ['none', 18], ['cat', 11], ['bunny', 10], ['floppy', 10], ['bear', 9], ['horns', 9],
+  ['sprout', 6], ['spikes', 6], ['stalks', 5], ['frills', 4], ['flower', 4],
+  ['halo', 3], ['bolt', 3], ['antlers', 2], ['crown', 2],
 ];
 const ALL = STYLES.map(p => p[0]);
-const PAIRED = new Set(['horns', 'antlers', 'bunny', 'cat', 'bear', 'stalks', 'frills']);
+const PAIRED = new Set(['horns', 'antlers', 'bunny', 'floppy', 'cat', 'bear', 'stalks', 'frills']);
 
 // the inner-ear arc of a bear nub: a smile across its lower half
 function circlePtsArc(cx, cy, r) {
@@ -47,14 +47,14 @@ function tapered(spine, w0, w1) {
   return [...L, ...R.reverse()];
 }
 
-export const Horns = {
-  id: 'horns', label: 'cuernos', order: 7, depth: .35,
-  gen: rng => ({
-    style: wpick(rng, STYLES),
-    tone: wpick(rng, [['bone', 40], ['dark', 32], ['ringed', 28]]),
-    len: rng.r(.85, 1.35),
-    curve: rng.r(-.5, .9),          // <0 sweeps forward, >0 curls back
-    spread: rng.r(.5, .78),
+export const Crest = {
+  id: 'crest', label: 'apéndices', order: 7, depth: .35,
+  gen: (rng, C) => ({
+    style: C.pick(rng, 'style', STYLES),
+    tone: C.pick(rng, 'tone', [['bone', 40], ['dark', 32], ['ringed', 28]]),
+    len: C.range(rng, 'len', .85, 1.35),
+    curve: C.range(rng, 'curve', -.5, .9),   // <0 sweeps forward, >0 curls back
+    spread: C.range(rng, 'spread', .5, .78),
     nSpikes: rng.ri(5, 8),
     branches: rng.ri(2, 3),
   }),
@@ -151,6 +151,25 @@ export const Horns = {
       const nub = s.blobPts(bx, by - r * .3, r, r * .92, s.jr(-.2, .2));
       toneFill(nub);
       s.sline(circlePtsArc(bx, by - r * .3, r * .55), 1.3, .45);
+
+    } else if (P.style === 'floppy') {
+      // an ear that gave up: it leaves the skull sideways and falls
+      const L = S * .66 * P.len;
+      const spine = chaikin([
+        [bx - sd * w * .04, by + S * .1],
+        [bx + sd * w * (.30 + P.curve * .12), by + L * .18],
+        [bx + sd * w * (.34 + P.curve * .2), by + L * .72],
+        [bx + sd * w * .22, by + L],
+      ], false, 2);
+      toneFill(tapered(spine, S * .2, S * .13));
+      // the inner fold, following the same fall a little shorter
+      const inner = chaikin([
+        [bx + sd * w * .04, by + S * .16],
+        [bx + sd * w * (.26 + P.curve * .12), by + L * .3],
+        [bx + sd * w * .22, by + L * .78],
+      ], false, 2);
+      s.paperFill(tapered(inner, S * .08, S * .045));
+      s.sline(inner, 1.2, .4);
 
     } else if (P.style === 'stalks') {
       // an eye on a stem, looking wherever it likes
