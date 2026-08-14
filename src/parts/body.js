@@ -87,8 +87,8 @@ export const Torso = {
     clothOn: { label: 'ropa color', bool: true },
     clothIdx: { label: 'tinte ropa', range: [0, 7], step: 1 },
   }),
-  bones: (P, F) => [{ name: 'torso', x: 0, y: -F.B.top / U }],
-  size: (P, F) => [(F.B.halfW * 3.2) / U, (F.B.h * 2.4) / U],
+  bones: (P, F) => [{ name: 'torso', x: (F.B.quad ? F.B.cx : 0) / U, y: -F.B.top / U }],
+  size: (P, F) => [(F.B.halfW * (F.B.quad ? 4.2 : 3.2)) / U, (F.B.h * 2.4) / U],
   draw(s, P, st, F) {
     const B = F.B, S = F.s;
     const hw = B.halfW, top = B.top, bot = B.bot;
@@ -96,9 +96,12 @@ export const Torso = {
     // the silhouette: shape families, all drawn as one closed path
     let pts;
     if (B.quad) {
-      // ON ALL FOURS: a low horizontal barrel, wider than tall
-      pts = [[-hw, top + B.h * .3], [-hw * .72, top], [hw * .72, top], [hw, top + B.h * .3],
-             [hw * .94, bot], [-hw * .94, bot]];
+      // ON ALL FOURS: a long low barrel that runs AWAY from the head,
+      // not a torso hanging under it
+      const c = B.cx, d = B.dir;
+      pts = [[c - d * hw, top + B.h * .42], [c - d * hw * .78, top + B.h * .05],
+             [c + d * hw * .5, top], [c + d * hw, top + B.h * .34],
+             [c + d * hw * .96, bot], [c - d * hw * .9, bot]];
     } else if (B.sit) {
       // SITTING: one mass, narrow at the shoulders and spreading to a
       // wide base — the haunches. No legs are drawn: the paws are a
@@ -320,14 +323,15 @@ export const Tail = {
   skip: P => P.style === 'none',
   bones: (P, F) => [{
     name: 'tail',
-    x: P.side * F.B.halfW * .82 / U,
-    y: -(F.B.hipY - F.B.h * .18) / U,
-    side: P.side,
+    x: (F.B.quad ? F.B.tailX : P.side * F.B.halfW * .82) / U,
+    y: -(F.B.quad ? F.B.hipY - F.B.h * .5 : F.B.hipY - F.B.h * .18) / U,
+    side: F.B.quad ? F.B.dir : P.side,
   }],
   size: (P, F) => [(F.B.halfW * 2.6 * P.len + F.s * .3) / U, (F.B.h * 2.4 * P.len + F.s * .3) / U],
   draw(s, P, st, F, bone) {
     const sd = bone.side, B = F.B, S = F.s;
-    const x0 = sd * B.halfW * .82, y0 = B.hipY - B.h * .18;
+    const x0 = B.quad ? B.tailX : sd * B.halfW * .82;
+    const y0 = B.quad ? B.hipY - B.h * .5 : B.hipY - B.h * .18;
     const L = B.h * .8 * P.len;
 
     if (P.style === 'puff') {
@@ -483,11 +487,12 @@ export const QuadLegs = {
     toes: { label: 'deditos', bool: true },
     back: { label: 'patas traseras', bool: true },
   }),
-  bones: (P, F) => [{ name: 'quadlegs', x: 0, y: -F.B.legTopY / U }],
-  size: (P, F) => [(F.B.halfW * 2.9) / U, (F.B.legLen * 2 + F.s * .5) / U],
+  bones: (P, F) => [{ name: 'quadlegs', x: F.B.cx / U, y: -F.B.legTopY / U }],
+  size: (P, F) => [(F.B.halfW * 4.4) / U, (F.B.legLen * 2.6 + F.s * .6) / U],
   draw(s, P, st, F) {
     const B = F.B, S = F.s;
     const r = B.pawR, th = S * .07 * P.thick;
+    const D = B.dir;
 
     const leg = (x, y0, len, scale) => {
       const spine = chaikin([[x, y0], [x + s.jr(-.01, .01) * S, y0 + len * .6], [x, y0 + len]], false, 2);
@@ -506,10 +511,11 @@ export const QuadLegs = {
     };
 
     // hind pair first: further out, a little shorter, drawn behind
-    if (P.back)
-      for (const sd of [-1, 1])
-        leg(sd * B.backLegX, B.legTopY - B.h * .06, B.legLen * .86, .92);
-    for (const sd of [-1, 1])
-      leg(sd * B.frontLegX, B.legTopY, B.legLen, 1);
+    // Front and hind pairs sit at the two ENDS of the body, each drawn
+    // twice with a small offset: the near leg and the far one behind it.
+    for (const off of [D * S * .07, 0]) {
+      leg(B.backLegX + off, B.legTopY - B.h * .05, B.legLen * (off ? .88 : 1), off ? .9 : 1);
+      leg(B.frontLegX + off, B.legTopY, B.legLen * (off ? .9 : 1), off ? .9 : 1);
+    }
   },
 };

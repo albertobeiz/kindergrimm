@@ -54,8 +54,6 @@ export const Nose = {
         const b = s.blobPts(nx, ny, r * 1.15, r * .82, s.jr(-.12, .12), .4);
         F.media.tone(s, b, { style: 'black', gap: r * .5 });
         s.stroke(b.concat([b[0]]), F.lwThin * 1.1, { taper: .12, amp: .5 });
-        s.ctx.fillStyle = PAPER;
-        s.wobbly(nx - r * .4, ny - r * .3, r * .2, r * .16); s.ctx.fill();
         return;
       }
       // a soft round nose, the friendliest mark on a human face

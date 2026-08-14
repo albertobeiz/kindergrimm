@@ -149,15 +149,15 @@ export const Crest = {
       // puts the left ear on the right side of the head.
       const hh = S * .52 * P.len;                 // tall: small ears read as bumps
       const half = w * .3 * P.len;                // half the base width
-      const inner = bx - sd * half;               // toward the face
-      const outer = bx + sd * half;               // away from it
-      const apex = bx + sd * half * .45;          // the tip leans out
+      const inner = bx + sd * half;               // toward the face
+      const outer = bx - sd * half;               // away from it
+      const apex = bx - sd * half * .45;          // the tip leans out
       const tri = chaikin([[inner, by + S * .1], [apex, by - hh], [outer, by + S * .04]], true, 1);
       toneFill(tri);
       // the pink inside, a smaller triangle sharing the apex direction
-      const innerTri = chaikin([[inner + sd * half * .42, by + S * .05],
+      const innerTri = chaikin([[inner - sd * half * .42, by + S * .05],
                                 [apex, by - hh * .58],
-                                [outer - sd * half * .3, by + S * .01]], true, 1);
+                                [outer + sd * half * .3, by + S * .01]], true, 1);
       s.paperFill(innerTri);
       s.sline(innerTri.concat([innerTri[0]]), F.lwThin * .85, .45);
 

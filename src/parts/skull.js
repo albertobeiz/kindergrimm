@@ -201,8 +201,13 @@ export const Ears = {
   gen: rng => ({ rings: rng.chance(.3), nRings: rng.ri(1, 3) }),
   meta: () => ({ rings: { label: 'pendientes', bool: true } }),
   // ears show only with hair that leaves them uncovered
-  skip: (P, F) => !['bald', 'buzz', 'slick', 'spiky', 'ponytail', 'buns', 'bowl',
-                    'mohawk', 'cowlick', 'topknot'].includes(F.P.hair.style),
+  // An animal's ears are its CREST. Human side-ears on a head that
+  // already has cat or floppy ears is the single loudest tell that a
+  // creature is a person in costume.
+  skip: (P, F) =>
+    ['cat', 'bunny', 'floppy', 'bear', 'frills'].includes(F.P.crest.style) ||
+    !['bald', 'buzz', 'slick', 'spiky', 'ponytail', 'buns', 'bowl',
+      'mohawk', 'cowlick', 'topknot'].includes(F.P.hair.style),
   bones: (P, F) => {
     const sides = F.at > .3 ? [-F.ts] : [-1, 1];   // turned heads show the far ear
     return sides.map(sd => ({ name: 'ear' + (sd < 0 ? 'L' : 'R'), x: sd * F.w * 1.02 / U, y: -F.s * .1 / U, side: sd }));

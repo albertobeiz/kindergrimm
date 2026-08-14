@@ -70,7 +70,7 @@ export const SPECIES = {
       mouth:  { style: { cat: 80, tiny: 10, tongue: 6, fangs: 4 } },
       // dots, crosses or shut lines — and set WIDE APART, out near the
       // sides of the face where a cat's are
-      eyes:   { type: { dot: 66, closed: 18, xcross: 16 }, scale: [.8, 1.1], sx: [.6, .74] },
+      eyes:   { type: { dot: 66, closed: 18, xcross: 16 }, scale: [1.3, 1.75], sx: [.58, .72] },
       brows:  { on: 0 },
       hair:   { style: { bald: 92, messy: 8 } },
       extras: { whiskers: .92, spots: .3, tears: .05, glasses: .04 },
