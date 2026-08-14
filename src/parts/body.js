@@ -65,9 +65,11 @@ export const Torso = {
   gen: rng => ({
     shape: wpick(rng, [['bean', 22], ['round', 18], ['square', 14], ['pear', 16],
                        ['tiny', 10], ['barrel', 12], ['drop', 8]]),
-    // Isaac proportions: the body is a small blob under a huge head
-    wF: rng.r(.36, .7),           // half width, against the head half width
-    hF: rng.r(.42, .88),          // height, against the head scale
+    // Isaac proportions: the body is a small blob under a huge head.
+    // Both are ratios AGAINST the head, so shrinking them is what
+    // makes a character read as big-headed — not scaling the skull.
+    wF: rng.r(.34, .6),           // half width, against the head half width
+    hF: rng.r(.36, .68),          // height, against the head scale
     lean: rng.r(-.06, .06),       // the whole body tips a little
     pattern: wpick(rng, [['none', 34], ['stripes', 22], ['belly', 18], ['buttons', 14], ['pocket', 12]]),
     clothOn: rng.chance(.45), clothIdx: rng.ri(0, 7),

@@ -17,8 +17,11 @@ scene.background = new THREE.Color(PAPER);
 
 // The character's origin is the centre of the HEAD, so the body hangs
 // below it: frame a little low to keep the feet in shot.
-const HALF_H = 1.5;
-const CAM_Y = -.45;
+const HALF_H = 1.28;
+const CAM_Y = -.28;
+// the panel leaves a narrow viewport, so also guarantee a minimum
+// half-WIDTH: without it, wide ears and horns get cut off the sides
+const MIN_HALF_W = 1.08;
 const camera = new THREE.OrthographicCamera(-1, 1, HALF_H, -HALF_H, .1, 100);
 camera.position.set(0, CAM_Y, 10);
 camera.lookAt(0, CAM_Y, 0);
@@ -30,8 +33,12 @@ stage.appendChild(renderer.domElement);
 
 function onResize() {
   const w = stage.clientWidth, h = stage.clientHeight;
-  camera.left = -HALF_H * w / h;
-  camera.right = HALF_H * w / h;
+  const aspect = w / h;
+  const halfH = Math.max(HALF_H, MIN_HALF_W / aspect);
+  camera.top = halfH;
+  camera.bottom = -halfH;
+  camera.left = -halfH * aspect;
+  camera.right = halfH * aspect;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h);
 }
@@ -40,7 +47,7 @@ addEventListener('resize', onResize);
 addPaper(scene, HALF_H);
 
 // the character stands ON a drawn floor line, whatever its proportions
-const FLOOR_Y = -1.05;
+const FLOOR_Y = -.92;
 {
   const fl = makeFloorLine(3.4);
   fl.position.set(0, FLOOR_Y - fl.userData.lineDy, -1);

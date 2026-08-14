@@ -12,7 +12,7 @@ export const Skull = {
     const turn = facing === 'straight' ? rng.r(-.1, .1)
       : rng.r(.28, .5) * (rng.chance(.5) ? 1 : -1);
     return {
-      s: .5 * rng.r(.95, 1.18),                  // all head, no face
+      s: .5 * rng.r(1.08, 1.34),                 // all head, no face
       wf: rng.r(.74, .98),
       turn,
       // non-round shapes need a near-full slide onto the target or the
