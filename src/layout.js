@@ -204,10 +204,10 @@ function bodyLayout(Ps, S, w, base) {
     // instead of sitting symmetrically underneath it. That is the
     // whole difference between an animal and a person on all fours.
     const dir = (Ps.tail?.side ?? 1);              // the way the body runs
-    const halfW = w * Math.max(.78, T.wF * 1.7);
-    const h = S * Math.max(.36, T.hF * .66);
+    const halfW = w * Math.max(.82, T.wF * 1.75);
+    const h = S * Math.max(.54, T.hF * .95);
     const bot = top + h;
-    const legLen = S * .24;
+    const legLen = S * .3;
     const cx = dir * halfW * .62;                  // the body's own centre
     return {
       quad: true, dir, cx,
@@ -216,7 +216,7 @@ function bodyLayout(Ps, S, w, base) {
       hipY: bot, hipX: cx + dir * halfW * .6,
       frontLegX: cx - dir * halfW * .62,           // under the shoulders
       backLegX: cx + dir * halfW * .66,            // under the haunches
-      legTopY: bot - h * .1, legLen,
+      legTopY: bot - h * .06, legLen,
       tailX: cx + dir * halfW * 1.05,              // off the far end
       pawR: S * .075,
       floorY: bot + legLen + S * .05,

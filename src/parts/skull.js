@@ -117,19 +117,15 @@ export const Skull = {
     // the head, so it fills with the same skin and shares its contour.
     // Its own outline is what makes it read as a snout instead of a
     // long chin — the silhouette bulge alone was not enough.
-    if (P.muzzle > 0) {
+    // THE MUZZLE is an ANCHOR, not a shape. Drawing it as a lobe with
+    // its own contour put a white circle behind every mouth. All it
+    // leaves now is a pale patch, and only where there is colour for
+    // it to be pale against — the nose and the W do the rest.
+    if (P.muzzle > 0 && F.L.M.on) {
       const M = F.L.M;
       const lobe = s.blobPts(M.cx, M.cy, M.rx, M.ry, s.jr(-.08, .08), .35);
-      // left as bare paper on purpose: on an animal the muzzle is the
-      // PALE patch of the face, so it stays out of the skin fill
-      s.paperFill(lobe);
       if (P.shroud) F.media.tone(s, lobe, { style: 'black', gap: S * .05 });
-      F.media.edge(s, lobe.concat([lobe[0]]), F.lwMain * .8, { amp: .8 });
-      // the crease where the muzzle meets the cheeks
-      if (F.media.underdraw)
-        for (const sd of [-1, 1])
-          s.sline([[M.cx + sd * M.rx * .96, M.cy - M.ry * .3],
-                   [M.cx + sd * M.rx * .72, M.cy - M.ry * .85]], 1.2, .3);
+      else if (F.colors.skin) s.paperFill(lobe);
     }
 
     // the shadow side of the face — pencil work, so oil paint skips it
