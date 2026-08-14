@@ -39,6 +39,7 @@ export const SPECIES = {
 
   dog: {
     label: 'perro',
+    bases: { sit: 62, biped: 38 },
     cast: {
       crest:  { style: { floppy: 62, bear: 22, none: 16 }, tone: { skin: 100 } },
       // the muzzle is in the SKULL's outline; the nose is just the
@@ -58,6 +59,7 @@ export const SPECIES = {
 
   cat: {
     label: 'gato',
+    bases: { sit: 70, biped: 30 },
     cast: {
       crest:  { style: { cat: 88, none: 12 }, len: [.9, 1.35], tone: { skin: 100 } },
       // a flatter muzzle than a dog's: cats are all cheeks
@@ -76,6 +78,7 @@ export const SPECIES = {
 
   rabbit: {
     label: 'conejo',
+    bases: { sit: 58, biped: 42 },
     cast: {
       crest:  { style: { bunny: 90, none: 10 }, len: [1.1, 1.6], tone: { skin: 100 } },
       nose:   { style: { triangle: 62, button: 38 } },
@@ -92,6 +95,7 @@ export const SPECIES = {
 
   bird: {
     label: 'pájaro',
+    bases: { sit: 45, biped: 55 },
     cast: {
       crest:  { style: { sprout: 34, frills: 26, spikes: 20, none: 20 }, tone: { skin: 70, bone: 30 } },
       nose:   { style: { none: 100 } },                    // the beak IS the face
@@ -111,6 +115,7 @@ export const SPECIES = {
 
   monster: {
     label: 'monstruo',
+    bases: { sit: 22, biped: 78 },
     cast: {
       crest:  { style: { horns: 34, spikes: 20, stalks: 16, frills: 14, antlers: 10, crown: 6 } },
       nose:   { style: { none: 48, skull: 26, snout: 16, triangle: 10 } },
@@ -130,6 +135,7 @@ export const SPECIES = {
 
   nightmare: {
     label: 'pesadilla',
+    bases: { sit: 15, biped: 85 },
     cast: {
       // a shape cut out of the dark: the head is filled in, and the
       // only light left is whatever is looking at you
@@ -157,6 +163,17 @@ const wpick = (rng, pairs) => {
   for (const p of pairs) { if ((x -= p[1]) < 0) return p[0]; }
   return pairs[pairs.length - 1][0];
 };
+
+export const BASES = ['biped', 'sit'];
+
+// A BASE is the skeleton, not the casting: 'biped' is the big-headed
+// two-legged doodle, 'sit' is the animal sitting on its haunches with
+// its front paws on the floor. The species says which it prefers.
+const DEFAULT_BASES = { biped: 100 };
+export function pickBase(speciesId, rng) {
+  const b = SPECIES[speciesId]?.bases ?? DEFAULT_BASES;
+  return wpick(rng, Object.entries(b));
+}
 
 // ---------------------------------------------------------------
 // The casting helper handed to every part's gen(). It answers three

@@ -99,6 +99,7 @@ const app = {
   setSpecies(mode) {
     speciesMode = mode;
     recipe.species = rollSpecies();
+    recipe.base = null;              // the new species picks its own skeleton
     regenUnlocked(recipe, recipe.seed);
     rebuild();
   },
@@ -115,6 +116,7 @@ const app = {
   regen(seed = (Math.random() * 1e9) | 0) {
     recipe.species = rollSpecies();
     recipe.media = rollMedia();
+    recipe.base = null;              // re-rolled from the species below
     regenUnlocked(recipe, seed);
     rebuild();
   },

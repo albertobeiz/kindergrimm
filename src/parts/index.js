@@ -18,7 +18,7 @@ import { Mouth, Nose } from './mouthnose.js';
 import { Hair } from './hair.js';
 import { Extras } from './extras.js';
 import { Crest } from './crest.js';
-import { Torso, Arms, Legs, Tail, Wings } from './body.js';
+import { Torso, Arms, Legs, Tail, Wings, Paws } from './body.js';
 
 export const PARTS = [
   // --- body (region:'body'): behind and below the head, planted on
@@ -28,6 +28,7 @@ export const PARTS = [
   Torso,
   Arms,     // in front of the torso, still behind the head
   Wings,    // birds only (species-specific part)
+  Paws,     // the 'sit' base uses these instead of arms+legs
   // --- head ---
   Hair,     // the back mass draws behind the skull (see its bones())
   Crest,

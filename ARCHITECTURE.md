@@ -287,6 +287,27 @@ a long chin; the second outline is what reads as a snout. And because
 the mouth sit **on** it — `F.L.noseY` and `F.L.my` already account for
 it, so those parts never learn what a muzzle is.
 
+### Bases — the skeleton, not the casting
+
+`recipe.base` says what the character is built on: `biped` (the
+big-headed two-legged doodle) or `sit` (an animal on its haunches with
+its paws on the floor). The species picks one from its `bases` table.
+
+A base changes two things and nothing else:
+
+1. **`bodyLayout()` branches on it** and publishes different anchors —
+   `sit` exports `frontPawX/Y`, `sidePawX/Y` and `pawR` where `biped`
+   exports shoulders and hips. Both still publish `floorY`, so the
+   floor code never learns a base exists.
+2. **Parts declare `base: ['biped']` or `base: ['sit']`** and the rig
+   skips the others. Arms and Legs are biped-only; `Paws` draws all
+   four at once and is sit-only. Everything above the neck — every
+   head, eye, ear, muzzle and medium — is shared untouched.
+
+That is the whole mechanism, and it is the same one as `species`. A
+quadruped standing on all fours would be a third base: a new branch in
+`bodyLayout` and a `Legs4` part.
+
 ### Adding a species
 
 1. Copy the nearest entry in `species.js` and change the tables.

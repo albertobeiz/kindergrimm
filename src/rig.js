@@ -25,12 +25,12 @@ import { makeRng, hashStr } from './rng.js';
 import { makePart, U } from './part.js';
 import { buildLayout } from './layout.js';
 import { PARTS, PART_BY_ID } from './parts/index.js';
-import { castingFor } from './species.js';
+import { castingFor, pickBase } from './species.js';
 
 export { PARTS };
 
 export function newRecipe(seed = (Math.random() * 1e9) | 0) {
-  return { seed, species: 'human', color: 'auto', media: 'graphite', parts: {} };
+  return { seed, species: 'human', base: 'biped', color: 'auto', media: 'graphite', parts: {} };
 }
 
 const partRng = (recipe, id) =>
@@ -48,6 +48,8 @@ const castFor = recipe => castingFor(recipe.species);
 export function ensureParams(recipe) {
   recipe.media ??= 'graphite';
   recipe.species ??= 'human';
+  // the species decides what it most likely stands on
+  recipe.base ||= pickBase(recipe.species, makeRng(hashStr(`${recipe.seed}:base`)));
   const cast = castFor(recipe);
   for (const def of PARTS) {
     const slot = recipe.parts[def.id] ??= {};
@@ -97,6 +99,9 @@ export function buildCharacter(recipe) {
     // a part can belong to a species: wings are for birds, and no
     // amount of dice-loading turns an arm into one
     if (def.species && !def.species.includes(recipe.species)) continue;
+    // …and to a BASE: the skeleton underneath. A sitting cat has paws
+    // where a biped has arms and legs, so those parts swap wholesale.
+    if (def.base && !def.base.includes(recipe.base)) continue;
     if (def.skip?.(P, F)) continue;
     const pivot = def.pivot ?? [.5, .5];
     const [wU, hU] = def.size(P, F);

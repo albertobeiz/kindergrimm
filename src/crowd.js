@@ -91,6 +91,7 @@ function drawCell(i, recipe = null) {
     recipe = newRecipe();
     recipe.media = media === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : media;
     recipe.species = species === 'todas' ? SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0] : species;
+    recipe.base = null;   // ensureParams picks it from the species
   }
   ensureParams(recipe);
   const face = buildCharacter(recipe);

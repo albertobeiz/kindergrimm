@@ -88,14 +88,22 @@ export const Torso = {
     clothIdx: { label: 'tinte ropa', range: [0, 7], step: 1 },
   }),
   bones: (P, F) => [{ name: 'torso', x: 0, y: -F.B.top / U }],
-  size: (P, F) => [(F.B.halfW * 3.2) / U, (F.B.h * 2.2) / U],
+  size: (P, F) => [(F.B.halfW * 3.2) / U, (F.B.h * 2.4) / U],
   draw(s, P, st, F) {
     const B = F.B, S = F.s;
     const hw = B.halfW, top = B.top, bot = B.bot;
 
-    // the silhouette: four shape families, all drawn as one closed path
+    // the silhouette: shape families, all drawn as one closed path
     let pts;
-    if (P.shape === 'square') {
+    if (B.sit) {
+      // SITTING: one mass, narrow at the shoulders and spreading to a
+      // wide base — the haunches. No legs are drawn: the paws are a
+      // part of their own and the rest is a bag sitting on the floor.
+      pts = [[-hw * .58, top], [hw * .58, top],
+             [hw * .92, top + B.h * .45], [hw, bot],
+             [hw * .5, bot + B.h * .04], [-hw * .5, bot + B.h * .04],
+             [-hw, bot], [-hw * .92, top + B.h * .45]];
+    } else if (P.shape === 'square') {
       pts = [[-hw, top], [hw, top], [hw * 1.04, bot], [-hw * 1.04, bot]];
     } else if (P.shape === 'pear') {
       pts = [[-hw * .62, top], [hw * .62, top], [hw * 1.05, bot - B.h * .3], [hw * .8, bot], [-hw * .8, bot], [-hw * 1.05, bot - B.h * .3]];
@@ -159,6 +167,7 @@ export const Arms = {
   // order -1: in front of the torso, but BEHIND the head — a raised
   // arm must pass behind the face, never across it
   id: 'arms', label: 'brazos', order: -1, depth: -.15, region: 'body',
+  base: ['biped'],
   // Every character has arms — they are half the pose. Every style
   // here is an IDLE: nothing reaches for the sky, because a standing
   // doodle with its arms up reads as jumping, not waiting.
@@ -248,6 +257,7 @@ export const Arms = {
 // =================================================================
 export const Legs = {
   id: 'legs', label: 'piernas', order: -3, depth: -.35, region: 'body',
+  base: ['biped'],
   // every character stands on something — no floating blobs
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['stub', 54], ['noodle', 18], ['wide', 28]]),
@@ -351,7 +361,7 @@ export const Tail = {
 // =================================================================
 export const Wings = {
   id: 'wings', label: 'alas', order: -1, depth: -.15, region: 'body',
-  species: ['bird'],
+  species: ['bird'], base: ['biped'],
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['folded', 54], ['open', 28], ['tucked', 18]]),
     len: C.range(rng, 'len', .9, 1.4),
@@ -391,6 +401,61 @@ export const Wings = {
       s.sline([[x0 + sd * S * .02, y0 + L * .12],
                [x0 + sd * L * out * (.35 + u * .65), y0 + L * (lift * .5 + .22 + u * .42)]],
         F.lwThin * .9, .45);
+    }
+  },
+};
+
+// =================================================================
+// PAWS — the sitting base. Four of them: two little ones planted at
+// the front and two splayed at the sides, exactly the four marks the
+// reference uses. This part replaces arms AND legs when the skeleton
+// is 'sit', which is what a base IS.
+// =================================================================
+export const Paws = {
+  id: 'paws', label: 'patas', order: -1, depth: -.2, region: 'body',
+  base: ['sit'],
+  gen: (rng, C) => ({
+    front: C.pick(rng, 'front', [['oval', 62], ['mitten', 26], ['claw', 12]]),
+    spread: C.range(rng, 'spread', .85, 1.2),
+    toes: rng.chance(.45),
+  }),
+  meta: () => ({
+    front: { label: 'patas', pick: ['oval', 'mitten', 'claw'] },
+    spread: { label: 'apertura', range: [.6, 1.5] },
+    toes: { label: 'deditos', bool: true },
+  }),
+  bones: (P, F) => [{ name: 'paws', x: 0, y: -F.B.bot / U }],
+  size: (P, F) => [(F.B.halfW * 3.4 * P.spread) / U, (F.s * .7) / U],
+  draw(s, P, st, F) {
+    const B = F.B, S = F.s;
+    const r = B.pawR;
+
+    // the two side paws first: they sit behind the front ones
+    for (const sd of [-1, 1]) {
+      const x = sd * B.sidePawX * P.spread, y = B.sidePawY;
+      const pad = s.blobPts(x, y, r * 1.35, r * .72, s.jr(-.12, .12) + sd * .18, .4);
+      s.paperFill(pad);
+      if (F.colors.skin) F.media.skin(s, pad, F.colors.skin, { gap: S * .04 });
+      F.media.edge(s, pad.concat([pad[0]]), F.lwThin * 1.25, { amp: .7 });
+    }
+
+    for (const sd of [-1, 1]) {
+      const x = sd * B.frontPawX, y = B.frontPawY;
+      if (P.front === 'claw') {
+        for (let k = 0; k < 3; k++)
+          s.stroke([[x + (k - 1) * r * .4, y - r * .5], [x + (k - 1) * r * .55, y + r * .5]],
+            F.lwThin * 1.1, { taper: .4 });
+        continue;
+      }
+      const wf = P.front === 'mitten' ? 1 : 1.18;
+      const pad = s.blobPts(x, y, r * wf, r * (P.front === 'mitten' ? 1 : .92), s.jr(-.12, .12), .4);
+      s.paperFill(pad);
+      if (F.colors.skin) F.media.skin(s, pad, F.colors.skin, { gap: S * .04 });
+      F.media.edge(s, pad.concat([pad[0]]), F.lwThin * 1.3, { amp: .7 });
+      // the little toe lines that turn a blob into a paw
+      if (P.toes)
+        for (let k = -1; k <= 1; k++)
+          s.sline([[x + k * r * .42, y - r * .5], [x + k * r * .46, y + r * .1]], 1.1, .4);
     }
   },
 };

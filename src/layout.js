@@ -181,13 +181,34 @@ function featureLayout(recipe, Ps, S, w, turn, at, ts, press, M) {
 // its top — the Isaac silhouette. `floorY` is where the feet end, so
 // scenes can stand every character on a floor line whatever its
 // proportions are.
-function bodyLayout(Ps, S, w) {
+function bodyLayout(Ps, S, w, base) {
   const T = Ps.torso ?? { wF: .5, hF: .65 };
   const chinY = Ps.skull.chinY;
   // a muzzle pushes the chin down, and the body has to get out of its way
   const muzzle = Ps.skull.muzzle || 0;
 
   const top = S * chinY * (1 + muzzle * .62) - S * .14;   // the head overlaps the body
+
+  // ---- SITTING: the animal on its haunches ----
+  // Wider than tall, no legs to speak of, four paws on the floor: two
+  // little ones at the front and two splayed at the sides. Every
+  // anchor the paws need is published here.
+  if (base === 'sit') {
+    const halfW = w * Math.max(.62, T.wF * 1.35);
+    const h = S * Math.max(.5, T.hF * .95);
+    const bot = top + h;
+    return {
+      sit: true,
+      top, bot, h, halfW,
+      shoulderY: top + h * .3, shoulderX: halfW * .9,
+      hipY: bot - h * .06, hipX: halfW * .45,
+      frontPawX: halfW * .34, frontPawY: bot - S * .012,
+      sidePawX: halfW * 1.0, sidePawY: bot - S * .03,
+      pawR: S * .085,
+      floorY: bot + S * .055,
+    };
+  }
+
   const halfW = w * T.wF;
   const h = S * T.hF;
   const bot = top + h;
@@ -199,6 +220,7 @@ function bodyLayout(Ps, S, w) {
   const floorY = (Lg.style === 'none' ? bot : hipY + legLen) + footH;
 
   return {
+    sit: false,
     top, bot, h, halfW,
     shoulderY: top + h * .22,
     shoulderX: halfW * .95,
@@ -218,7 +240,7 @@ export function buildLayout(recipe, Ps) {
 
   const head = headLayout(recipe, Ps, S, w);
   const feats = featureLayout(recipe, Ps, S, w, turn, at, ts, press, head.M);
-  const B = bodyLayout(Ps, S, w);
+  const B = bodyLayout(Ps, S, w, recipe.base);
 
   // the casting: which of the muted colours this character gets, if any
   const mode = recipe.color || 'auto';
