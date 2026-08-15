@@ -59,6 +59,10 @@ recipe ──► gen() ─────┴──► params ──► layout.js �
 | `src/scenery.js` | the props in the room (toys, cots, the nightlight) | you add furniture |
 | `src/dark.js` | **global illumination** — the room is black outside the lamps | how light behaves |
 | `src/postfx.js` | tilt-shift, vignette — the *lens* | the mood of the whole frame |
+| `src/items/core.js` | **the object hand.** `REF`, the rank ladder, `finish()`, `stamp()`, the stat algebra | you change how objects are drawn or costed |
+| `src/items/*.js` | **the item families.** One file per family of object. | you add an object ← *data + one drawing* |
+| `src/items/index.js` | the item registry, the roll, and favour | you add a family file |
+| `src/parts/gear.js` | `Held` / `Offhand` / `Worn` — items on a body | almost never |
 | `src/main.js` / `src/crowd.js` / `src/game.js` | the three scenes | new scene features |
 
 ---
@@ -317,6 +321,52 @@ fills on a time budget at boot, and the nightmare wave is *queued* at
 dusk and built one per frame — building a whole wave in one frame
 stutters at exactly the moment the night is meant to feel dangerous.
 
+### Camera and gestures — the game is played on a phone
+
+The camera orbits a **pan target** (`camWant`, eased into `camAt`), not
+the origin. Panning **grabs the floor**: remember the world point under
+the finger and move the target so that point stays under it. Never
+convert pixels to world units by hand — the foreshortening term is easy
+to get subtly wrong and reads as drift. `clampPan()` shrinks the
+allowed radius as you zoom out, or you drag the floor's edge into shot.
+
+**Both rays must be cast in the same frame, and the target set
+absolutely.** The camera *eases* toward `camWant`, so it is always a
+little behind it. Ray the floor once at the finger's current pixel and
+add the difference to `camWant` and you have measured the gap against
+a camera that has not caught up yet — every move re-pays a debt
+already owed, so a steady finger accelerates the pan and on release it
+sails past and settles back. Ray the **start** pixel and the **current**
+pixel with the camera as it is right now and the lag is in both rays
+and cancels; then set `camWant` from the target the drag *started*
+with, never `+=`. (Measured: one 6.2-unit drag became 7.5–15.7 units
+depending only on how many `pointermove` events it took.) At the wall,
+re-anchor the drag on the clamped value, or dragging back does nothing
+until the finger has undone every pixel the clamp refused.
+
+**On touch a tap and the start of a drag are the same event.** So every
+press begins as a *provisional tap* and only becomes a pan once it has
+travelled past `TAP_SLOP` or been held past `TAP_MS`. Orders are issued
+on **release**, never on press — which is also what stops a pan from
+dropping a lantern while the draft is waiting for a spot. Two pointers
+cancel the tap outright and become pinch (zoom) plus twist (rotate,
+behind a deadzone so a plain pinch does not spin the room).
+
+Three things that bite:
+
+- `setPointerCapture` **throws** if the pointer is already gone. Wrap
+  it, or an exception loses the whole press.
+- The canvas needs `touch-action: none` or the browser claims the
+  gestures for scrolling, and the viewport needs `user-scalable=no` or
+  a pinch zooms the *page*.
+- **Tap targets do not scale with zoom.** Pick proxies are fixed world
+  sizes, so zoomed out a child is a few pixels while a thumb is ~44 of
+  them. `pickScale` grows the proxies with `halfH` to compensate.
+
+Free twist is kept for desktop, but touch gets **quarter-turn buttons**
+— an arbitrary angle is horrible to aim with two fingers and this room
+has nothing that needs one.
+
 ### Global illumination (`src/dark.js`)
 
 The room is **black**, everywhere the light does not reach — not
@@ -354,20 +404,33 @@ You start with three children, one bed, one floor lantern and one toy.
   and loses stamina fast; at zero its parents come and take it home.
   Lose all three and the school closes. Children are never hurt and
   never die — this is a baby school, do not escalate it.
-- **Nerve.** Every child has a nerve of -3…+3, every nightmare a
-  menace of -3…+3, and **courage = nerve + light×3**. Out-matched, a
-  child freezes and cries — and a frozen child *ignores your orders*
-  until the thing leaves. This is the join between the two systems:
-  the same child breaks in the dark and holds under a lamp.
+- **A child is three numbers**: **energy**, **attack**, **speed** —
+  and those are exactly what the card shows. Everything else a stat
+  bag carries (`reach`, `swingT`, `rest`, `lampR`, `scale`, `drain`,
+  `knock`) is a modifier on how those three play out, not a fourth
+  pillar. There is no morale system: a child never refuses an order.
 - **Nightmares** chew on the furniture, never on a child. **Light does
   not kill them — it mires them** (17% speed under a lamp). The
   children do the killing. They want the closest bed or toy and do not
   care who is using it, so they have their own `nearestBreakable()`.
+- **Playing costs energy.** `DRAIN_PLAY` is charged on top of the
+  idle drain (and on top of the dark, which is why playing out where
+  you cannot see is the worst thing you can ask for). The only thing
+  in the game that makes progress has to be paid for in the same
+  currency the dark charges, or the answer is always "everyone on a
+  toy, forever" and a bed is just something the nightmares eat.
 - **The bar and the draft.** Playing fills one shared bar. When it
   fills the world STOPS (`state.paused` zeroes `dt`, rendering
-  continues) and three cards are drawn from `KNACKS` (applied to a
-  child you then click) and `PLACEABLES` (put where you then click).
-  There is no currency — the draft is the whole economy.
+  continues) and a HAND of six generated objects is dealt, of which
+  you keep exactly one: carried things are applied to a child you then
+  click, furniture is put where you then click. There is no currency —
+  the draft is the whole economy.
+- **The title screen** (`#start`, `state.started`) is also the load
+  screen: the class is built one child per frame behind it, so the
+  ~20 ms build cost lands while nobody is playing. `started` and
+  `paused` are separate flags because they stop the world for opposite
+  reasons — one holds a game that has not begun, the other freezes one
+  in progress.
 
 **Picking** is done with invisible proxy quads (`addPick`), one per
 clickable entity, raycast in place of the real drawings: hit-testing
@@ -545,3 +608,195 @@ top of the registry.
 a face nobody can draw, first add that as a *state* of the eye, brow
 or mouth part (one branch in its `draw()`), then point at it from
 `states`.
+
+**Add an item family:** see §10. One file, one line in
+`src/items/index.js`.
+
+---
+
+## 10. Objects — the item system
+
+### The one idea: the stats ARE the drawing
+
+An item is a seeded bag of params, and that same bag drives `draw()`
+**and** `statsOf()`. A sword that rolled a long blade *is* drawn long
+and *does* reach further; a lantern with a fat bowl *is* drawn fat and
+*does* light a bigger circle. You can read an item's power off the
+paper the way you can read a character's species off its ears.
+
+Two rules fall out of that, and they are the ones to enforce in
+review: **never add a stat with no visible consequence**, and **never
+draw a feature that means nothing.**
+
+### One drawing, three hosts
+
+Every family draws itself **once**, in a `REF`-sized box (96 px) with
+the origin at its **anchor** and up **negative** — the same convention
+`scenery.js` uses. `stamp()` then plants that drawing wherever it is
+needed:
+
+```
+the draft card   ·   the floor prop   ·   the fist of a child
+```
+
+The anchor is the **grip** for `held`/`offhand`, the **head contact**
+for `worn`, the **base** for standing floor things, and the **centre**
+for flat things and charms.
+
+**It scales through `ctx.scale`, never by multiplying the numbers.**
+That matters more than it looks: every decision inside `Sketch` (the
+`w >= 1.2` granulation gate, the 2.2 px resample floor, the `n < 3`
+bail to a plain line) is made in *user* units, before the transform.
+Scaling the canvas gives the identical drawing — grain and all — at
+another size. Scaling your own numbers crosses those thresholds,
+shifts the whole random stream, and quietly gives you a *different*
+item. Keep the factor inside roughly `[.6, 2]`; `REF = 96` was chosen
+so all three hosts land in that band.
+
+### Ranks are a medium, not a colour
+
+| rank | look | roll | mods |
+|---|---|---|---|
+| `sketch` | plain graphite, one contour | ×.85–1.05 | 0 |
+| `inked` | a second, confident darker pass | ×1.0–1.25 | 1 |
+| `gilded` | gleam ticks + a lighter inner fill | ×1.2–1.5 | 2 |
+| `nightmare` | dense scribble, barbs, a harder line | ×1.5–2.0 | 2 **+ a curse** |
+
+Every family closes its shapes through **`finish(s, pts, rank, o)`**,
+which is to items what `F.media.*` is to parts. No family may draw its
+own rank look — that is what keeps the whole catalogue legible and
+lets a twelfth family arrive without breaking the ladder. Pass
+`{ F }` through when the item is being drawn *on a character*, and
+`finish` routes it through that character's own medium.
+
+`nightmare` is the devil deal: the best numbers in the game on an
+object drawn by *them*, and it always carries a curse.
+
+### Favour — the toybox learns what you like
+
+Picking a family makes it both **commoner** and **better**: its draft
+weight rises and its rank ladder tilts, while every other family
+fades. There is no pool to maintain and no currency — favour is just a
+multiplier over generation, which is what keeps the whole economy
+procedural.
+
+### The hand — what a draft is made of
+
+`HAND` in `items/index.js` is the shape of a draft: one **light**, one
+**toy**, one **bed**, and three from the **kit** (anything a child can
+carry). The three floor kinds are guaranteed because the room only
+ever runs out of one of those three, and a draft that failed to offer
+the one you were short of killed the run by shuffle rather than by
+anything you did. Favour still steers *which* family and *what rank*
+inside each group, and the kit half is where the gamble lives.
+
+The card copy is three separate statements — `copy.what` (flavour),
+`copy.does` (the numbers, read off the bag) and `copy.costs` (the
+curse) — printed as three paragraphs, because run together as one
+sentence the upgrade hides inside the flavour. `desc` keeps the joined
+one-liner for tooltips.
+
+Names are **bare** — `nameItem` returns "long inked bat", not "a long
+inked bat". A name is a card heading and a kit row far more often than
+it is a word in a sentence; `withArticle()` puts the article back for
+the log lines, which are prose.
+
+### The family contract
+
+```js
+export const Sword = {
+  id: 'sword', slot: 'held', noun: 'sword', weight: 10,
+  // floor families also declare kind: 'light' | 'toy' | 'bed'
+  gen(rng, C)  { ... },   // C = { rank, pow, wpick }; pow is the rank's multiplier
+  statsOf(P)   { return { add: {...}, mul: {...} } },   // PURE
+  fxOf(P)      { ... },   // fear / sticky / throw / chill / lull / thrift / familiar
+  patchOf(P)   { ... },   // mutation slot: a recipe patch
+  objOf(P)     { ... },   // floor slot: { kind, wU, hU, r, fuel, dur, play, rest }
+  adj(P), desc(P),        // the name and one line of card copy
+  draw(s, P, F) { ... },  // REF space, origin at the anchor, up negative
+};
+```
+
+Slots: `held` · `offhand` · `worn` · `charm` · `mutation` · `floor`.
+
+**The drawing must be deterministic from `P`.** This is the rule that
+bites. The same art is baked once as a floor prop but re-drawn every
+boil frame as a character part — so anything decided with `s.jr()`
+*shimmers* at 1 Hz on a child. Every shape, count and position comes
+from `P`, rolled in `gen()`. `s.jr()` is only for sub-linewidth
+jitter, which is the boil and is wanted.
+
+### How an item reaches a body
+
+`src/parts/gear.js` registers three normal parts. Their params are
+deliberately tiny — `{ family, rank, seed }` — and the shape is
+re-derived (memoised) from them, so a recipe stays small and JSON
+round-trips, and the object in the fist is guaranteed to be the object
+the card showed.
+
+**The gear bone sits at the SHOULDER, not the hand.** Bones are flat
+siblings; there is no parenting in the rig. So a held bone is placed
+at exactly the arm's origin and `anim.js` hands it the arm's finished
+transform in a second pass (`GEAR`), which makes the object swing
+correctly in every pose — including poses nobody has written yet. The
+item is then drawn at the hand's own coordinates, which `layout.js`
+publishes as **`B.grip(side)`** — the muzzle lesson again: publish
+where the thing landed, and the parts that sit on it never learn how
+it got there. `Arms.draw` reads the same anchor, so the two can never
+disagree.
+
+Draw orders: `Held`/`Offhand` take **0** (the one free slot: in front
+of the arm, still behind the head), and `Worn` shares **7** with
+`Crest`, winning on registry order the way Eyes/Nose/Mouth already do.
+The rig's 16-slot block is otherwise full — see §6b before choosing
+anything else.
+
+### What an object can actually do
+
+Beyond the stat bag, `fxOf(P)` returns effects the room reads. **Units
+are the contract**: everything is a radius in world units except
+`sticky` (seconds) and `throw` (an object). Return a 0–1 "strength"
+where a radius is expected and it silently never fires — the room is
+26 units across, so a believable earshot is 2 to 6.
+
+| effect | what it does | drawn as |
+|---|---|---|
+| `fear` | on a hit, every nightmare in range flinches | — |
+| `chill` | nightmares in range are mired as if under a lamp | a chalk ring |
+| `lull` | children sleeping in range rest faster | a chalk ring |
+| `thrift` | beds and toys in range wear out slower | a chalk ring |
+| `sticky` | a nightmare this child hits stays mired | — |
+| `throw` | the child lobs a drawn marble while fighting | a flying billboard |
+| `familiar` | a live doodle animal trails the child and bites | a whole character |
+
+A familiar is a **real character**, built from the same rig as
+everybody else, so it can be a cat, a dog or a small nightmare
+depending on what the doll was made in the shape of. It is the only
+thing in the room with a mind of its own — which is exactly why it
+belongs to an object and not to a child: the rule that *children do
+nothing on their own* has to stay true, and an object is allowed to be
+the exception because you chose it.
+
+**Energy is the join.** The dark burns it, a bed gives it back, and at
+zero the child goes home — so anything that adds `maxStam` or lowers
+`drain` buys time in the same currency a lantern buys. That is what
+makes a shield, a crown or a hat worth as much as a sword, and it is
+why every point of it has to be real.
+
+There is deliberately **no morale stat**. An earlier draft had `nerve`
+and a nightmare `menace`, and a child could freeze and refuse orders;
+it is gone. A child that will not do what you clicked is a child you
+cannot read, and the three numbers on the card are the whole contract.
+
+### Mutations rebuild the child
+
+A `mutation` item has no drawing on the body at all: it merges a
+**recipe patch** and rebuilds the character. That costs ~20 ms, so it
+may only ever happen while the draft has the world stopped. Three
+things must be re-pointed on a rebuild or they rot silently: the
+cached material list (the light tint would keep writing to disposed
+materials and the new child would never light), the feet lift (the
+animator never writes `face.group`), and the depth rank (a fresh face
+has `rank === null`, which the board sort re-stamps for free). The
+animator's getter must read the **live** face — `() => k.face`, never
+a closure over the original.

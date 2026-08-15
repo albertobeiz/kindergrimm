@@ -182,6 +182,37 @@ function featureLayout(recipe, Ps, S, w, turn, at, ts, press, M) {
 // its top — the Isaac silhouette. `floorY` is where the feet end, so
 // scenes can stand every character on a floor line whatever its
 // proportions are.
+// WHERE THE HAND IS. The arm's own drawing ends at its wrist, and
+// anything a character HOLDS has to land in exactly the same spot —
+// so the position is computed once here rather than twice, badly.
+// This is the muzzle lesson again: publish where the thing landed and
+// the parts that sit on it never have to learn how it got there.
+//
+// Returns `sd => [x, y]` in character px, or null when this body has
+// no hand to speak of (a fin, a paw, a quadruped's foreleg).
+function gripBiped(A, S, halfW, h, shoulderX, shoulderY, hipY) {
+  if (!A) return null;
+  return sd => {
+    const x0 = sd * shoulderX, y0 = shoulderY;
+    const L = h * .62 * A.len;
+    // A fin has no hand, but it still has an END, and a child with
+    // stubby wings for arms can absolutely pin a sword against itself.
+    // Returning null here instead would mean the item's numbers
+    // applied while nothing was drawn — a drawing that lies, which is
+    // the one thing this system is not allowed to do.
+    if (A.style === 'wing') return [x0 + sd * L * .5, y0 + L * .75];
+    // the right arm wanders; that asymmetry is deliberate in Arms.draw
+    // and the hand has to wander with it
+    const droop = Math.max(.15, A.droop + (sd > 0 ? A.asym : 0));
+    let dropY = L * (.55 + droop * .55);
+    let outX = sd * L * .32;
+    if (A.style === 'hips') { outX = sd * halfW * .82; dropY = hipY - y0 - S * .04; }
+    else if (A.style === 'clasped') { outX = -sd * shoulderX * .48; dropY = L * (.62 + droop * .35); }
+    else if (A.style === 'behind') { outX = sd * L * .12; dropY = L * (.34 + droop * .2); }
+    return [x0 + outX, y0 + dropY];
+  };
+}
+
 function bodyLayout(Ps, S, w, base) {
   const T = Ps.torso ?? { wF: .5, hF: .65 };
   const chinY = Ps.skull.chinY;
@@ -220,6 +251,7 @@ function bodyLayout(Ps, S, w, base) {
       tailX: cx + dir * halfW * 1.05,              // off the far end
       pawR: S * .075,
       floorY: bot + legLen + S * .05,
+      grip: null, gripR: S * .075,                 // on all fours; nothing is free to carry
     };
   }
 
@@ -227,15 +259,18 @@ function bodyLayout(Ps, S, w, base) {
     const halfW = w * Math.max(.62, T.wF * 1.35);
     const h = S * Math.max(.5, T.hF * .95);
     const bot = top + h;
+    const frontPawX = halfW * .34, frontPawY = bot - S * .012, pawR = S * .085;
     return {
       sit: true,
       top, bot, h, halfW,
       shoulderY: top + h * .3, shoulderX: halfW * .9,
       hipY: bot - h * .06, hipX: halfW * .45,
-      frontPawX: halfW * .34, frontPawY: bot - S * .012,
+      frontPawX, frontPawY,
       sidePawX: halfW * 1.0, sidePawY: bot - S * .03,
-      pawR: S * .085,
+      pawR,
       floorY: bot + S * .055,
+      // an animal on its haunches holds things in its front paws
+      grip: sd => [sd * frontPawX, frontPawY - pawR * .4], gripR: pawR,
     };
   }
 
@@ -243,6 +278,8 @@ function bodyLayout(Ps, S, w, base) {
   const h = S * T.hF;
   const bot = top + h;
   const hipY = bot - h * .06;
+  const shoulderY = top + h * .22;
+  const shoulderX = halfW * .95;
 
   const Lg = Ps.legs ?? { style: 'stub', len: .4, foot: 'oval' };
   const legLen = Lg.style === 'none' ? 0 : h * .5 * Lg.len;
@@ -252,11 +289,13 @@ function bodyLayout(Ps, S, w, base) {
   return {
     sit: false,
     top, bot, h, halfW,
-    shoulderY: top + h * .22,
-    shoulderX: halfW * .95,
+    shoulderY,
+    shoulderX,
     hipY,
     hipX: halfW * .42,
     floorY,
+    grip: gripBiped(Ps.arms, S, halfW, h, shoulderX, shoulderY, hipY),
+    gripR: S * .075,
   };
 }
 
@@ -292,7 +331,9 @@ export function buildLayout(recipe, Ps) {
     P: Ps,
     colors,
     media: MEDIA[recipe.media] ?? MEDIA.graphite,
-    L: { ...head, ...feats },       // head + features
+    // hatY/hatX are the crest's own anchor, published so a worn thing
+    // sits at the same height as the horns it has to share a head with
+    L: { ...head, ...feats, hatY: -S * Ps.skull.skullY * .84, hatX: turn * w * .12 },
     B,                              // body
   };
 }

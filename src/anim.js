@@ -27,6 +27,10 @@ const TRANS = .38;         // pose crossfade, seconds
 const SHOT_TRANS = .13;    // one-shots hit faster
 const FACE_TRANS = .5;     // expression body-language ramp
 const sstep = w => w * w * (3 - 2 * w);
+// Parts that are bolted to a hand rather than to the body: they take
+// the arm's transform wholesale instead of accumulating their own.
+// A worn hat is NOT in here — it lives on the head like a crest.
+const GEAR = new Set(['held', 'offhand']);
 
 export function createAnimator(getFace, opts) {
   // opts = { blink, talk, sway, breath, gaze, boil, boilSpeed, phase, amp }
@@ -270,7 +274,18 @@ export function createAnimator(getFace, opts) {
       // and expressions accumulated ---------------------------------
       const browLift = (opts.talk ? Math.sin(t * 9 + 1) * .008 : 0)
         + gy * .022;                        // brows ride with the eyes
+      // Gear rides the hand. A held object's bone sits at exactly the
+      // arm's origin (see src/parts/gear.js), so handing it the arm's
+      // finished transform makes it swing with that arm in every pose
+      // — including poses written years from now, which is why this is
+      // done here once rather than in each pose file. Two passes,
+      // because entries come in registry order and nothing guarantees
+      // the arm is reached first.
+      const arms = {};
+      for (const e of face.entries) if (e.id === 'arms') arms[e.side] = e;
+
       for (const e of face.entries) {
+        if (GEAR.has(e.id)) continue;
         const base = e.bone.userData.base;
         const a = e.acc;
         let x = base.x + (a ? a.x : 0);
@@ -292,6 +307,22 @@ export function createAnimator(getFace, opts) {
         if (e.id === 'torso') sx += breath * .012 * brAmp;   // the chest swells a little more
         if (e.id === 'mouth') sy *= talkS;
         e.bone.scale.set(sx, sy, 1);
+      }
+
+      for (const e of face.entries) {
+        if (!GEAR.has(e.id)) continue;
+        const arm = arms[e.side];
+        if (arm) {
+          e.bone.position.copy(arm.bone.position);
+          e.bone.rotation.z = arm.bone.rotation.z;
+          e.bone.scale.copy(arm.bone.scale);
+        } else {
+          // no arm to hold it: fall back to its own rest pose so a
+          // hatless-but-armless body still draws something sane
+          const b = e.bone.userData.base, a = e.acc;
+          e.bone.position.set(b.x + (a ? a.x : 0), b.y + (a ? a.y : 0), 0);
+          e.bone.rotation.z = a ? a.rot : 0;
+        }
       }
 
       // ---- texture states: expression first, pose requests over it,

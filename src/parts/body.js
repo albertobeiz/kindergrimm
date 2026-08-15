@@ -221,41 +221,34 @@ export const Arms = {
     // Where the hand ends up. Arms hang CLOSE to the body at rest —
     // held out wide reads as a jumping jack, not an idle. The right
     // arm is drawn a touch differently from the left, on purpose.
-    const asym = sd > 0 ? P.asym : 0;
-    const droop = Math.max(.15, P.droop + asym);
-    let dropY = L * (.55 + droop * .55);
-    let outX = sd * L * .32;
+    //
+    // The wrist itself comes from `B.grip` so that anything the
+    // character HOLDS lands in the same place: two parts agreeing on a
+    // position is exactly what layout.js is for. The elbow is still
+    // this part's own business.
+    const [hx, hy] = B.grip(sd);
+    const outX = hx - x0, dropY = hy - y0;
     let mid;
 
     if (P.style === 'hips') {
-      // elbow out, hand tucked back onto the waist
-      outX = sd * B.halfW * .82;
-      dropY = B.hipY - y0 - S * .04;
-      mid = [x0 + sd * L * .72, y0 + dropY * .42];
+      mid = [x0 + sd * L * .72, y0 + dropY * .42];       // elbow out, hand back on the waist
     } else if (P.style === 'clasped') {
-      // both hands meet over the belly
-      outX = -sd * B.shoulderX * .48;
-      dropY = L * (.62 + droop * .35);
-      mid = [x0 + sd * L * .34, y0 + dropY * .55];
+      mid = [x0 + sd * L * .34, y0 + dropY * .55];       // both hands meet over the belly
     } else if (P.style === 'behind') {
-      // tucked away: barely more than a shoulder and a knuckle
-      outX = sd * L * .12;
-      dropY = L * (.34 + droop * .2);
-      mid = [x0 + sd * L * .22, y0 + dropY * .5];
+      mid = [x0 + sd * L * .22, y0 + dropY * .5];        // barely a shoulder and a knuckle
     } else if (P.style === 'noodle') {
       mid = [x0 + outX * .3 + sd * L * .22, y0 + dropY * .45];   // a loose curve
     } else {
       mid = [x0 + outX * .5, y0 + dropY * .5];
     }
 
-    const spine = chaikin([[x0, y0], mid, [x0 + outX, y0 + dropY]], false, 2);
+    const spine = chaikin([[x0, y0], mid, [hx, hy]], false, 2);
     const thick = P.style === 'noodle' ? S * .055 : P.style === 'behind' ? S * .07 : S * .085;
     const shape = limbShape(spine, thick, thick * .82);
     F.media.tone(s, shape, { style: 'light', gap: S * .05 });
     F.media.edge(s, shape.concat([shape[0]]), F.lwThin * 1.25, { amp: .8 });
 
-    const tip = spine[spine.length - 1];
-    paw(s, F, tip[0], tip[1], S * .075, P.hand, sd);
+    paw(s, F, hx, hy, B.gripR, P.hand, sd);
   },
 };
 

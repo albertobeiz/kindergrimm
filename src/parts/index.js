@@ -19,6 +19,7 @@ import { Hair } from './hair.js';
 import { Extras } from './extras.js';
 import { Tears } from './tears.js';
 import { Crest } from './crest.js';
+import { Held, Offhand, Worn } from './gear.js';
 import { Torso, Arms, Legs, Tail, Wings, Paws, QuadLegs } from './body.js';
 
 export const PARTS = [
@@ -31,6 +32,8 @@ export const PARTS = [
   Wings,    // birds only (species-specific part)
   Paws,     // the 'sit' base uses these instead of arms+legs
   QuadLegs, // the 'quad' base: four legs with cat paws
+  Offhand,  // order 0: what the far hand is carrying…
+  Held,     // …and the near one. In front of the arm, behind the head.
   // --- head ---
   Hair,     // the back mass draws behind the skull (see its bones())
   Crest,
@@ -42,6 +45,8 @@ export const PARTS = [
   Mouth,
   Extras,   // marks, tears, accidents: always last, over everything
   Tears,    // the crying expression's water — empty until it flows
+  Worn,     // a hat sits over the horns it shares a head with, so it
+            // is listed after Crest and wins their shared order
 ];
 
 export const PART_BY_ID = Object.fromEntries(PARTS.map(d => [d.id, d]));

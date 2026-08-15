@@ -9,18 +9,17 @@
 //   their own — an idle child is a child burning down, and every bit
 //   of progress in this game is something you told someone to do.
 //
-//   Playing fills the bar. When it fills, everything STOPS and you
-//   draw three cards: a knack for one child, a lamp, a toy, a bed.
-//   Knacks ask which child; things ask where on the floor.
+//   Playing fills the bar — and costs the child energy, because the
+//   only thing here that makes progress has to be paid for. When the
+//   bar fills, everything STOPS and a hand of six objects is dealt: a
+//   lamp, a toy, a bed, and three things a child can carry. You keep
+//   ONE. Carried things ask which child; furniture asks where on the
+//   floor.
 //
 //   The room is black outside the lamps. Dark drains a child fast,
-//   and at zero its parents come and take it home.
-//
-//   Every child has a NERVE from -3 to +3 and every nightmare a
-//   MENACE from -3 to +3. Courage is nerve plus the light you happen
-//   to be standing in, so the same child freezes in the dark and
-//   squares up under a lamp. Out-matched, it freezes and cries — and
-//   a frozen child ignores your orders until the thing goes away.
+//   and at zero its parents come and take it home. A child is three
+//   numbers — ENERGY, ATTACK, SPEED — and every object on a card
+//   moves one of them.
 //
 // THE VIEW is 3D: floor on XZ, orbiting orthographic camera, and
 // every upright drawing a billboard yawed to face it. See
@@ -28,15 +27,17 @@
 // ---------------------------------------------------------------
 import * as THREE from 'three';
 import { ROOM_BG, makeFloorTexture, makeShadowTextures } from './ground.js';
-import {
-  makeProp, drawBedTop, drawBall, drawLantern, drawTorch, drawAreaLantern,
-} from './scenery.js';
+// only the opening hand is hand-authored now; everything the draft
+// offers later is generated (see src/items/)
+import { makeProp, drawBedTop, drawBall, drawLantern } from './scenery.js';
 import { createDarkness } from './dark.js';
 import { createPostFX } from './postfx.js';
 import { Sketch } from './sketch.js';
 import { setRender, U } from './part.js';
 import { newRecipe, buildCharacter, ensureParams, setDepthRank, shadowOrder, LAYER } from './rig.js';
 import { createAnimator } from './anim.js';
+import { drawOffers, bumpFavor, thumbFor, propDrawFor, aggregate } from './items/index.js';
+import { applyStats, withArticle } from './items/core.js';
 
 setRender({ u: 96, frames: 2 });
 THREE.ColorManagement.enabled = false;
@@ -55,6 +56,13 @@ const BODY_R = .42;
 // light is good for minutes, and only the dark is urgent.
 const STAM_MAX = 100;
 const DRAIN_IDLE = .3, DRAIN_DARK = 2;
+// Playing is WORK. The bar is the only thing in this game that makes
+// progress, and it has to be paid for in the same currency the dark
+// charges — otherwise the right move is always "everyone on a toy,
+// forever" and a bed is just something the nightmares eat. It stacks
+// ON TOP of the dark, so playing out where you cannot see is the
+// worst thing you can ask of a child, which is exactly right.
+const DRAIN_PLAY = 1.6;
 const RECOVER = 4;
 const TIRED = 25;
 const PLAY_WEAR = 1.5, BED_WEAR = 1.2;
@@ -69,7 +77,15 @@ const MARE_SLOW = .88, MARE_EVERY = 16;
 
 const state = {
   xp: 0, level: 0, lost: 0, over: false, flash: 0, gloom: 0,
+  // `started` is the title screen and `paused` is the draft. Two
+  // flags, because they stop the world for opposite reasons: the
+  // draft freezes a game in progress, the title holds one that has
+  // not begun — and the class is still being BUILT behind it.
+  started: false,
   paused: false, offers: null, pending: null, selected: null,
+  // how much the toybox likes each family of object. Picking one
+  // makes it both commoner and better; everything else fades.
+  favor: {},
 };
 
 // ---- boot -------------------------------------------------------
@@ -78,10 +94,16 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(ROOM_BG);
 
 let halfH = 8.5;
+const ZOOM_MIN = 3.4, ZOOM_MAX = 26;
 const ORBIT_R = 16, ORBIT_Y = 9.6;
-let camAz = .55;
+const PAN_R = 16;                        // how far from the middle you may wander
+let camAz = .55, camAzWant = .55;
+// where the camera is looking: `want` is what input sets, `at` is the
+// smoothed value the camera actually uses, so every move glides
+const camWant = new THREE.Vector3(), camAt = new THREE.Vector3();
 const camera = new THREE.OrthographicCamera(-1, 1, halfH, -halfH, .1, 100);
 const view = { az: camAz, rightX: 1, rightZ: 0 };
+const TOUCH = matchMedia('(pointer: coarse)').matches;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
@@ -100,14 +122,49 @@ function onResize() {
 }
 addEventListener('resize', onResize);
 
+// keep the view over the room: the further out you zoom the less
+// there is to pan to, or you drag the edge of the floor into shot.
+// Returns whether it actually had to pull the target back, which the
+// drag uses to re-anchor itself against the wall.
+function clampPan() {
+  const lim = Math.max(0, PAN_R - halfH * .5);
+  const d = Math.hypot(camWant.x, camWant.z);
+  if (d <= lim) return false;
+  camWant.x *= lim / d; camWant.z *= lim / d;
+  return true;
+}
+
+function setZoom(v) {
+  halfH = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, v));
+  clampPan();
+  // A wheel during a live drag changes how many world units a pixel is
+  // worth, and the drag measures itself from the pixel it started on.
+  // Re-anchor on the finger where it is now, or the view snaps back to
+  // the target the pan began with. (Declared below; only ever reached
+  // from an event, long after this module has finished evaluating.)
+  if (drag) {
+    const p = ptrs.get(drag.id);
+    if (p) { drag.from.copy(camWant); drag.x0 = p.x; drag.y0 = p.y; }
+  }
+  onResize();
+}
+
 function updateCamera(dt) {
-  camAz += ((keys.q ? 1 : 0) - (keys.e ? 1 : 0)) * 1.2 * dt;
+  camAzWant += ((keys.q ? 1 : 0) - (keys.e ? 1 : 0)) * 1.2 * dt;
+  // ease toward what input asked for, framerate-independently, so a
+  // 90° button press swings rather than snaps
+  const k = 1 - Math.pow(.0008, dt);
+  camAz += (camAzWant - camAz) * k;
+  camAt.lerp(camWant, 1 - Math.pow(.0025, dt));
+
   view.az = camAz;
-  camera.position.set(Math.sin(camAz) * ORBIT_R, ORBIT_Y, Math.cos(camAz) * ORBIT_R);
-  camera.lookAt(0, .6, 0);
+  camera.position.set(camAt.x + Math.sin(camAz) * ORBIT_R, ORBIT_Y, camAt.z + Math.cos(camAz) * ORBIT_R);
+  camera.lookAt(camAt.x, .6, camAt.z);
   view.rightX = Math.cos(camAz);
   view.rightZ = -Math.sin(camAz);
 }
+
+const lookAtXZ = (x, z) => { camWant.set(x, 0, z); clampPan(); };
 
 const depthKey = (x, z) => x * Math.sin(camAz) + z * Math.cos(camAz);
 
@@ -251,7 +308,9 @@ function dropPick(ent) {
 function addThing(o) {
   const mesh = makeProp({
     draw: o.draw, wU: o.wU, hU: o.hU, flat: !!o.flat,
-    seed: `${o.kind}${things.length}:${(Math.random() * 1e6) | 0}`,
+    // a generated object passes its own seed so the thing on the floor
+    // is the same drawing the card showed
+    seed: o.seed ?? `${o.kind}${things.length}:${(Math.random() * 1e6) | 0}`,
   });
   if (o.flat) {
     mesh.rotation.x = -Math.PI / 2;
@@ -278,9 +337,25 @@ function addThing(o) {
   return t;
 }
 
+// Objects come and go all night in this room, and every generated one
+// bakes its OWN CanvasTexture — so letting them go without disposing
+// grows the GPU footprint for the whole session.
+//
+// `ownTexture` matters: a prop's map belongs to that prop alone, but
+// the pools, rings, marks and marbles all share one module-level
+// texture between every instance. Disposing a shared map would blank
+// every other one in the room.
+function freeMesh(m, ownTexture = false) {
+  if (!m) return;
+  scene.remove(m);
+  m.geometry?.dispose();
+  if (ownTexture) m.material?.map?.dispose();
+  m.material?.dispose();
+}
+
 function removeThing(t) {
-  scene.remove(t.mesh);
-  if (t.pool) scene.remove(t.pool);
+  freeMesh(t.mesh, true);            // its drawing is its own
+  freeMesh(t.pool);                  // …but the glow decal is shared
   dropPick(t);
   for (const k of kids) if (k.order && k.order.obj === t) { k.order = null; k.act = 'idle'; }
   const i = things.indexOf(t); if (i >= 0) things.splice(i, 1);
@@ -304,7 +379,12 @@ function rebuildLights(t) {
     l.power = lightPower(l, t);
     LIGHTS.push({ x: l.x, z: l.z, r: l.r * l.power });
   }
-  for (const k of kids) if (k.lampR > 0) LIGHTS.push({ x: k.x, z: k.z, r: k.lampR });
+  for (const k of kids) {
+    if (k.lampR <= 0) continue;
+    // a `flickery` curse never quite lets them trust their own lamp
+    const f = k.curses.has('flicker') ? .74 + .26 * Math.sin(t * 9 + k.id * 2) : 1;
+    LIGHTS.push({ x: k.x, z: k.z, r: k.lampR * f });
+  }
 }
 
 function lightAt(x, z) {
@@ -323,11 +403,7 @@ const WARM = {
   mouth: ['scared'], quadlegs: ['stepA', 'stepB', 'fold'],
 };
 
-function buildBody(species, wantH) {
-  const recipe = newRecipe();
-  recipe.species = species;
-  recipe.media = 'graphite';
-  recipe.base = null;
+function makeFace(recipe) {
   ensureParams(recipe);
   const face = buildCharacter(recipe);
   for (const e of face.entries) {
@@ -337,16 +413,57 @@ function buildBody(species, wantH) {
     for (const st of warm) e.part.setState(st);
     e.part.setState(cur);
   }
-  const scale = (wantH / 1.4) * (.58 / (face.F.s / U)) * (.92 + Math.random() * .16);
+  return face;
+}
+
+// The height in the room is held constant while the DRAWING changes:
+// scale is derived from the head, so a big-head mutation makes the
+// head bigger against the body instead of making the child a giant.
+// `sizeJit` is the one-off personal size, kept across rebuilds so a
+// child never pops when it gains a hat.
+function fitBody(c) {
+  const face = c.face;
+  c.scale = (c.wantH / 1.4) * (.58 / (face.F.s / U)) * c.sizeJit * (c.stats?.scale ?? 1);
+  const sw = (face.F.B.halfW * 3.0) / U * c.scale;
+  c.shadow.geometry.dispose();
+  c.shadow.geometry = new THREE.PlaneGeometry(sw, sw * .5);
+  // the click target has to grow with the child, or a giant is
+  // unclickable round its edges and a shrunk one steals clicks from
+  // the floor behind it
+  const pb = c.pickBase;
+  if (c.pick && pb) {
+    const f = c.scale / pb.scale;
+    const w = pb.w * f, h = pb.h * f;
+    c.pick.geometry.dispose();
+    c.pick.geometry = new THREE.PlaneGeometry(w, h);
+    c.pick.geometry.translate(0, h / 2, 0);
+  }
+}
+
+const GEAR_SLOTS = ['held', 'offhand', 'worn'];
+
+function buildBody(species, wantH, gear = true) {
+  const recipe = newRecipe();
+  recipe.species = species;
+  recipe.media = 'graphite';
+  recipe.base = null;
+  // A CHILD starts with nothing in its hands. The gear parts roll a
+  // small chance of random kit, which is right for the editor and the
+  // crowd page but a lie here: a child drawn holding a sword that is
+  // not in its belongings breaks the one promise this whole system
+  // makes. Nightmares keep theirs — they have no inventory to
+  // contradict, and a scribbled crown suits them.
+  if (!gear) for (const id of GEAR_SLOTS)
+    recipe.parts[id] = { params: { family: 'none', rank: 'sketch', seed: 0 }, lock: true };
+  const face = makeFace(recipe);
 
   const holder = new THREE.Group();
   face.group.position.y = face.F.B.floorY / U;
   holder.add(face.group);
   scene.add(holder);
 
-  const sw = (face.F.B.halfW * 3.0) / U * scale;
   const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(sw, sw * .5),
+    new THREE.PlaneGeometry(1, .5),
     new THREE.MeshBasicMaterial({
       map: SHADOWS[(Math.random() * SHADOWS.length) | 0],
       transparent: true, depthWrite: false, opacity: .8,
@@ -357,30 +474,122 @@ function buildBody(species, wantH) {
   shadow.position.y = .06 + Math.random() * .02;
   scene.add(shadow);
 
-  return { face, holder, shadow, scale, parts: face.entries.map(e => e.part.matl) };
+  const c = {
+    face, holder, shadow, wantH, sizeJit: .92 + Math.random() * .16,
+    scale: 1, parts: face.entries.map(e => e.part.matl),
+  };
+  fitBody(c);
+  return c;
+}
+
+// Rebuild a character from its own (patched) recipe, in place. This is
+// how an item changes what a child IS rather than what it carries.
+// It costs ~20ms, so it may only ever happen while the draft has the
+// world stopped — never during play.
+//
+// Three things must be re-pointed or they quietly rot: the cached
+// material list (the light tint would keep writing to disposed
+// materials and the new child would never light), the feet lift (the
+// animator never writes face.group), and the depth rank (a fresh face
+// has rank null, which the board sort re-stamps for free).
+function rebuildFace(c) {
+  const recipe = c.face.recipe;
+  c.holder.remove(c.face.group);
+  c.face.dispose();
+  c.face = makeFace(recipe);
+  c.face.group.position.y = c.face.F.B.floorY / U;
+  c.holder.add(c.face.group);
+  c.parts = c.face.entries.map(e => e.part.matl);
+  fitBody(c);
 }
 
 const NAMES = ['Poppy', 'Tam', 'Pearl', 'Wren', 'Nils', 'Juno', 'Bruno', 'Lilo'];
 
+// Every live stat is DERIVED, never edited in place: `k.base` is who
+// the child was born as, `k.items` is what it is carrying, and
+// `recomputeKid` re-runs the whole sum whenever the set changes.
+// Re-deriving rather than multiplying is what stops swapping a sword
+// from drifting the numbers a little further every single draft.
+function recomputeKid(k) {
+  const { stats, fx } = aggregate(k.items);
+  k.stats = applyStats(k.base, stats);
+  k.fx = fx;
+  // every stat is flattened onto the child so the sim can read
+  // `k.speed` — EXCEPT `scale`, which is not a number the sim reads
+  // but a multiplier on the body fit. Copying it here would clobber
+  // the size derived from the head and shrink every child to 1.
+  for (const key in k.stats) if (key !== 'scale') k[key] = k.stats[key];
+  if (k.face) fitBody(k);
+  // curses ride along with whatever granted them. The ones that are
+  // pure numbers are already folded into the bag above; these are the
+  // ones the simulation has to look up by name.
+  k.curses = new Set(k.items.filter(it => it.curse).map(it => it.curse.id));
+  k.stamina = Math.min(k.stamina, k.maxStam);
+  if (k.lampR > 0 && !k.lampPool) k.lampPool = makePool(2.6);
+  if (k.lampR <= 0 && k.lampPool) { scene.remove(k.lampPool); k.lampPool = null; }
+  refreshAura(k);
+  refreshPet(k);
+}
+
+// An effect with a radius gets a chalk circle, whatever slot granted
+// it — a snail's chill reaches as far as a bell's. This lives here
+// rather than in giveItem because EVERY path that changes a child's
+// belongings comes through recomputeKid, and only one of them used to
+// remember to do it.
+function refreshAura(k) {
+  const kind = AURA_KINDS.find(a => k.fx[a] > 0);
+  const want = kind ? `${kind}:${k.fx[kind].toFixed(2)}` : '';
+  if (k.auraKey === want) return;
+  k.auraKey = want;
+  if (k.aura) {
+    scene.remove(k.aura);
+    k.aura.geometry.dispose(); k.aura.material.dispose();
+    k.aura = null;
+  }
+  if (kind) k.aura = makeAura(kind, k.fx[kind]);
+}
+
+// A second, better doll should upgrade the animal you already have
+// rather than silently do nothing.
+function refreshPet(k) {
+  const f = k.fx.familiar;
+  const pet = pets.find(p => p.owner === k);
+  if (!f) return;
+  if (!pet) { spawnPet(k, f); return; }
+  pet.bite = Math.max(pet.bite, f.bite ?? 0);
+  pet.r = Math.max(pet.r, f.r ?? 0);
+}
+
 function spawnKid(i) {
-  const body = buildBody('human', KID_H);
+  const body = buildBody('human', KID_H, false);
   const a = Math.random() * Math.PI * 2, r = .8 + Math.random() * 1.6;
   const k = {
     ...body, kind: 'kid', id: i, name: NAMES[i % NAMES.length],
     x: Math.cos(a) * r, z: Math.sin(a) * r,
     h: Math.random() * Math.PI * 2, rad: BODY_R,
     stamina: STAM_MAX,
-    speed: .9 + Math.random() * .7,
-    dmg: 1.4 + Math.random() * .6,
-    reach: 1.7, swingT: .85, rest: 1, lampR: 0, lampPool: null,
-    act: 'idle', order: null,
+    base: {
+      speed: .9 + Math.random() * .7,
+      dmg: 1.4 + Math.random() * .6,
+      reach: 1.7, swingT: .85, rest: 1, lampR: 0,
+      scale: 1, maxStam: STAM_MAX, drain: 1, knock: 2.6,
+    },
+    items: [], fx: {}, curses: new Set(), lampPool: null,
+    act: 'idle', order: null, aura: null,
     lit: 1, gone: false, swing: 0, warned: false,
-    animator: createAnimator(() => body.face, {
-      blink: true, gaze: true, talk: false, sway: true, breath: true,
-      boil: true, boilSpeed: .5, phase: Math.random() * 20, amp: 1.1,
-    }),
+    throwT: 0,
   };
+  // the getter must read the LIVE face: a mutation rebuilds it, and a
+  // closure over the original would animate a disposed character
+  k.animator = createAnimator(() => k.face, {
+    blink: true, gaze: true, talk: false, sway: true, breath: true,
+    boil: true, boilSpeed: .5, phase: Math.random() * 20, amp: 1.1,
+  });
+  recomputeKid(k);
   addPick(k, 1.1, 2.1);
+  // remember the size the proxy was cut at, so `fitBody` can re-cut it
+  // in proportion when an object makes this child bigger or smaller
+  k.pickBase = { w: 1.1, h: 2.1, scale: k.scale };
   k.mark = makeMark();
   kids.push(k);
   return k;
@@ -394,11 +603,12 @@ function spawnMare() {
     x: Math.cos(a) * r, z: Math.sin(a) * r,
     h: 0, rad: BODY_R * 1.25, hp: MARE_HP, dying: 0, stagger: 0,
     hitFlash: 0, knock: null, target: null, retarget: 0,
-    animator: createAnimator(() => body.face, {
-      blink: true, gaze: true, talk: false, sway: true, breath: true,
-      boil: true, boilSpeed: .8, phase: Math.random() * 20, amp: 1.5,
-    }),
+    mired: 0,
   };
+  m.animator = createAnimator(() => m.face, {
+    blink: true, gaze: true, talk: false, sway: true, breath: true,
+    boil: true, boilSpeed: .8, phase: Math.random() * 20, amp: 1.5,
+  });
   m.animator.setPose('walk', { speed: .5 });
   addPick(m, 1.2, 2);
   mares.push(m);
@@ -406,30 +616,281 @@ function spawnMare() {
 }
 
 function despawn(c, list) {
-  scene.remove(c.holder, c.shadow);
-  if (c.lampPool) scene.remove(c.lampPool);
-  if (c.mark) scene.remove(c.mark);
+  scene.remove(c.holder);
+  freeMesh(c.shadow);                        // SHADOWS[] is shared
+  freeMesh(c.lampPool);
+  freeMesh(c.aura);
+  freeMesh(c.mark);
   dropPick(c);
   c.face.dispose();
-  c.shadow.geometry.dispose(); c.shadow.material.dispose();
   const i = list.indexOf(c); if (i >= 0) list.splice(i, 1);
   if (state.selected === c) state.selected = null;
+  // whatever this child was carrying goes home with it
+  for (const p of [...pets]) if (p.owner === c) despawn(p, pets);
+  // and a marble already in the air is nobody's now
+  for (const s of shots) if (s.from === c) s.life = 0;
+}
+
+// ---- giving a child an object -----------------------------------
+// A chalk circle on the floor, for the objects whose effect has a
+// RADIUS. An aura you cannot see is a stat with no consequence, and
+// this game's whole promise is that you can read power off the page.
+const AURA_TEX = (() => {
+  const s = new Sketch(256, 256);
+  s.boil(31);
+  for (let k = 0; k < 3; k++) {
+    const pts = [];
+    for (let i = 0; i <= 44; i++) {
+      const a = (i / 44) * Math.PI * 2, r = 112 - k * 7 + s.jr(-6, 6);
+      pts.push([128 + Math.cos(a) * r, 128 + Math.sin(a) * r]);
+    }
+    s.sline(pts, 2.2, .5);
+  }
+  return new THREE.CanvasTexture(s.canvas);
+})();
+
+const AURA_COL = {
+  chill: [.6, .8, 1],
+  lull: [.75, .7, 1], fear: [1, .6, .55], thrift: [.7, 1, .75],
+};
+
+function makeAura(kind, r) {
+  const c = AURA_COL[kind] ?? [1, 1, 1];
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(r * 2, r * 2),
+    new THREE.MeshBasicMaterial({
+      map: AURA_TEX, transparent: true, depthWrite: false, opacity: .28,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  m.material.color.setRGB(c[0], c[1], c[2]);
+  m.rotation.x = -Math.PI / 2;
+  m.position.y = .06;
+  m.renderOrder = -7850;                 // over the pools, under the ring
+  scene.add(m);
+  return m;
+}
+
+// The one place an item is attached to a child. Slots that hold one
+// thing swap; charms and mutations stack. A mutation is the expensive
+// one: it patches the RECIPE and rebuilds the character, which is
+// only affordable because the draft has the world stopped.
+const AURA_KINDS = ['chill', 'lull', 'fear', 'thrift'];
+
+function giveItem(k, item) {
+  if (item.slot === 'mutation') {
+    // each change happens to a child only once — a second pair of
+    // horns is not a second pair of horns
+    if (k.items.some(i => i.family === 'mutation' && i.P.kind === item.P.kind)) return false;
+    k.items.push(item);
+    if (item.patch) {
+      mergePatch(k.face.recipe, item.patch);
+      recomputeKid(k);
+      rebuildFace(k);
+    } else {
+      // a size change touches no part: the same drawing, held bigger.
+      // No reason to pay 20ms redrawing every canvas.
+      recomputeKid(k);
+    }
+    return true;
+  }
+
+  if (item.slot === 'held' || item.slot === 'offhand' || item.slot === 'worn') {
+    const held = k.items.find(i => i.slot === item.slot);
+    if (held) {
+      if (k.curses.has('stuck') && held.curse?.id === 'stuck') return false;
+      k.items.splice(k.items.indexOf(held), 1);
+    }
+    k.items.push(item);
+    // the gear parts derive their whole drawing from these three
+    // values, so this is the entire hand-off from item to rig
+    k.face.recipe.parts[item.slot] = {
+      params: { family: item.family, rank: item.rank, seed: item.seed },
+      lock: true,
+    };
+    recomputeKid(k);
+    rebuildFace(k);
+    return true;
+  }
+
+  k.items.push(item);                     // charms just stack
+  recomputeKid(k);                        // …which refreshes the ring and the pet
+  return true;
+}
+
+// Merge a mutation's recipe patch. `lock: true` so a later global
+// regenerate cannot undo something the player chose.
+function mergePatch(recipe, patch) {
+  if (!patch?.parts) return;
+  for (const id in patch.parts) {
+    const slot = recipe.parts[id] ??= {};
+    slot.params = { ...slot.params, ...patch.parts[id].params };
+    slot.lock = true;
+  }
+}
+
+// ---- familiars --------------------------------------------------
+// A doll comes alive and trails the child who carries it. It is the
+// one thing in the room with a mind of its own — it keeps station
+// behind its owner and goes at anything that comes too close — which
+// is exactly why it belongs to an OBJECT and not to a child: the rule
+// that children do nothing on their own has to stay true.
+//
+// It is a real character, built from the same rig as everybody else,
+// so a familiar can be a cat, a dog or a small nightmare depending on
+// what the doll was made in the shape of.
+const pets = [];
+
+function spawnPet(owner, fx) {
+  // knee-high at most: at a child's own height it stops reading as a
+  // pet and starts reading as another child
+  const body = buildBody(fx.species ?? 'cat', KID_H * .66 * (fx.scale ?? .7), false);
+  const p = {
+    ...body, kind: 'pet', owner,
+    x: owner.x - .8, z: owner.z - .8, h: 0, rad: BODY_R * .55,
+    bite: fx.bite ?? .5, r: fx.r ?? 3.5, swing: 0, id: owner.id + 90,
+    // it hits in its owner's name, and from its OWN position so the
+    // shove goes the right way — but with an empty `fx`, or the
+    // owner's on-hit effects would fire twice per bite
+    name: owner.name, fx: {}, knock: 2.2,
+  };
+  p.animator = createAnimator(() => p.face, {
+    blink: true, gaze: true, talk: false, sway: true, breath: true,
+    boil: true, boilSpeed: .9, phase: Math.random() * 20, amp: 1.3,
+  });
+  pets.push(p);
+  return p;
+}
+
+function stepPet(p, t, dt) {
+  if (p.owner.gone || !kids.includes(p.owner)) { despawn(p, pets); return; }
+
+  // whatever is worrying the owner is the pet's business
+  let foe = null, fd = 1e9;
+  for (const m of mares) {
+    if (m.dying > 0) continue;
+    const d = Math.hypot(m.x - p.owner.x, m.z - p.owner.z);
+    if (d < p.r && d < fd) { fd = d; foe = m; }
+  }
+
+  const speed = 1.7;
+  if (foe) {
+    const d = Math.hypot(foe.x - p.x, foe.z - p.z);
+    p.h = Math.atan2(foe.z - p.z, foe.x - p.x);
+    if (d > .7) {
+      p.x += Math.cos(p.h) * speed * dt;
+      p.z += Math.sin(p.h) * speed * dt;
+      p.animator.setPose('run');
+    } else if ((p.swing -= dt) <= 0) {
+      p.swing = .8;
+      p.animator.setPose('attack');
+      strike(p, foe, p.bite, .5);
+    }
+    p.animator.setFace('angry');
+    return;
+  }
+
+  // otherwise: heel, a little behind and to one side
+  const hx = p.owner.x - Math.cos(p.owner.h) * .9;
+  const hz = p.owner.z - Math.sin(p.owner.h) * .9;
+  const d = Math.hypot(hx - p.x, hz - p.z);
+  if (d > .35) {
+    p.h = Math.atan2(hz - p.z, hx - p.x);
+    const v = Math.min(speed, d * 2.4) * dt;
+    p.x += Math.cos(p.h) * v; p.z += Math.sin(p.h) * v;
+    p.animator.setPose('walk');
+  } else p.animator.setPose('idle');
+  p.animator.setFace('idle');
+}
+
+// ---- the marbles a wand throws ----------------------------------
+// The one thing in this game that flies. It is a drawn pebble on a
+// lobbed arc, and it exists so that "shoots" is a real answer to
+// "what could an object do" without turning a baby school into a
+// shooter: it staggers and chips, it never kills on its own.
+const shots = [];
+const SHOT_TEX = (() => {
+  const s = new Sketch(64, 64);
+  s.boil(17);
+  const b = s.blobPts(32, 32, 15, 14, .2, .4);
+  s.paperFill(b);
+  s.stroke(b.concat([b[0]]), 3, { taper: .1, alpha: 1 });
+  s.hatchFill(b, 5, -.7, .16, 1);
+  return new THREE.CanvasTexture(s.canvas);
+})();
+
+function throwShot(k, m) {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(.34, .34),
+    new THREE.MeshBasicMaterial({ map: SHOT_TEX, transparent: true, depthWrite: false }),
+  );
+  // a marble in the air is over everybody; it is too small to be worth
+  // a rank of its own on the board
+  mesh.renderOrder = 500000;
+  scene.add(mesh);
+  const d = Math.hypot(m.x - k.x, m.z - k.z) || 1;
+  shots.push({
+    mesh, x: k.x, z: k.z, y: 1.1, from: k,
+    vx: (m.x - k.x) / d * (k.fx.throw.speed ?? 7),
+    vz: (m.z - k.z) / d * (k.fx.throw.speed ?? 7),
+    vy: 1.4, dmg: k.fx.throw.dmg ?? 1, life: 2.5,
+  });
+}
+
+function stepShots(dt) {
+  for (let i = shots.length - 1; i >= 0; i--) {
+    const s = shots[i];
+    s.life -= dt;
+    if (s.life <= 0 || s.y < .05) {          // spent, or its thrower went home
+      freeMesh(s.mesh);
+      shots.splice(i, 1);
+      continue;
+    }
+    s.x += s.vx * dt; s.z += s.vz * dt;
+    s.vy -= 5.2 * dt; s.y += s.vy * dt;
+    let hit = null;
+    for (const m of mares) {
+      if (m.dying > 0) continue;
+      if (Math.hypot(m.x - s.x, m.z - s.z) < m.rad + .3 && s.y < 1.7) { hit = m; break; }
+    }
+    if (hit) {
+      strike(s.from, hit, s.dmg, .55);
+      freeMesh(s.mesh);
+      shots.splice(i, 1);
+    }
+  }
+}
+
+// A key charm carried anywhere near a bed or a toy makes it last
+// longer — against fair wear AND against being chewed on, which is
+// the thing that actually breaks the furniture in this room.
+function thriftAt(x, z) {
+  for (const k of kids) {
+    if (!k.fx.thrift) continue;
+    if (Math.hypot(k.x - x, k.z - z) < k.fx.thrift) return .55;
+  }
+  return 1;
 }
 
 // a nightmare wants the closest bed or toy and does not care who is
 // using it — in fact that is the whole horror of the thing
 function nearestBreakable(x, z) {
+  // a child under a `wanted` curse drags them toward whatever it is
+  // standing near — the price of a nightmare-drawn object
+  let bait = null;
+  for (const k of kids) if (k.curses.has('bait')) { bait = k; break; }
   let best = null, bd = 1e9;
   for (const t of things) {
     if ((t.kind !== 'bed' && t.kind !== 'toy') || t.dur <= 0) continue;
-    const d = Math.hypot(t.x - x, t.z - z);
+    let d = Math.hypot(t.x - x, t.z - z);
+    if (bait) d -= Math.max(0, 6 - Math.hypot(t.x - bait.x, t.z - bait.z));
     if (d < bd) { bd = d; best = t; }
   }
   return best;
 }
 
 function separate() {
-  const all = [...kids, ...mares];
+  const all = [...kids, ...mares, ...pets];
   for (let i = 0; i < all.length; i++) {
     const a = all[i];
     if (a.dying > 0) continue;
@@ -459,12 +920,55 @@ const moveTo = (k, tx, tz, dt, mult = 1) => {
   return d;
 };
 
+// One hit landing, wherever it came from — a swing or a thrown
+// marble. The item effects that fire ON CONTACT live here, so there
+// is exactly one place a nightmare can be hurt.
+function strike(k, m, dmg, knockMul = 1) {
+  m.hp -= dmg;
+  m.stagger = .35;
+  // the hit has to LAND: a white flare, a shove away from whoever
+  // threw it, and the thing flinches
+  m.hitFlash = 1;
+  const a = Math.atan2(m.z - k.z, m.x - k.x);
+  const kb = (k.knock ?? 2.6) * knockMul;
+  m.knock = { x: Math.cos(a) * kb, z: Math.sin(a) * kb };
+  m.animator.setFace('scared');
+  state.flash = Math.max(state.flash, .18);
+
+  if (k.fx?.sticky) m.mired = Math.max(m.mired, k.fx.sticky);
+  if (k.fx?.fear) {                       // everything nearby flinches too
+    for (const o of mares) {
+      if (o === m || o.dying > 0) continue;
+      if (Math.hypot(o.x - m.x, o.z - m.z) < k.fx.fear) {
+        o.stagger = Math.max(o.stagger, .45);
+        o.animator.setFace('scared');
+      }
+    }
+  }
+
+  if (m.hp <= 0) {
+    m.dying = .6;
+    say(`${k.name} drove one off`);
+    for (const other of kids) if (other.order?.obj === m) { other.order = null; other.act = 'idle'; }
+  }
+}
+
 function stepKid(k, t, dt) {
   k.lit = lightAt(k.x, k.z);
+  // A `flickery` child never quite trusts the light it is standing in.
+  // It has to bite whether or not they are carrying a lamp of their
+  // own, or the card would be printing a price nobody pays.
+  if (k.curses.has('flicker')) k.lit *= .72 + .28 * Math.sin(t * 9 + k.id * 2);
   const dark = k.lit < .12;
 
-  if (k.act === 'sleep') k.stamina = Math.min(STAM_MAX, k.stamina + RECOVER * k.rest * dt);
-  else k.stamina -= (dark ? DRAIN_DARK : DRAIN_IDLE) * dt;
+  // `k.act` is last frame's — the orders below are what set it — and
+  // that one frame of lag is invisible at any drain rate we use here.
+  if (k.act === 'sleep') k.stamina = Math.min(k.maxStam, k.stamina + RECOVER * k.rest * dt);
+  else {
+    let drain = dark ? DRAIN_DARK : DRAIN_IDLE;
+    if (k.act === 'play') drain += DRAIN_PLAY;
+    k.stamina -= drain * k.drain * dt;
+  }
 
   if (k.stamina < TIRED && !k.warned) {
     k.warned = true;
@@ -497,25 +1001,16 @@ function stepKid(k, t, dt) {
     if (!mares.includes(o.obj) || o.obj.dying > 0) { k.order = null; k.act = 'idle'; return; }
     const d = Math.hypot(o.obj.x - k.x, o.obj.z - k.z);
     k.act = 'fight';
+    // a wand keeps working at range, which is the whole point of one
+    if (k.fx.throw && (k.throwT -= dt) <= 0 && d < (k.fx.throw.r ?? 7)) {
+      k.throwT = k.fx.throw.every ?? 1.2;
+      throwShot(k, o.obj);
+    }
     if (d > k.reach) { moveTo(k, o.obj.x, o.obj.z, dt, 1.3); k.animator.setPose('run'); }
     else if ((k.swing -= dt) <= 0) {
       k.swing = k.swingT;
       k.animator.setPose('attack');
-      const m = o.obj;
-      m.hp -= k.dmg;
-      m.stagger = .35;
-      // the hit has to LAND: a white flare, a shove away from whoever
-      // threw it, and the thing flinches
-      m.hitFlash = 1;
-      const a = Math.atan2(m.z - k.z, m.x - k.x);
-      m.knock = { x: Math.cos(a) * 2.6, z: Math.sin(a) * 2.6 };
-      m.animator.setFace('scared');
-      state.flash = Math.max(state.flash, .18);
-      if (o.obj.hp <= 0) {
-        o.obj.dying = .6;
-        say(`${k.name} drove one off`);
-        for (const other of kids) if (other.order?.obj === o.obj) { other.order = null; other.act = 'idle'; }
-      }
+      strike(k, o.obj, k.dmg);
     }
     k.animator.setFace('angry');
     return;
@@ -533,20 +1028,29 @@ function stepKid(k, t, dt) {
     return;
   }
 
+  const thrift = thriftAt(obj.x, obj.z);
+
   if (obj.kind === 'toy') {
     k.act = 'play';
-    obj.dur -= PLAY_WEAR * dt;
+    obj.dur -= PLAY_WEAR * thrift * dt;
     addXp(XP_RATE * obj.play * dt);
     k.animator.setPose('play');
     k.animator.setFace(dark ? 'scared' : 'idle');
     if (obj.dur <= 0) { say('a toy broke'); removeThing(obj); }
   } else {
     k.act = 'sleep';
-    obj.dur -= BED_WEAR * dt;
+    obj.dur -= BED_WEAR * thrift * dt;
+    // a lullaby doll nearby, and the bed's own softness
+    let lull = obj.rest ?? 1;
+    for (const o of kids) {
+      if (!o.fx.lull || o === k) continue;
+      if (Math.hypot(o.x - k.x, o.z - k.z) < o.fx.lull) lull *= 1.5;
+    }
+    k.stamina = Math.min(k.maxStam, k.stamina + RECOVER * k.rest * (lull - 1) * dt);
     k.animator.setPose('sleep');
     k.animator.setFace('sleeping');
     if (obj.dur <= 0) { say('a bed broke'); removeThing(obj); }
-    else if (k.stamina >= STAM_MAX - 1) { k.order = null; k.act = 'idle'; }
+    else if (k.stamina >= k.maxStam - 1) { k.order = null; k.act = 'idle'; }
   }
 }
 
@@ -561,7 +1065,17 @@ function stepMare(m, t, dt) {
     return;
   }
   const lit = lightAt(m.x, m.z);
-  const speed = MARE_V * (1 - MARE_SLOW * lit);
+  // Light does not kill them, it MIRES them. A cold-snap charm mires
+  // them where there is no light at all, and a thread charm makes a
+  // hit stick — both are ways of buying the same thing a lamp buys.
+  if (m.mired > 0) m.mired -= dt;
+  let mire = MARE_SLOW * lit;
+  if (m.mired > 0) mire = Math.max(mire, MARE_SLOW);
+  for (const k of kids) {
+    if (!k.fx.chill) continue;
+    if (Math.hypot(k.x - m.x, k.z - m.z) < k.fx.chill) { mire = Math.max(mire, MARE_SLOW); break; }
+  }
+  const speed = MARE_V * (1 - mire);
   if (m.stagger > 0) m.stagger -= dt;
   if (m.hitFlash > 0) m.hitFlash = Math.max(0, m.hitFlash - dt * 4);
   if (m.knock) {                                  // shoved, and skidding to a stop
@@ -586,7 +1100,10 @@ function stepMare(m, t, dt) {
     m.h = Math.atan2(dz, dx);
     if (m.stagger <= 0) { m.x += Math.cos(m.h) * speed * dt; m.z += Math.sin(m.h) * speed * dt; }
   } else if (m.stagger <= 0) {
-    m.target.dur -= MARE_CHEW * dt;
+    // a key charm nearby protects the furniture from THIS too — the
+    // chew is what actually destroys things, so a promise that only
+    // covered fair wear and tear would be no promise at all
+    m.target.dur -= MARE_CHEW * thriftAt(m.target.x, m.target.z) * dt;
     state.flash = Math.max(state.flash, .35);
     if (m.target.dur <= 0) {
       say(m.target.kind === 'bed' ? 'a nightmare broke a bed' : 'a nightmare broke a toy');
@@ -597,22 +1114,11 @@ function stepMare(m, t, dt) {
 }
 
 // ---- the draft --------------------------------------------------
-const KNACKS = [
-  { id: 'strong', label: 'Strong', desc: 'hits much harder', kid: k => { k.dmg *= 1.6; } },
-  { id: 'quick', label: 'Quick', desc: 'runs faster', kid: k => { k.speed *= 1.3; } },
-  { id: 'reach', label: 'Long arms', desc: 'reaches further', kid: k => { k.reach *= 1.4; } },
-  { id: 'fury', label: 'Fury', desc: 'swings more often', kid: k => { k.swingT *= .7; } },
-  { id: 'lamp', label: 'Little lantern', desc: 'a light that follows them', kid: k => { k.lampR += k.lampR ? 1 : 2.6; } },
-  { id: 'nap', label: 'Good sleeper', desc: 'rests far quicker', kid: k => { k.rest *= 1.7; } },
-];
-const PLACEABLES = [
-  { id: 'torch', label: 'Torch', desc: 'small light, burns out fast', put: { kind: 'light', draw: drawTorch, wU: .5, hU: 1.2, r: 2.3, fuel: 55 } },
-  { id: 'lantern', label: 'Lantern', desc: 'an honest light', put: { kind: 'light', draw: drawLantern, wU: .7, hU: 1.05, r: 4.4, fuel: 105 } },
-  { id: 'biglamp', label: 'Standing lamp', desc: 'lights half the room', put: { kind: 'light', draw: drawAreaLantern, wU: 1.5, hU: 2.2, r: 5.8, fuel: 150 } },
-  { id: 'toy', label: 'Toy', desc: 'a good one — fills the bar faster', put: { kind: 'toy', draw: drawBall, wU: .6, hU: .6, dur: 100, play: 1.35 } },
-  { id: 'bed', label: 'Bed', desc: 'somewhere to sleep', put: { kind: 'bed', draw: drawBedTop, wU: 1.5, hU: 2.1, flat: true, dur: 100 } },
-];
-
+// There is no fixed list of rewards and no currency. A whole hand of
+// objects is GENERATED whenever the bar fills — art, numbers and name
+// from one seed — you keep exactly ONE of them, and that pick tilts
+// the odds toward its family for the rest of the run. That is the
+// whole economy.
 function addXp(n) {
   if (state.paused || state.over) return;
   state.xp += n;
@@ -620,11 +1126,11 @@ function addXp(n) {
 }
 
 function openDraft() {
-  const pool = [...KNACKS.map(k => ({ ...k, type: 'knack' })),
-                ...PLACEABLES.map(p => ({ ...p, type: 'place' }))];
-  const offers = [];
-  while (offers.length < 3 && pool.length) offers.push(pool.splice((Math.random() * pool.length) | 0, 1)[0]);
-  state.offers = offers;
+  // The SHAPE of the hand — a lamp, a toy, a bed and three things to
+  // carry — lives in items/index.js. All the room contributes is its
+  // veto: never offer a card nobody here can use, because a mutation
+  // every child already has is a dead choice on the table.
+  state.offers = drawOffers(state.favor, { ok: anyoneCanTake });
   state.paused = true;
   state.level++;
   renderDraft();
@@ -636,19 +1142,57 @@ function chooseOffer(i) {
   renderDraft();
 }
 
+const CARRIED = ['held', 'offhand', 'worn', 'charm', 'mutation'];
+
+// Can anybody actually take this? A mutation only happens to a child
+// once, so with three children who all already have horns there is
+// nobody left to give a pair of horns to — and without this the draft
+// would wait forever for a click that can never work.
+const anyoneCanTake = it => !CARRIED.includes(it.slot)
+  || kids.some(k => !k.gone && canTake(k, it));
+
+function canTake(k, it) {
+  if (it.slot === 'mutation')
+    return !k.items.some(i => i.family === 'mutation' && i.P.kind === it.P.kind);
+  if (it.slot === 'held' || it.slot === 'offhand' || it.slot === 'worn') {
+    const cur = k.items.find(i => i.slot === it.slot);
+    return !(cur && cur.curse?.id === 'stuck');
+  }
+  return true;
+}
+
+// The way out. Any pending card can be thrown away, so a run can
+// never be stranded on an offer nobody can use.
+function discardPending() {
+  if (!state.pending) return;
+  // the log is prose, so it gets the article back
+  say(`${withArticle(state.pending.name)} — put back in the box`);
+  state.pending = null;
+  state.paused = false;
+  renderDraft();
+}
+
 function applyPending(ent, gx, gz) {
-  const p = state.pending;
-  if (!p) return false;
-  if (p.type === 'knack') {
+  const it = state.pending;
+  if (!it) return false;
+
+  if (CARRIED.includes(it.slot)) {
     if (!ent || ent.kind !== 'kid') return false;
-    p.kid(ent);
-    say(`${ent.name}: ${p.label}`);
-    if (p.id === 'lamp' && !ent.lampPool) ent.lampPool = makePool(2.6);
+    if (!giveItem(ent, it)) { say('that one will not take it'); return false; }
+    say(`${ent.name} takes ${withArticle(it.name)}`);
   } else {
     if (gx === undefined || Math.hypot(gx, gz) > ROOM_R) return false;
-    addThing({ ...p.put, x: gx, z: gz, maxFuel: p.put.fuel, maxDur: p.put.dur });
-    say(`${p.label} placed`);
+    const o = it.obj;
+    addThing({
+      ...o, x: gx, z: gz, maxFuel: o.fuel, maxDur: o.dur,
+      // the placed object is drawn from the SAME params as the card,
+      // so what you picked is exactly what lands on the floor
+      draw: propDrawFor(it), seed: `item:${it.uid}:${it.seed}`, item: it,
+    });
+    say(`${withArticle(it.name)} — put down`);
   }
+
+  bumpFavor(state.favor, it.family);
   state.pending = null;
   state.paused = false;
   renderDraft();
@@ -659,40 +1203,155 @@ function applyPending(ent, gx, gz) {
 const keys = {};
 addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
+  if (!state.started) { if (e.key === 'Enter' || e.key === ' ') begin(); return; }
   if (e.key === 'r' || e.key === 'R') location.reload();
-  if (e.key === 'Escape') state.selected = null;
+  if (e.key === 'Escape') { if (state.pending) discardPending(); else state.selected = null; }
   const n = parseInt(e.key, 10);
   if (state.offers && n >= 1 && n <= state.offers.length) chooseOffer(n - 1);
 });
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-addEventListener('wheel', e => {
-  halfH = Math.min(26, Math.max(3.4, halfH * (1 + Math.sign(e.deltaY) * .12)));
-  onResize();
-}, { passive: true });
+addEventListener('wheel', e => setZoom(halfH * (1 + Math.sign(e.deltaY) * .12)), { passive: true });
 
 const ray = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const hitPt = new THREE.Vector3();
+const panA = new THREE.Vector3(), panB = new THREE.Vector3();
+const ndc = new THREE.Vector2();
 
-renderer.domElement.addEventListener('pointerdown', ev => {
-  if (state.over) return;
+// where on the floor is this pixel, with the camera as it is NOW
+function groundAt(cx, cy, out = hitPt) {
   const r = renderer.domElement.getBoundingClientRect();
-  const ndc = new THREE.Vector2(
-    ((ev.clientX - r.left) / r.width) * 2 - 1,
-    -((ev.clientY - r.top) / r.height) * 2 + 1,
-  );
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.ray.intersectPlane(groundPlane, out) ? out : null;
+}
+
+function entAt(cx, cy) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(pickables, false);
-  const ent = hits.length ? hits[0].object.userData.ent : null;
-  const onGround = ray.ray.intersectPlane(groundPlane, hitPt);
+  return hits.length ? hits[0].object.userData.ent : null;
+}
 
-  if (state.pending) {                      // the draft is waiting on a target
+// =================================================================
+// GESTURES
+//
+// On a phone a tap and the start of a drag are the same event, so
+// every press starts as a PROVISIONAL tap: it only becomes a camera
+// pan once the finger has travelled far enough or been held long
+// enough. The order is issued on RELEASE, never on press — which is
+// also what stops a pan from dropping a lantern while the draft is
+// waiting for you to pick a spot.
+//
+// Panning grabs the floor: we remember the world point under the
+// finger and move the camera so that point stays under it. No
+// pixels-to-world conversion, so it is exact at any zoom and angle.
+// =================================================================
+const TAP_SLOP = 11;                     // px of travel still counts as a tap
+const TAP_MS = 400;
+const ptrs = new Map();
+let drag = null;                         // { id, grab:Vector3 } once panning
+let pinch = null;
+let lastTap = { t: 0, ent: null };
+
+const el = renderer.domElement;
+el.style.touchAction = 'none';
+
+el.addEventListener('pointerdown', ev => {
+  // capture keeps a drag alive if the finger leaves the canvas, but it
+  // THROWS if the pointer is already gone — and an exception here
+  // would lose the press entirely
+  try { el.setPointerCapture(ev.pointerId); } catch {}
+  ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY, x0: ev.clientX, y0: ev.clientY, t0: performance.now(), moved: false });
+  if (ptrs.size === 2) {                 // second finger: never a tap
+    for (const p of ptrs.values()) p.moved = true;
+    const [a, b] = [...ptrs.values()];
+    pinch = {
+      d: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      ang: Math.atan2(b.y - a.y, b.x - a.x),
+      halfH0: halfH, az0: camAzWant, twisted: false,
+    };
+    drag = null;
+  }
+});
+
+el.addEventListener('pointermove', ev => {
+  const p = ptrs.get(ev.pointerId);
+  if (!p) return;
+  p.x = ev.clientX; p.y = ev.clientY;
+
+  if (ptrs.size >= 2 && pinch) {
+    const [a, b] = [...ptrs.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    setZoom(pinch.halfH0 * (pinch.d / d));
+    // twist has a deadzone, or every pinch rotates the room a little
+    let da = Math.atan2(b.y - a.y, b.x - a.x) - pinch.ang;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    if (pinch.twisted || Math.abs(da) > .22) { pinch.twisted = true; camAzWant = pinch.az0 - da; }
+    return;
+  }
+
+  if (!p.moved && (Math.hypot(p.x - p.x0, p.y - p.y0) > TAP_SLOP
+                   || performance.now() - p.t0 > TAP_MS)) {
+    p.moved = true;
+    // the pixel the finger went down on, and the target as it was then
+    drag = { id: ev.pointerId, x0: p.x0, y0: p.y0, from: camWant.clone() };
+  }
+  if (drag && drag.id === ev.pointerId) {
+    // BOTH rays are cast through the camera as it is RIGHT NOW, and
+    // the target is set ABSOLUTELY from where the pan began. Both
+    // halves of that matter: the camera eases toward `camWant` and so
+    // is always a little behind it, and a per-move delta measured
+    // against the lagging camera feeds that lag straight back in —
+    // every move re-pays a debt already owed, the pan accelerates
+    // under a steady finger, and on release it sails past and settles
+    // back. Measured this way the lag is in both rays and cancels.
+    const a = groundAt(drag.x0, drag.y0, panA);
+    const b = groundAt(p.x, p.y, panB);
+    if (a && b) {
+      camWant.set(drag.from.x + a.x - b.x, 0, drag.from.z + a.z - b.z);
+      // At the wall, forget the part of the drag that was refused, or
+      // dragging back does nothing until the finger has undone every
+      // pixel it pushed into the clamp.
+      if (clampPan()) { drag.from.copy(camWant); drag.x0 = p.x; drag.y0 = p.y; }
+    }
+  }
+});
+
+function endPointer(ev) {
+  const p = ptrs.get(ev.pointerId);
+  ptrs.delete(ev.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (drag && drag.id === ev.pointerId) drag = null;
+  if (!p || p.moved) return;
+  if (performance.now() - p.t0 > TAP_MS) return;
+  handleTap(p.x, p.y);
+}
+el.addEventListener('pointerup', endPointer);
+el.addEventListener('pointercancel', ev => { ptrs.delete(ev.pointerId); pinch = null; drag = null; });
+
+function handleTap(cx, cy) {
+  if (state.over || !state.started) return;
+  const ent = entAt(cx, cy);
+  const onGround = groundAt(cx, cy);
+
+  if (state.pending) {
     applyPending(ent, onGround ? hitPt.x : undefined, onGround ? hitPt.z : undefined);
     return;
   }
   if (state.paused) return;
 
-  if (ent && ent.kind === 'kid') { state.selected = ent; return; }
+  const now = performance.now();
+  const double = ent && ent === lastTap.ent && now - lastTap.t < 380;
+  lastTap = { t: now, ent };
+
+  if (ent && ent.kind === 'kid') {
+    state.selected = ent;
+    if (double) lookAtXZ(ent.x, ent.z);     // tap twice to bring them into view
+    return;
+  }
   const k = state.selected;
   if (!k || k.gone) return;
 
@@ -703,7 +1362,15 @@ renderer.domElement.addEventListener('pointerdown', ev => {
   } else if (onGround) {
     k.order = { type: 'move', x: hitPt.x, z: hitPt.z };
   }
-});
+}
+
+// ---- the buttons a thumb can reach ------------------------------
+// Two-finger twist is horrible to aim, and this room has nothing that
+// needs an arbitrary angle — so touch gets quarter turns instead.
+document.getElementById('rot-l').onclick = () => { camAzWant -= Math.PI / 2; };
+document.getElementById('rot-r').onclick = () => { camAzWant += Math.PI / 2; };
+document.getElementById('zoom-in').onclick = () => setZoom(halfH * .78);
+document.getElementById('zoom-out').onclick = () => setZoom(halfH * 1.28);
 
 // ---- HUD --------------------------------------------------------
 const hudEl = document.getElementById('hud');
@@ -735,24 +1402,82 @@ function ageMsgs(dt) {
   if (dirty) drawMsgs();
 }
 
+const SLOT_WORD = {
+  held: 'for one child to carry', offhand: 'for one child’s other hand',
+  worn: 'for one child to wear', charm: 'for one child to keep',
+  mutation: 'this happens to one child', floor: 'put it on the floor',
+};
+
 function renderDraft() {
   draftEl.classList.toggle('thin', !!state.pending && !state.offers);
   if (state.offers) {
     draftEl.style.display = 'flex';
-    draftEl.innerHTML = `<h2>something new</h2><div class="cards">` + state.offers.map((o, i) =>
-      `<button data-i="${i}"><b>${o.label}</b><span>${o.desc}</span>`
-      + `<em>${o.type === 'knack' ? 'for one child' : 'put it on the floor'}</em><i>${i + 1}</i></button>`).join('') + `</div>`;
-    draftEl.querySelectorAll('button').forEach(b => b.onclick = () => chooseOffer(+b.dataset.i));
+    // Three paragraphs, never one sentence: what it is, what it does
+    // to the numbers, and what it costs. Run together they read as one
+    // long line of flavour and the upgrade hides inside it.
+    draftEl.innerHTML = `<h2>something new<small> · keep one</small></h2><div class="cards">`
+      + state.offers.map((o, i) =>
+        `<button class="r-${o.rank}" data-i="${i}"><b>${o.name}</b><div class="txt">`
+        + (o.copy.what ? `<p>${o.copy.what}</p>` : '')
+        + (o.copy.does ? `<p class="up">${o.copy.does}</p>` : '')
+        + (o.copy.costs ? `<p class="bad">${o.copy.costs}</p>` : '')
+        + `</div><em>${SLOT_WORD[o.slot] ?? ''}</em><i>${i + 1}</i></button>`).join('') + `</div>`;
+    // The card shows the object's OWN drawing, not an icon standing in
+    // for it — the same strokes that will end up in a fist or on the
+    // floor. It is the moment the whole system justifies itself: you
+    // are choosing between three drawings.
+    draftEl.querySelectorAll('button').forEach(b => {
+      const o = state.offers[+b.dataset.i];
+      b.insertBefore(thumbFor(o, 96), b.querySelector('em'));
+      b.onclick = () => chooseOffer(+b.dataset.i);
+    });
   } else if (state.pending) {
     draftEl.style.display = 'flex';
-    draftEl.innerHTML = `<h2>${state.pending.type === 'knack'
-      ? 'click the child who gets it' : 'click the floor to put it down'}</h2>`;
+    draftEl.innerHTML = `<h2>${CARRIED.includes(state.pending.slot)
+      ? 'click the child who gets it' : 'click the floor to put it down'}`
+      + `<small> · esc to put it back</small></h2>`;
   } else {
     draftEl.style.display = 'none';
   }
 }
 
-const ACTION = { idle: 'waiting', walk: 'walking', play: 'playing', sleep: 'sleeping', fight: 'fighting' };
+const ACTION = {
+  idle: 'waiting', walk: 'walking', play: 'playing',
+  sleep: 'sleeping', fight: 'fighting',
+};
+
+// #card is rewritten every frame, which would destroy a <canvas> 60
+// times a second. So the panel is split once: the vitals are volatile
+// and the kit is rebuilt only when the child's belongings actually
+// change.
+cardEl.innerHTML = '<div class="vitals"></div><div class="kit"></div>';
+const vitalsEl = cardEl.querySelector('.vitals');
+const kitEl = cardEl.querySelector('.kit');
+let kitKey = '';
+
+function updateKit(k) {
+  const key = k ? `${k.id}|${k.items.map(i => i.uid).join(',')}` : '';
+  if (key === kitKey) return;
+  kitKey = key;
+  kitEl.innerHTML = '';
+  if (!k || !k.items.length) return;
+  const h = document.createElement('div');
+  h.className = 'kit-h';
+  h.textContent = 'carrying';
+  kitEl.appendChild(h);
+  const ul = document.createElement('ul');
+  for (const it of k.items) {
+    const li = document.createElement('li');
+    li.className = `r-${it.rank}`;
+    li.appendChild(thumbFor(it, 64));      // baked at 64, shown at 22
+    const label = document.createElement('span');
+    label.textContent = it.name;
+    li.appendChild(label);
+    li.title = it.desc;
+    ul.appendChild(li);
+  }
+  kitEl.appendChild(ul);
+}
 
 function updateHud() {
   const k = state.selected;
@@ -760,15 +1485,16 @@ function updateHud() {
   if (!k || k.gone) { cardEl.style.display = 'none'; }
   else {
     cardEl.style.display = 'block';
-    const p = Math.max(0, Math.min(1, k.stamina / STAM_MAX));
+    const p = Math.max(0, Math.min(1, k.stamina / k.maxStam));
     const low = p < .25 ? ' low' : k.lit < .12 ? ' dark' : '';
-    cardEl.innerHTML =
+    vitalsEl.innerHTML =
       `<h3>${k.name}</h3>`
       + `<div class="e"><i class="${low.trim()}" style="width:${(p * 100).toFixed(0)}%"></i>`
       + `<u>energy ${Math.round(k.stamina)}</u></div>`
       + `<dl><dt>speed</dt><dd>${k.speed.toFixed(1)}</dd>`
       + `<dt>attack</dt><dd>${k.dmg.toFixed(1)}</dd></dl>`
-      + `<p>${ACTION[k.act] ?? k.act}${k.lampR ? ' · carries a lantern' : ''}</p>`;
+      + `<p>${ACTION[k.act] ?? k.act}${k.lampR ? ' · carries a light' : ''}</p>`;
+    updateKit(k);
   }
   barEl.style.width = `${Math.max(0, Math.min(1, state.xp / xpNeed)) * 100}%`;
 }
@@ -783,6 +1509,25 @@ addThing({ kind: 'toy', draw: drawBall, wU: .6, hU: .6, x: 2.3, z: -.6, dur: 100
 let toSpawn = [0, 1, 2];
 renderDraft();
 
+// ---- the title screen -------------------------------------------
+// It is a screen with a job. A child costs ~20 ms to build and NOTHING
+// MAY BUILD DURING PLAY — so the class fills itself in behind the
+// title, one per frame, while you are reading the rules. By the time
+// you press the button the room is already standing there, breathing.
+//
+// The world is frozen (`dt` is 0) but the frame is not: the animator
+// runs off `dtRaw`, so they blink and sway behind the veil, and the
+// camera turns slowly, which is the only advertisement this game has
+// for being a 3D room at all.
+const startEl = document.getElementById('start');
+function begin() {
+  if (state.started) return;
+  state.started = true;
+  startEl.style.display = 'none';
+  say('keep them in the light');
+}
+document.getElementById('begin').onclick = begin;
+
 // ---- loop -------------------------------------------------------
 onResize();
 let last = performance.now(), mareT = 0;
@@ -790,13 +1535,15 @@ renderer.setAnimationLoop(now => {
   const dtRaw = Math.min(.05, (now - last) / 1000);
   last = now;
   const t = now / 1000;
-  const dt = state.paused ? 0 : dtRaw;      // the draft stops the world
+  // the draft stops the world; the title has not started it yet
+  const dt = state.paused || !state.started ? 0 : dtRaw;
+  if (!state.started) camAzWant += dtRaw * .09;
 
   if (toSpawn.length) spawnKid(toSpawn.shift());
 
   rebuildLights(t);
 
-  if (!state.over && !state.paused) {
+  if (state.started && !state.over && !state.paused) {
     for (const k of [...kids]) {
       stepKid(k, t, dt);
       if (k.gone) despawn(k, kids);
@@ -805,7 +1552,11 @@ renderer.setAnimationLoop(now => {
       state.over = true;
       const g = document.getElementById('gameover');
       g.style.display = 'flex';
-      g.innerHTML = `the lights went out…<br><span style="font-size:18px">all ${state.lost} children went home · press R</span>`;
+      // ONE flex child. Loose text and a <span> would be two flex
+      // items sitting side by side, and the <br> between them would do
+      // nothing at all — which is exactly what it was doing.
+      g.innerHTML = `<div>the lights went out…`
+        + `<span>all ${state.lost} children went home · press R</span></div>`;
     }
     for (const th of [...things]) {
       if (th.kind !== 'light') continue;
@@ -817,10 +1568,17 @@ renderer.setAnimationLoop(now => {
       mareT = 0; spawnMare();
     }
     for (const m of [...mares]) stepMare(m, t, dt);
+    for (const p of [...pets]) stepPet(p, t, dt);
+    stepShots(dt);
     separate();
   }
 
   updateCamera(dtRaw);
+
+  // Zoomed out, a child is a few pixels tall — but a finger is about
+  // 44 of them. Tap targets grow with the zoom so they stay thumbable
+  // however far back you are.
+  const pickScale = Math.max(1, halfH / 9);
 
   darkness.update(LIGHTS, t);
   for (const th of things) {
@@ -830,16 +1588,24 @@ renderer.setAnimationLoop(now => {
     th.pool.material.opacity = p * (.9 + Math.sin(t * 6 + th.x) * .1);
   }
 
-  for (const c of [...kids, ...mares]) {
+  for (const c of [...kids, ...mares, ...pets]) {
     c.holder.position.set(c.x, 0, c.z);
     c.holder.rotation.y = view.az;
     c.holder.scale.set(c.scale, c.scale, 1);
     c.shadow.position.set(c.x, c.shadow.position.y, c.z);
     c.shadow.rotation.y = view.az;
-    if (c.pick) { c.pick.position.set(c.x, 0, c.z); c.pick.rotation.y = view.az; }
+    if (c.pick) {
+      c.pick.position.set(c.x, 0, c.z);
+      c.pick.rotation.y = view.az;
+      c.pick.scale.setScalar(pickScale);
+    }
     if (c.lampPool) {
       c.lampPool.position.set(c.x, .05, c.z);
       c.lampPool.scale.setScalar(c.lampR / 2.6);
+    }
+    if (c.aura) {
+      c.aura.position.set(c.x, .06, c.z);
+      c.aura.material.opacity = .18 + .12 * Math.sin(t * 2.2 + c.id);
     }
     const v = DARK_VIS + (1 - DARK_VIS) * lightAt(c.x, c.z);
     // a struck nightmare flares white for a moment — the only way to
@@ -849,7 +1615,7 @@ renderer.setAnimationLoop(now => {
     // right now, AMBER means will need a bed soon. Red wins.
     const awake = c.kind === 'kid' && c.act !== 'sleep';
     const bleeding = awake && c.lit < .12;
-    const tired = awake && !bleeding && c.stamina < STAM_MAX * .25;
+    const tired = awake && !bleeding && c.stamina < c.maxStam * .25;
 
     if (c.dying > 0) {
       // already fading out; leave it alone
@@ -895,9 +1661,19 @@ renderer.setAnimationLoop(now => {
     const wear = th.dur !== undefined && th.maxDur ? .55 + .45 * (th.dur / th.maxDur) : 1;
     if (th.flat) { th.mesh.material.color.setScalar(wear); continue; }
     th.mesh.rotation.y = view.az;
-    if (th.pick) th.pick.rotation.y = view.az;      // the target turns with it
+    if (th.pick) {                                  // the target turns with it
+      th.pick.rotation.y = view.az;
+      th.pick.scale.setScalar(pickScale);
+    }
     const v = DARK_VIS + (1 - DARK_VIS) * lightAt(th.x, th.z);
     th.mesh.material.color.setScalar(v * wear);
+  }
+
+  for (const s of shots) {
+    s.mesh.position.set(s.x, s.y, s.z);
+    s.mesh.rotation.y = view.az;                   // a marble is a billboard too
+    const v = DARK_VIS + (1 - DARK_VIS) * lightAt(s.x, s.z);
+    s.mesh.material.color.setScalar(v);
   }
 
   const sel = state.selected;
@@ -907,7 +1683,7 @@ renderer.setAnimationLoop(now => {
     ring.material.opacity = .5 + .25 * Math.sin(t * 3);
   }
 
-  const board = [...things.filter(th => !th.flat), ...kids, ...mares]
+  const board = [...things.filter(th => !th.flat), ...kids, ...mares, ...pets]
     .sort((a, b) => depthKey(a.x, a.z) - depthKey(b.x, b.z));
   for (let r = 0; r < board.length; r++) {
     const b = board[r];
@@ -924,5 +1700,6 @@ renderer.setAnimationLoop(now => {
   postfx.render(scene, camera);
 });
 
-window.__game = { state, kids, mares, things, lightAt, spawnMare, openDraft,
-  camera, renderer, addXp, get xpNeed() { return xpNeed; } };
+window.__game = { state, kids, mares, pets, things, shots, lightAt, spawnMare, openDraft,
+  begin, giveItem, recomputeKid, camera, renderer, addXp, camWant, camAt, lookAtXZ,
+  get xpNeed() { return xpNeed; }, get halfH() { return halfH; }, get az() { return camAzWant; } };

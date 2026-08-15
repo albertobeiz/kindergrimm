@@ -2,18 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Kindergrimm</title>
 <style>
-  :root { --ink: #e8e0cd; --dark: #0b0d13; }
+  :root { --ink: #e8e0cd; --dark: #0b0d13; --pad: 14px; }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; overflow: hidden; }
   body {
     background: var(--dark); color: var(--ink);
     font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+    /* the browser must not claim the gestures for scroll or zoom */
+    touch-action: none; -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   #stage { position: absolute; inset: 0; }
-  #stage canvas { display: block; }
+  #stage canvas { display: block; touch-action: none; }
   #grain { position: absolute; inset: 0; pointer-events: none; z-index: 2; mix-blend-mode: overlay; opacity: .22; }
 
   #hud {
@@ -53,6 +56,31 @@
   #card dd { text-align: right; }
   #card p { margin-top: 9px; font-size: 11px; opacity: .5; letter-spacing: .05em; }
 
+  /* what the child is carrying. The kit is emptied when there is
+     nothing, so the rule above it is drawn only when it has rows. */
+  #card .kit:not(:empty) {
+    margin-top: 10px; padding-top: 9px;
+    border-top: 1px solid rgba(232,224,205,.14);
+  }
+  #card .kit-h { font-size: 11px; opacity: .5; letter-spacing: .05em; }
+  #card ul {
+    list-style: none; margin: 5px 0 0; padding: 0;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  #card li {
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+    padding: 2px 4px 2px 6px; font-size: 11px; letter-spacing: .04em;
+    border-left: 2px solid rgba(232,224,205,.28); border-radius: 0 3px 3px 0;
+  }
+  #card li:hover { background: rgba(232,224,205,.07); }
+  #card li canvas { display: block; flex: none; width: 22px; height: 22px; }
+  #card li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* rank as a stripe down the left edge — same four words the draft uses */
+  #card li.r-sketch { border-left-color: rgba(232,224,205,.28); }
+  #card li.r-inked { border-left-color: rgba(232,224,205,.6); }
+  #card li.r-gilded { border-left-color: rgba(240,214,150,.7); }
+  #card li.r-nightmare { border-left-color: rgba(196,96,150,.75); }
+
   /* the bar playing fills — a strip pinned to the very bottom edge,
      so nothing else can ever land on top of it */
   #barwrap {
@@ -79,15 +107,19 @@
   /* the draft */
   #draft {
     position: absolute; inset: 0; z-index: 5; display: none;
-    flex-direction: column; align-items: center; justify-content: center;
+    flex-direction: column; align-items: center; justify-content: safe center;
     background: rgba(6,7,10,.72); gap: 22px;
+    overflow-y: auto; padding: 20px 0;
   }
   #draft.thin { background: rgba(6,7,10,.32); pointer-events: none; }
   #draft h2 {
     font-size: 19px; font-weight: normal; letter-spacing: .16em;
     opacity: .8; text-transform: lowercase;
   }
-  #draft .cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  #draft h2 small { opacity: .5; font-size: .75em; letter-spacing: .1em; }
+  /* six cards, so a fixed 3×2 grid rather than a wrap that would leave
+     five on one row and one orphan on the next */
+  #draft .cards { display: grid; grid-template-columns: repeat(3, 190px); gap: 14px; }
   #draft button {
     position: relative; width: 190px; min-height: 132px; cursor: pointer;
     display: flex; flex-direction: column; gap: 7px; text-align: left;
@@ -97,7 +129,13 @@
   }
   #draft button:hover { background: rgba(44,48,62,.96); border-color: rgba(232,224,205,.7); }
   #draft button b { font-size: 15px; letter-spacing: .06em; }
-  #draft button span { opacity: .72; line-height: 1.35; }
+  /* the copy, in three paragraphs: what it IS, what it DOES to the
+     numbers, and what it COSTS. Three statements, three colours, so
+     the upgrade can never hide inside a sentence of flavour. */
+  #draft button .txt { display: flex; flex-direction: column; gap: 5px; }
+  #draft button .txt p { opacity: .68; line-height: 1.35; }
+  #draft button .txt p.up { opacity: 1; color: rgba(196,214,168,.92); }
+  #draft button .txt p.bad { opacity: 1; color: rgba(206,110,100,.95); }
   #draft button em {
     margin-top: auto; font-style: normal; font-size: 11px; opacity: .42;
     letter-spacing: .08em;
@@ -106,25 +144,164 @@
     position: absolute; right: 11px; top: 10px;
     font-style: normal; font-size: 11px; opacity: .35;
   }
+  /* the object's own drawing. The card is a stretch-aligned column, so
+     the canvas has to be pinned to its own 96 box or the flexbox blows
+     it out to the full 160px of content width and distorts it. Centred
+     and in flow, it also stays clear of the number badge up in the corner. */
+  #draft button canvas {
+    display: block; align-self: center; flex: none;
+    width: 96px; height: 96px;
+  }
 
+  /* rank, as a tint on the edge — rarity you can read across the room.
+     These sit after :hover and match its specificity, so each rank
+     restates its own hover instead of losing its colour to it. */
+  #draft button.r-sketch { border-color: rgba(232,224,205,.3); background: rgba(20,22,30,.94); }
+  #draft button.r-inked { border-color: rgba(232,224,205,.58); background: rgba(24,28,38,.94); }
+  #draft button.r-gilded { border-color: rgba(240,214,150,.55); background: rgba(30,27,20,.94); }
+  #draft button.r-nightmare {
+    border-color: rgba(196,96,150,.58); border-width: 2px;
+    background: rgba(28,18,28,.94);
+  }
+  #draft button.r-sketch:hover { border-color: rgba(232,224,205,.7); background: rgba(44,48,62,.96); }
+  #draft button.r-inked:hover { border-color: rgba(232,224,205,.88); background: rgba(48,54,70,.96); }
+  #draft button.r-gilded:hover { border-color: rgba(240,214,150,.85); background: rgba(56,49,34,.96); }
+  #draft button.r-nightmare:hover { border-color: rgba(196,96,150,.85); background: rgba(50,30,50,.96); }
+
+  /* ---- the on-screen controls a thumb can reach ---------------- */
+  #pad {
+    position: absolute; right: var(--pad); bottom: 26px; z-index: 4;
+    display: flex; gap: 8px;
+  }
+  #pad button {
+    width: 46px; height: 46px; font: inherit; font-size: 17px;
+    color: var(--ink); background: rgba(16,18,25,.82); cursor: pointer;
+    border: 1px solid rgba(232,224,205,.3); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+  }
+  #pad button:active { background: rgba(60,66,84,.95); }
+
+  /* ---- phones ---------------------------------------------------
+     Portrait has no room for a desktop layout: the card goes to the
+     bottom as a strip, messages shrink, the draft becomes a full
+     width stack, and every tappable thing grows. */
+  @media (max-width: 760px), (pointer: coarse) {
+    #hint { display: none; }
+    #title { font-size: 11px; opacity: .3; }
+    #hud { top: 34px; font-size: 14px; }
+
+    #card {
+      top: auto; bottom: 84px; left: var(--pad); right: var(--pad);
+      width: auto; padding: 10px 12px;
+    }
+    #card h3 { font-size: 14px; margin-bottom: 7px; }
+    #card dl { grid-template-columns: auto 1fr auto 1fr; gap: 2px 6px; margin-top: 7px; }
+    #card p { margin-top: 6px; }
+
+    #log { top: 56px; right: var(--pad); width: 46vw; font-size: 11px; }
+    #log div { padding: 3px 6px; }
+
+    #draft { gap: 12px; padding: 16px; }
+    #draft h2 { font-size: 16px; }
+    #draft .cards { grid-template-columns: 1fr; width: 100%; gap: 8px; }
+    #draft button {
+      width: 100%; min-height: 0; flex-direction: row; align-items: center;
+      gap: 11px; padding: 10px 12px;
+    }
+    #draft button b { flex: none; width: 34%; }
+    #draft button .txt { flex: 1; gap: 3px; font-size: 11px; }
+    #draft button canvas { width: 54px; height: 54px; }
+    #draft button em { margin: 0; display: none; }
+    #draft button i { top: auto; bottom: 4px; right: 6px; }
+
+    #pad { bottom: 20px; }
+    #pad button { width: 52px; height: 52px; }
+    #gameover { font-size: 22px; padding: 24px; }
+  }
+
+  /* One flex child, because loose text and a <span> would be two flex
+     items side by side and the line break between them would do
+     nothing. The second line is its own block instead. */
   #gameover {
     position: absolute; inset: 0; z-index: 6; display: none;
     align-items: center; justify-content: center; text-align: center;
     font-size: 30px; line-height: 1.5; background: rgba(6,7,10,.75);
+  }
+  #gameover span { display: block; margin-top: 10px; font-size: 18px; opacity: .7; }
+
+  /* ---- the title screen ---------------------------------------- */
+  #start {
+    position: absolute; inset: 0; z-index: 7; display: flex;
+    flex-direction: column; align-items: center; justify-content: safe center;
+    background: rgba(6,7,10,.84); padding: 24px; overflow-y: auto;
+  }
+  #start .panel { width: 100%; max-width: 430px; text-align: center; }
+  #start h1 {
+    font-size: 34px; font-weight: normal; letter-spacing: .3em;
+    text-transform: lowercase; margin-bottom: 6px;
+  }
+  #start .lede { font-size: 13px; opacity: .55; letter-spacing: .06em; }
+  #start ul {
+    list-style: none; padding: 0; margin: 26px 0 0;
+    text-align: left; display: flex; flex-direction: column; gap: 9px;
+  }
+  #start li {
+    font-size: 12.5px; line-height: 1.5; opacity: .8; padding-left: 15px;
+    position: relative; letter-spacing: .03em;
+  }
+  #start li::before { content: "·"; position: absolute; left: 3px; opacity: .5; }
+  #start li b { font-weight: normal; color: rgba(240,214,150,.95); }
+  #start button {
+    margin-top: 28px; width: 100%; padding: 14px; cursor: pointer;
+    font: inherit; font-size: 15px; letter-spacing: .16em; color: var(--ink);
+    background: rgba(20,22,30,.94); border: 1px solid rgba(240,214,150,.5);
+    border-radius: 5px; touch-action: manipulation;
+  }
+  #start button:hover { background: rgba(44,48,62,.96); border-color: rgba(240,214,150,.9); }
+  #start button:active { background: rgba(60,66,84,.95); }
+  #start .keys { margin-top: 12px; font-size: 11px; opacity: .3; letter-spacing: .06em; }
+  @media (max-width: 760px), (pointer: coarse) {
+    #start h1 { font-size: 26px; letter-spacing: .22em; }
+    #start ul { margin-top: 20px; gap: 7px; }
+    #start li { font-size: 12px; }
   }
 </style>
 </head>
 <body>
   <div id="stage"></div>
   <canvas id="grain"></canvas>
-  <div id="title">kindergrimm · <a href="index.html">editor</a> · <a href="crowd.html">crowd</a></div>
+  <div id="title">kindergrimm · <a href="index.html">editor</a> · <a href="crowd.html">crowd</a> · <a href="items.html">juguetería</a></div>
   <div id="hud"></div>
   <div id="card"></div>
   <div id="log"></div>
   <div id="barwrap"><div id="bar"></div></div>
-  <div id="hint">click a child, then click a bed / toy / nightmare / the floor · Q/E turn · wheel zoom · R restart</div>
+  <div id="hint">tap a child, then tap a bed / toy / nightmare / the floor · drag to pan · pinch or wheel to zoom · R restart</div>
+  <div id="pad">
+    <button id="rot-l" title="turn left">↺</button>
+    <button id="zoom-out" title="zoom out">−</button>
+    <button id="zoom-in" title="zoom in">+</button>
+    <button id="rot-r" title="turn right">↻</button>
+  </div>
   <div id="draft"></div>
   <div id="gameover"></div>
+
+  <!-- The title. It is also the load screen: the class is built one
+       child per frame behind it, so nothing has to build during play. -->
+  <div id="start">
+    <div class="panel">
+      <h1>kindergrimm</h1>
+      <p class="lede">a baby school, after dark</p>
+      <ul>
+        <li>the room is black outside the lamps, and <b>the dark burns them down</b>. a child with no energy goes home to its parents. lose them all and the school closes.</li>
+        <li><b>they do nothing on their own.</b> tap a child, then tap where it goes: a bed to sleep, a toy to play, a nightmare to see it off, the floor to walk there.</li>
+        <li><b>playing fills the bar</b> at the bottom — and costs energy. a full bar deals six objects; you keep one.</li>
+        <li>nightmares eat the furniture, never the children. light does not kill them, it mires them. nobody here is ever hurt.</li>
+      </ul>
+      <button id="begin">open the school</button>
+      <div class="keys">enter · drag to pan · pinch or wheel to zoom · R restart</div>
+    </div>
+  </div>
 
   <script>
     // paper grain over the render, so even the black has tooth in it
