@@ -55,6 +55,8 @@
   #card dt { opacity: .55; }
   #card dd { text-align: right; }
   #card p { margin-top: 9px; font-size: 11px; opacity: .5; letter-spacing: .05em; }
+  /* a curse, in words — same red the draft prints its costs in */
+  #card p.quirk { margin-top: 4px; opacity: .9; color: rgba(206,110,100,.95); }
 
   /* what the child is carrying. The kit is emptied when there is
      nothing, so the rule above it is drawn only when it has rows. */
@@ -112,6 +114,19 @@
     overflow-y: auto; padding: 20px 0;
   }
   #draft.thin { background: rgba(6,7,10,.32); pointer-events: none; }
+  /* the door scene: the words go to the top of the screen, because the
+     middle is where the children are standing */
+  #draft.top { justify-content: flex-start; padding-top: 64px; gap: 12px; }
+  #draft .decline {
+    font: inherit; font-size: 12px; letter-spacing: .1em; color: var(--ink);
+    background: rgba(20,22,30,.94); border: 1px solid rgba(232,224,205,.34);
+    border-radius: 5px; padding: 9px 16px; cursor: pointer;
+    touch-action: manipulation;
+  }
+  /* the veil is click-through so the children can be tapped — the one
+     button on it has to claim its own clicks back */
+  #draft.thin .decline { pointer-events: auto; }
+  #draft .decline:hover { background: rgba(44,48,62,.96); border-color: rgba(232,224,205,.7); }
   #draft h2 {
     font-size: 19px; font-weight: normal; letter-spacing: .16em;
     opacity: .8; text-transform: lowercase;
@@ -242,16 +257,11 @@
     text-transform: lowercase; margin-bottom: 6px;
   }
   #start .lede { font-size: 13px; opacity: .55; letter-spacing: .06em; }
-  #start ul {
-    list-style: none; padding: 0; margin: 26px 0 0;
-    text-align: left; display: flex; flex-direction: column; gap: 9px;
+  #start .intro {
+    margin: 22px 0 0; font-size: 13px; line-height: 1.75;
+    opacity: .78; letter-spacing: .04em;
   }
-  #start li {
-    font-size: 12.5px; line-height: 1.5; opacity: .8; padding-left: 15px;
-    position: relative; letter-spacing: .03em;
-  }
-  #start li::before { content: "·"; position: absolute; left: 3px; opacity: .5; }
-  #start li b { font-weight: normal; color: rgba(240,214,150,.95); }
+  #start .intro b { font-weight: normal; color: rgba(240,214,150,.95); }
   #start button {
     margin-top: 28px; width: 100%; padding: 14px; cursor: pointer;
     font: inherit; font-size: 15px; letter-spacing: .16em; color: var(--ink);
@@ -263,8 +273,7 @@
   #start .keys { margin-top: 12px; font-size: 11px; opacity: .3; letter-spacing: .06em; }
   @media (max-width: 760px), (pointer: coarse) {
     #start h1 { font-size: 26px; letter-spacing: .22em; }
-    #start ul { margin-top: 20px; gap: 7px; }
-    #start li { font-size: 12px; }
+    #start .intro { margin-top: 16px; font-size: 12px; }
   }
 </style>
 </head>
@@ -292,12 +301,10 @@
     <div class="panel">
       <h1>kindergrimm</h1>
       <p class="lede">a baby school, after dark</p>
-      <ul>
-        <li>the room is black outside the lamps, and <b>the dark burns them down</b>. a child with no energy goes home to its parents. lose them all and the school closes.</li>
-        <li><b>they do nothing on their own.</b> tap a child, then tap where it goes: a bed to sleep, a toy to play, a nightmare to see it off, the floor to walk there.</li>
-        <li><b>playing fills the bar</b> at the bottom — and costs energy. a full bar deals six objects; you keep one.</li>
-        <li>nightmares eat the furniture, never the children. light does not kill them, it mires them. nobody here is ever hurt.</li>
-      </ul>
+      <p class="intro">the parents are gone until morning. outside the lamps the room is black,
+        <b>the dark burns children down</b> — and they will do nothing you do not tell them to.</p>
+      <p class="intro">play fills the bar. the bar brings toys. the nightmares come for the toys.
+        and every fifth bell, <b>a knock at the door</b>.</p>
       <button id="begin">open the school</button>
       <div class="keys">enter · drag to pan · pinch or wheel to zoom · R restart</div>
     </div>
