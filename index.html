@@ -51,10 +51,11 @@
   input[type=number] { width: 105px; }
   input[type=checkbox] { accent-color: var(--ink); }
 
-  #chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  #chips button { padding: 2px 8px; font-size: 12px; border-width: 1px; }
-  #chips button.sel { background: var(--ink); color: var(--paper); }
+  #chips, .chiprow { display: flex; flex-wrap: wrap; gap: 5px; }
+  #chips button, .chiprow button { padding: 2px 8px; font-size: 12px; border-width: 1px; }
+  #chips button.sel, .chiprow button.sel { background: var(--ink); color: var(--paper); }
   #chips button.locked::after { content: " 🔒"; font-size: 9px; }
+  .chiprow { margin: 2px 0 8px; }
 
   #part-title { font-weight: bold; }
   #recipe-box {
@@ -117,6 +118,10 @@
 
     <section id="sec-anim">
       <h2>Animación</h2>
+      <div class="hint">pose</div>
+      <div id="poses" class="chiprow"></div>
+      <div class="hint">cara</div>
+      <div id="faces" class="chiprow"></div>
       <div class="row"><label>parpadeo</label><input id="anim-blink" type="checkbox" checked></div>
       <div class="row"><label>mirada</label><input id="anim-gaze" type="checkbox" checked></div>
       <div class="row"><label>hablar</label><input id="anim-talk" type="checkbox"></div>

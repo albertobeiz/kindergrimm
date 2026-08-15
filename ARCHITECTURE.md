@@ -51,9 +51,15 @@ recipe ──► gen() ─────┴──► params ──► layout.js �
 | `src/parts/*.js` | **The parts.** One file per feature family. | you add a part or a variant ← *usually this* |
 | `src/parts/index.js` | **The registry.** The ordered list of active parts. | you add a part file |
 | `src/rig.js` | recipe → bones → meshes. Generic; knows nothing about eyes or arms. | almost never |
-| `src/anim.js` | boil, blink, gaze, talk, sway, breath. | you add a behaviour |
+| `src/anim.js` | **The animator core.** Autonomic life (boil, blink, gaze, talk, sway, breath), pose blending, expression crossfades. | you change how blending works |
+| `src/poses/*.js` | **The poses.** idle, walk, run, sit, sleep, attack — one file each. | you add a pose ← *like adding a part* |
+| `src/expressions.js` | **The expressions.** idle, angry, scared, crying, sleeping. | you add an expression |
 | `src/part.js` | canvas/texture plumbing (`makePart`), render resolution. | almost never |
-| `src/main.js` / `src/crowd.js` | the two scenes | new scene features |
+| `src/ground.js` | the game room's floor tiles + the blob shadows | the room's look |
+| `src/scenery.js` | the props in the room (toys, cots, the nightlight) | you add furniture |
+| `src/dark.js` | **global illumination** — the room is black outside the lamps | how light behaves |
+| `src/postfx.js` | tilt-shift, vignette — the *lens* | the mood of the whole frame |
+| `src/main.js` / `src/crowd.js` / `src/game.js` | the three scenes | new scene features |
 
 ---
 
@@ -182,12 +188,19 @@ all pick it up automatically.
 
 ## 6. States (how animation works)
 
-`states: ['idle']` by default. Every state is drawn ahead of time into
-its own texture, so animating is a texture swap — free at runtime.
+`states: ['idle']` by default. Every state is drawn into its own
+texture, so animating is a texture swap — free at runtime. States are
+drawn **lazily**: only the resting state is paid for at build time,
+and an expression nobody makes never costs a canvas.
 
-- Eyes declare `['open','closed','left','right','up','down']`: blinking
-  and glancing are swaps.
-- Mouth declares `['idle','open']`: talking is a swap plus a jaw scale.
+- Eyes declare the autonomic set (`open/closed` + four glances) plus
+  the expression set (`angry/scared/cry`): blinking, glancing and
+  emoting are all swaps.
+- Mouth declares `['idle','open']` for talk plus
+  `['angry','scared','cry','sleep']` for the expressions.
+- Brows declare `['idle','angry','sad','raised']`; QuadLegs declare
+  `['idle','stepA','stepB','fold']` — the four-legged walk is a
+  flip-book of diagonal pairs, and 'fold' is the sphinx sleep.
 - `draw()` receives the state as `st` and decides what changes.
 
 The animator also moves bones (`e.bone.position/rotation/scale`) —
@@ -208,6 +221,175 @@ character on a drawn line with
 `group.position.y = floorLineY + F.B.floorY / U`. If your part extends
 below the feet, extend `bodyLayout()` so `floorY` still tells the
 truth.
+
+### Poses and expressions
+
+On top of the autonomic life sit two crossfaded systems:
+
+**Poses** (`src/poses/`, registry in `src/poses/index.js`) say what
+the body is doing: idle, walk, run, sit, sleep, attack. A pose writes
+bone/group *offsets* through a small ctx API, and every write is
+scaled by the pose's blend weight — a transition is two poses mixing,
+so nothing snaps. Walk and run share ONE gait phase, so a tempo change
+never teleports a foot. One-shots (attack) play out and hand back.
+Poses scale the autonomic layers through `auto` multipliers (sleep:
+gaze 0, breath 2.2) instead of switching them off. The full contract
+is documented at the top of `src/poses/index.js`; every pose handles
+the three bases (`biped`/`sit`/`quad`).
+
+**Expressions** (`src/expressions.js`) say what the face is doing:
+idle, angry, scared, crying, sleeping. An expression = texture states
+per face part + continuous body language on the same weight API.
+Texture swaps are binary, so the animator lands them *while a blink
+has the eyes shut*; the brows/shiver/sob ramp with the crossfade,
+which is where the smoothness comes from.
+
+Scenes drive both with `animator.setPose(id)` / `animator.setFace(id)`.
+
+---
+
+## 6b. The room (`game.html`) — Kindergrimm, and 3D
+
+The game scene is a **real 3D world**, ported from the `draw-test`
+prototype: a floor lying flat on XZ, an orthographic camera orbiting
+above it, and every drawing standing on that floor as an upright
+billboard. The editor and the crowd are still flat pages — only this
+scene is 3D, which is why `addPaper()` (a camera-facing page plus a
+paper-tooth quad) is **not** used here: under an orbiting camera those
+go edge-on. The game gets its grain and vignette from DOM overlays in
+`game.html` instead, and its lens from `postfx.js`.
+
+```
+billboard   holder.rotation.y = view.az     — yaw ONLY, never pitch.
+            The drawing stays square to the page and simply eats the
+            foreshortening. That is the whole Don't-Starve trick.
+mirror      screen-space, never world-space:
+              mdot = cos(h)*view.rightX + sin(h)*view.rightZ
+            latch the flip only when |mdot| > .15, then lerp scale.x
+            through zero so the turn reads as a paper flip. A
+            world-space flip moonwalks the moment the camera orbits
+            past 90°. Safe only because parts are DoubleSide planes.
+depth key   x*sin(az) + z*cos(az) — the view-axis projection. Under an
+            ORTHO camera radial distance is the wrong key and inverts
+            characters at opposite frame edges.
+shadow      its own scene object, never a child of the holder, or it
+            inherits the yaw, the mirror and the breath.
+            rotation.order = 'YXZ' so the yaw spins the ellipse WITHIN
+            the floor instead of tipping it out of it.
+floor       drawn TOP-DOWN and tiled. Never paint perspective into it
+            — a baked vanishing point swings around with the camera —
+            and never draw a long straight line, because one that
+            starts at a tile edge lines up with its neighbour's and
+            the floor turns back into graph paper.
+```
+
+The one fact that makes all this cheap: **`anim.js` never writes
+`face.group`** — only `headGroup`/`bodyGroup`. So world placement, the
+billboard yaw and the mirror all live on a holder above it, and the
+animator never has to know the world became 3D. Every screen-space
+offset it writes (sway, gaze parallax, breath) stays correct at every
+azimuth, because a billboard is permanently a front view.
+
+**Depth sorting is not optional.** Every material is `transparent`
+with `depthWrite: false`, so what you see is decided *entirely* by
+draw order, and three sorts by `renderOrder` before it ever looks at
+z. Part orders span -4 (tail) to 7 (a horned crest), so with the raw
+numbers every character's torso draws before *any* character's head
+and two overlapping characters interleave part by part — a far face
+punches through a near back.
+
+`setDepthRank(face, rank)` in `rig.js` fixes this by giving each
+character a contiguous 16-slot block of the renderOrder line
+(`+0` shadow, `+1…+12` parts, `+13…+15` props). Rank 0 is farthest.
+**Ranks must be unique** — two characters sharing one fall back to
+three's mesh-id tie-break and interleave silently, so always break the
+depth sort on entity index. The scene re-stamps every frame; a rebuilt
+character has `rank === null` and is re-stamped for free.
+
+**Lazy states cut both ways.** They are right for the crowd (35
+characters that mostly never emote) and wrong in the room, where the
+first blink and first glance would draw canvases mid-play. `game.js`
+prewarms the states it will actually reach for (`WARM`) during the
+load pass and leaves the expressions lazy.
+
+**Nothing may build during play.** A character costs ~20 ms. The class
+fills on a time budget at boot, and the nightmare wave is *queued* at
+dusk and built one per frame — building a whole wave in one frame
+stutters at exactly the moment the night is meant to feel dangerous.
+
+### Global illumination (`src/dark.js`)
+
+The room is **black**, everywhere the light does not reach — not
+tinted, not dimmed. There is no day/night cycle; it is always dark,
+and light is the only safe ground. That one decision is what makes a
+lantern a decision instead of a decoration.
+
+It is one plane lying on the floor whose fragment shader is handed
+every live light in WORLD space. Each pixel asks how far it is from
+the nearest lamp and paints itself black in proportion — a shadow mask
+on the ground, one draw call, no render targets. The pool edge wobbles
+on a slow clock, because a child drawing a circle of lamplight would
+never get it round, and a clean radial gradient is the one thing here
+that would look like a computer did it.
+
+Billboards standing on the floor are **not** darkened by that plane —
+they are drawn over it. `game.js` tints them on the CPU
+(`mat.color.setScalar(v)`) from the same `lightAt()`, so what you see
+and what the game thinks is lit can never disagree.
+
+### The game
+
+You start with three children, one bed, one floor lantern and one toy.
+
+- **Children do NOTHING on their own.** There is no autonomy at all:
+  every child stands where it is, burning stamina, until you tell it
+  otherwise. Click a child to select it, then click a bed (rest), a
+  toy (play), a nightmare (go at it) or the floor (walk there). An
+  idle child is a child running down, which is what makes the clock
+  feel like yours.
+- **Orders persist**: a child on a toy plays until the toy breaks or
+  you say otherwise; a child in a bed sleeps until it is full.
+- **Everything breaks** — beds and toys by use, lights by time.
+- **The dark is the threat.** A child outside the light is `scared`
+  and loses stamina fast; at zero its parents come and take it home.
+  Lose all three and the school closes. Children are never hurt and
+  never die — this is a baby school, do not escalate it.
+- **Nerve.** Every child has a nerve of -3…+3, every nightmare a
+  menace of -3…+3, and **courage = nerve + light×3**. Out-matched, a
+  child freezes and cries — and a frozen child *ignores your orders*
+  until the thing leaves. This is the join between the two systems:
+  the same child breaks in the dark and holds under a lamp.
+- **Nightmares** chew on the furniture, never on a child. **Light does
+  not kill them — it mires them** (17% speed under a lamp). The
+  children do the killing. They want the closest bed or toy and do not
+  care who is using it, so they have their own `nearestBreakable()`.
+- **The bar and the draft.** Playing fills one shared bar. When it
+  fills the world STOPS (`state.paused` zeroes `dt`, rendering
+  continues) and three cards are drawn from `KNACKS` (applied to a
+  child you then click) and `PLACEABLES` (put where you then click).
+  There is no currency — the draft is the whole economy.
+
+**Picking** is done with invisible proxy quads (`addPick`), one per
+clickable entity, raycast in place of the real drawings: hit-testing
+every part mesh of a child would be slow and would miss the gaps
+between the strokes. Proxies must be *positioned* — characters get
+theirs moved each frame, and a static thing needs its proxy placed at
+creation or it sits at the origin, unclickable, while the origin
+silently becomes clickable instead.
+
+Objects that lie on the floor (beds) are `flat: true` — drawn
+top-down, laid with `rotation.x = -π/2`, and placed UNDER the darkness
+plane so the light shader paints them per-pixel like the floor.
+
+**Every upright thing is a billboard** — props included, not just the
+characters. `mesh.rotation.y = view.az` has to be re-applied to all of
+them every frame; a prop that only gets a position is pinned to +Z and
+goes edge-on the moment the camera orbits. They are **never mirrored**:
+a doodle child does not turn around to walk the other way.
+
+Bodies take up room: `separate()` pushes every overlapping pair of
+characters apart along the line between them, half the correction
+each, after everyone has moved.
 
 ---
 
@@ -354,3 +536,12 @@ automatically.
 
 **Add a body-relative anchor:** extend `bodyLayout()` in `layout.js`
 and read it from `F.B`.
+
+**Add a pose:** copy the nearest file in `src/poses/`, register it in
+`src/poses/index.js`. Handle the three bases. The contract is at the
+top of the registry.
+
+**Add an expression:** one entry in `src/expressions.js`. If it needs
+a face nobody can draw, first add that as a *state* of the eye, brow
+or mouth part (one branch in its `draw()`), then point at it from
+`states`.

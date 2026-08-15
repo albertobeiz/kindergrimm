@@ -108,6 +108,9 @@ export function addPaper(scene, halfH) {
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(t), transparent: true, depthWrite: false }),
   );
   tooth.position.z = 1;
-  tooth.renderOrder = 1000;
+  // above everything, with room to spare: the game room gives each
+  // character a block of 16 renderOrder slots, so a fixed 1000 would
+  // sink into the crowd once there are ~60 of them on the page
+  tooth.renderOrder = 1e6;
   scene.add(tooth);
 }

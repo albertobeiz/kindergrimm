@@ -60,7 +60,11 @@ function starPts(cx, cy, r, n = 5, inner = .44, rot = -Math.PI / 2) {
 
 export const Eyes = {
   id: 'eyes', label: 'ojos', order: 3, depth: 1,
-  states: ['open', 'closed', 'left', 'right', 'up', 'down'],
+  // open/closed + the four glances are the autonomic set; angry /
+  // scared / cry are EXPRESSION states the animator swaps to behind a
+  // blink. States are drawn lazily, so the extras cost nothing until
+  // somebody actually makes the face.
+  states: ['open', 'closed', 'left', 'right', 'up', 'down', 'angry', 'scared', 'cry'],
   gen: (rng, C) => ({
     type: C.pick(rng, 'type', TYPES),
     // the doodle habit of drawing each eye without checking the other
@@ -118,6 +122,33 @@ export const Eyes = {
           lashW * .55, { taper: .35, alpha: .9 });
       }
     };
+
+    // ---- expression states: one drawing each, whatever the eye
+    // type — an emotion overrides the repertoire, it doesn't
+    // negotiate with it ---------------------------------------------
+    if (st === 'angry' || st === 'scared' || st === 'cry') {
+      const r = Math.min(ew * .68, F.w * Math.min(P.sx, .55) * .74);
+      if (st === 'angry') {
+        // a hard little pupil under a lid pressed down toward the nose
+        pupil(s, ecx, cy0 + r * .15, r * .32, P.glint);
+        s.stroke([[ecx - sd * r * 1.1, cy0 - r * 1.0], [ecx + sd * r * .95, cy0 - r * .2]],
+          lashW * 1.25, { taper: .2, alpha: 1, amp: .5 });
+      } else if (st === 'scared') {
+        // an enormous white with a tiny pupil adrift in it
+        const disc = s.blobPts(ecx, cy0, r * 1.15, r * 1.2, s.jr(-.1, .1), .4);
+        s.paperFill(disc);
+        s.stroke(disc.concat([disc[0]]), F.lwThin * 1.5, { taper: .1, amp: .5, alpha: .92 });
+        pupil(s, ecx + s.jr(-.12, .12) * r, cy0 + s.jr(-.12, .12) * r, r * .15, false);
+      } else {
+        // cry: squeezed shut — the lids pressed into an arc, with the
+        // strain lines of somebody really going for it
+        s.stroke(chaikin([[ecx - r * .9, cy0 - r * .2], [ecx, cy0 + r * .38], [ecx + r * .9, cy0 - r * .2]], false, 1),
+          lashW * .95, { taper: .25 });
+        s.sline([[ecx - r * .55, cy0 + r * .6], [ecx + r * .5, cy0 + r * .65]], 1.2, .4);
+        s.sline([[ecx - r * .8, cy0 - r * .55], [ecx + r * .75, cy0 - r * .5]], 1.1, .3);
+      }
+      return;
+    }
 
     // ---- the one-mark eyes -----------------------------------
     if (SIMPLE.has(type)) {
@@ -262,6 +293,9 @@ export const Eyes = {
 
 export const Brows = {
   id: 'brows', label: 'cejas', order: 4, depth: .9,
+  // the brow IS the emotion: which end drops is the whole difference
+  // between angry and sad. The animator swaps these behind a blink.
+  states: ['idle', 'angry', 'sad', 'raised'],
   // An animal has no eyebrows. The profile turns these off entirely
   // (`brows: { on: 0 }`) and that alone stops a cat looking like a
   // person in a cat hat.
@@ -288,7 +322,12 @@ export const Brows = {
     const { eh, ecxJit, browY } = F.L;
     const ew = F.L.eyeW(sd);
     const ecx = F.L.eyeX(sd) + ecxJit[sd] * .4;
-    s.stroke([[ecx - sd * ew * .95, browY + P.a * eh * 1.6], [ecx + sd * ew * .85, browY - P.a * eh * 1.6]],
-      F.s * P.thF, { over: F.s * .02, taper: .32 });
+    // the first point is always the INNER end (toward the nose)
+    let aIn = P.a * eh * 1.6, aOut = -P.a * eh * 1.6, lift = 0, th = 1;
+    if (st === 'angry') { aIn = eh * 1.9; aOut = -eh * .9; th = 1.3; }   // pressed down over the eye
+    else if (st === 'sad') { aIn = -eh * 1.6; aOut = eh * .9; }          // inner ends float up
+    else if (st === 'raised') { lift = -eh * 1.7; aIn *= .4; aOut *= .4; } // both up, wide awake
+    s.stroke([[ecx - sd * ew * .95, browY + lift + aIn], [ecx + sd * ew * .85, browY + lift + aOut]],
+      F.s * P.thF * th, { over: F.s * .02, taper: .32 });
   },
 };

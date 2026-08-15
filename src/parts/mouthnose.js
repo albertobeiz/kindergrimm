@@ -125,7 +125,11 @@ const MOUTHS = [
 const ALL = [...MOUTHS.map(p => p[0]), 'beak', 'flat', 'open'];
 
 export const Mouth = {
-  id: 'mouth', label: 'boca', order: 3, depth: 1, states: ['idle', 'open'], pivot: [.5, .7],
+  id: 'mouth', label: 'boca', order: 3, depth: 1, pivot: [.5, .7],
+  // idle/open are the talk pair; angry/scared/cry/sleep are EXPRESSION
+  // states — the emotion redraws the mouth wholesale, whatever style
+  // the character was cast with. Drawn lazily, on first use.
+  states: ['idle', 'open', 'angry', 'scared', 'cry', 'sleep'],
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', MOUTHS),
     myF: C.range(rng, 'myF', .42, .56),
@@ -153,6 +157,43 @@ export const Mouth = {
     const { mw, my, mx, fx } = F.L;
     const lw = F.lwThin;
     const open = st === 'open';
+
+    // ---- expression states -----------------------------------
+    if (st === 'angry') {
+      // teeth gritted into one hard band
+      const bw = Math.max(mw, S * .14), bh = S * .045;
+      const band = [[mx - bw, my - bh], [mx + bw, my - bh], [mx + bw * .94, my + bh], [mx - bw * .94, my + bh]];
+      s.paperFill(band);
+      F.media.edge(s, band.concat([band[0]]), lw * 1.2, { amp: .7 });
+      for (let k = 1; k < 4; k++)
+        s.sline([[mx - bw + bw * 2 * k / 4, my - bh], [mx - bw * .94 + bw * 1.88 * k / 4, my + bh]], 1.2, .5);
+      if (F.media.underdraw) s.hatch(mx, my + bh * 1.8, bw * 1.2, S * .04, .1, 2, .16);
+      return;
+    }
+    if (st === 'scared') {
+      // the gasp: a small tight o
+      const r = Math.max(S * .05, mw * .3);
+      const hole = s.blobPts(mx, my, r * .8, r, s.jr(-.1, .1), .45);
+      F.media.tone(s, hole, { style: 'black', gap: r * .4 });
+      F.media.edge(s, hole.concat([hole[0]]), lw * 1.1, { amp: .8 });
+      return;
+    }
+    if (st === 'cry') {
+      // the wail: a wide dark arch, corners dragged down
+      const rx2 = Math.max(mw * .95, S * .12), ry2 = S * .11;
+      const arch = chaikin([[mx - rx2, my], [mx - rx2 * .5, my + ry2], [mx + rx2 * .5, my + ry2], [mx + rx2, my]], true, 2);
+      F.media.tone(s, arch, { style: 'black', gap: rx2 * .35 });
+      F.media.edge(s, arch.concat([arch[0]]), lw * 1.15, { amp: .9 });
+      if (F.media.underdraw) s.hatch(mx, my + ry2 * 1.5, rx2 * 1.3, S * .05, .1, 2, .14);
+      return;
+    }
+    if (st === 'sleep') {
+      // slack: barely a mark, breathing through it
+      const r = Math.max(S * .03, mw * .18);
+      const hole = s.blobPts(mx, my + S * .01, r * .7, r, 0, .5);
+      s.stroke(hole.concat([hole[0]]), lw, { taper: .2, alpha: .75 });
+      return;
+    }
 
     if (P.upperLip)
       s.stroke([[mx - mw * .8 + s.jr(-.04, .04) * w, my + s.jr(-.035, .035) * S],

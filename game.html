@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kindergrimm</title>
+<style>
+  :root { --ink: #e8e0cd; --dark: #0b0d13; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--dark); color: var(--ink);
+    font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  #stage { position: absolute; inset: 0; }
+  #stage canvas { display: block; }
+  #grain { position: absolute; inset: 0; pointer-events: none; z-index: 2; mix-blend-mode: overlay; opacity: .22; }
+
+  #hud {
+    position: absolute; top: 38px; left: 0; right: 0; z-index: 3;
+    text-align: center; font-size: 15px; letter-spacing: .05em;
+    opacity: .92; pointer-events: none; text-shadow: 0 1px 3px #000;
+  }
+  #hud b { letter-spacing: .1em; }
+  #title {
+    position: absolute; left: 14px; top: 12px; z-index: 3;
+    letter-spacing: .16em; font-size: 13px; opacity: .4;
+  }
+  #title a { color: inherit; }
+
+  /* the child you are commanding */
+  #card {
+    position: absolute; left: 14px; top: 62px; z-index: 3; display: none;
+    width: 196px; padding: 12px 13px 11px;
+    background: rgba(16,18,25,.9); border: 1px solid rgba(232,224,205,.3);
+    border-radius: 5px; backdrop-filter: blur(2px);
+  }
+  #card h3 { font-size: 15px; font-weight: normal; letter-spacing: .12em; margin-bottom: 9px; }
+  #card .e {
+    position: relative; height: 18px; border-radius: 3px; overflow: hidden;
+    background: rgba(0,0,0,.45); border: 1px solid rgba(232,224,205,.22);
+  }
+  #card .e i { position: absolute; inset: 0 auto 0 0; background: rgba(196,214,168,.5); transition: width .15s linear; }
+  #card .e i.low { background: rgba(224,168,96,.55); }
+  #card .e i.dark { background: rgba(206,96,86,.55); }
+  #card .e u {
+    position: absolute; inset: 0; text-decoration: none; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: .06em; text-shadow: 0 1px 2px #000;
+  }
+  #card dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 9px 0 0; font-size: 12px; }
+  #card dt { opacity: .55; }
+  #card dd { text-align: right; }
+  #card p { margin-top: 9px; font-size: 11px; opacity: .5; letter-spacing: .05em; }
+
+  /* the bar playing fills — a strip pinned to the very bottom edge,
+     so nothing else can ever land on top of it */
+  #barwrap {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 7px; z-index: 4;
+    background: rgba(0,0,0,.5);
+  }
+  #bar { height: 100%; width: 0; background: rgba(240,214,150,.8); transition: width .12s linear; }
+
+  /* messages stack down the right-hand side, newest first */
+  #log {
+    position: absolute; right: 14px; top: 60px; z-index: 3;
+    width: 230px; text-align: right; font-size: 12px;
+    display: flex; flex-direction: column; gap: 4px; pointer-events: none;
+  }
+  #log div {
+    background: rgba(16,18,25,.72); border-right: 2px solid rgba(240,214,150,.5);
+    border-radius: 3px 0 0 3px; padding: 4px 8px; letter-spacing: .03em;
+  }
+  #hint {
+    position: absolute; left: 0; right: 0; bottom: 14px; z-index: 3;
+    font-size: 11px; opacity: .3; text-align: center;
+  }
+
+  /* the draft */
+  #draft {
+    position: absolute; inset: 0; z-index: 5; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(6,7,10,.72); gap: 22px;
+  }
+  #draft.thin { background: rgba(6,7,10,.32); pointer-events: none; }
+  #draft h2 {
+    font-size: 19px; font-weight: normal; letter-spacing: .16em;
+    opacity: .8; text-transform: lowercase;
+  }
+  #draft .cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  #draft button {
+    position: relative; width: 190px; min-height: 132px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px; text-align: left;
+    font: inherit; color: var(--ink); padding: 15px 15px 13px;
+    background: rgba(20,22,30,.94); border: 1px solid rgba(232,224,205,.34);
+    border-radius: 5px;
+  }
+  #draft button:hover { background: rgba(44,48,62,.96); border-color: rgba(232,224,205,.7); }
+  #draft button b { font-size: 15px; letter-spacing: .06em; }
+  #draft button span { opacity: .72; line-height: 1.35; }
+  #draft button em {
+    margin-top: auto; font-style: normal; font-size: 11px; opacity: .42;
+    letter-spacing: .08em;
+  }
+  #draft button i {
+    position: absolute; right: 11px; top: 10px;
+    font-style: normal; font-size: 11px; opacity: .35;
+  }
+
+  #gameover {
+    position: absolute; inset: 0; z-index: 6; display: none;
+    align-items: center; justify-content: center; text-align: center;
+    font-size: 30px; line-height: 1.5; background: rgba(6,7,10,.75);
+  }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+  <canvas id="grain"></canvas>
+  <div id="title">kindergrimm · <a href="index.html">editor</a> · <a href="crowd.html">crowd</a></div>
+  <div id="hud"></div>
+  <div id="card"></div>
+  <div id="log"></div>
+  <div id="barwrap"><div id="bar"></div></div>
+  <div id="hint">click a child, then click a bed / toy / nightmare / the floor · Q/E turn · wheel zoom · R restart</div>
+  <div id="draft"></div>
+  <div id="gameover"></div>
+
+  <script>
+    // paper grain over the render, so even the black has tooth in it
+    (() => {
+      const c = document.getElementById('grain'), g = c.getContext('2d');
+      function paint() {
+        c.width = innerWidth; c.height = innerHeight;
+        const n = Math.round((c.width * c.height) / 1100);
+        for (let i = 0; i < n; i++) {
+          g.fillStyle = `rgba(${180 + Math.random() * 60 | 0},${170 + Math.random() * 60 | 0},140,${Math.random() * .5})`;
+          g.fillRect(Math.random() * c.width, Math.random() * c.height, 1.3, 1.3);
+        }
+      }
+      paint();
+      addEventListener('resize', paint);
+    })();
+  </script>
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+  <script type="module" src="./src/game.js"></script>
+</body>
+</html>

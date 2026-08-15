@@ -136,8 +136,9 @@ export function buildCharacter(recipe) {
 
       entries.push({
         id: def.id, def, bone, part,
+        order,                                    // the part's own draw slot
         side: b.side ?? 1,
-        depth: b.depth ?? def.depth ?? 0,
+        depth: b.depth ?? def.depth ?? 0,         // parallax, NOT draw depth
         region: def.region ?? 'head',
       });
     }
@@ -145,7 +146,46 @@ export function buildCharacter(recipe) {
 
   return {
     group, headGroup, bodyGroup, entries, F, recipe,
+    rank: null,                                   // set by setDepthRank
     byId: id => entries.filter(e => e.id === id),
     dispose() { entries.forEach(e => e.part.dispose()); },
   };
 }
+
+// ---------------------------------------------------------------
+// DEPTH RANK — for scenes that stand more than one character in the
+// same space (the game room).
+//
+// Every material here is transparent with depthWrite:false, so what
+// you see is decided ENTIRELY by draw order: three sorts by
+// renderOrder before it ever looks at z. Part orders span -4 (tail)
+// to 7 (a horned crest), so with the raw numbers every character's
+// torso is drawn before ANY character's head, and two characters
+// standing close together interleave part by part — a far face
+// punches through a near back.
+//
+// The fix is to give each character a CONTIGUOUS BLOCK of the
+// renderOrder line: 12 slots used, 16 reserved, so nothing of one
+// character can ever land between two parts of another. Rank 0 is
+// the FARTHEST from the camera. Ranks must be unique — two
+// characters sharing one fall back to the mesh-id tie-break and
+// interleave silently.
+// ---------------------------------------------------------------
+// Block layout, per character, relative to rank * LAYER:
+//   +0            the shadow, under everything the character owns
+//   +1 … +12      its parts (order -4 … 7, rebased)
+//   +13 … +15     props above it (an emote, a held thing)
+export const PART_ORDER_MIN = -4;
+export const PART_ORDER_SPAN = 12;
+export const LAYER = 16;
+
+export function setDepthRank(face, rank) {
+  if (face.rank === rank) return;     // idempotent: usually a no-op
+  face.rank = rank;
+  const base = rank * LAYER - PART_ORDER_MIN + 1;
+  for (const e of face.entries) e.part.mesh.renderOrder = base + e.order;
+}
+
+export const shadowOrder = face => (face.rank ?? 0) * LAYER;
+export const propOrder = (face, n = 0) =>
+  (face.rank ?? 0) * LAYER + PART_ORDER_SPAN + 1 + n;

@@ -25,10 +25,16 @@ export function setRender({ u, frames } = {}) {
 
 export function makePart({ name, wU, hU, pivot = [.5, .5], states = ['idle'], draw, seed }) {
   const frames = {}, canvases = {};
-  for (const st of states) {
+  const W = Math.max(4, Math.round(wU * U)), H = Math.max(4, Math.round(hU * U));
+  // States are drawn LAZILY: only the resting state is paid for at
+  // build time. An expression nobody makes never costs a canvas —
+  // that is what lets every part carry a full emotional repertoire
+  // without the crowd paying for it 35 times over.
+  function ensure(st) {
+    if (frames[st]) return;
     frames[st] = []; canvases[st] = [];
     for (let f = 0; f < BOIL_FRAMES; f++) {
-      const s = new Sketch(Math.max(4, Math.round(wU * U)), Math.max(4, Math.round(hU * U)));
+      const s = new Sketch(W, H);
       s.boil(hashStr(`${seed}:${name}:${st}:${f}`));
       draw(s, st);
       const tex = new THREE.CanvasTexture(s.canvas);
@@ -37,6 +43,7 @@ export function makePart({ name, wU, hU, pivot = [.5, .5], states = ['idle'], dr
       canvases[st].push(s.canvas);
     }
   }
+  ensure(states[0]);
   const geo = new THREE.PlaneGeometry(wU, hU);
   geo.translate((0.5 - pivot[0]) * wU, (0.5 - pivot[1]) * hU, 0);
   const matl = new THREE.MeshBasicMaterial({
@@ -49,7 +56,11 @@ export function makePart({ name, wU, hU, pivot = [.5, .5], states = ['idle'], dr
     fps: .85 + (h % 100) / 130,      // per-part boil cadence, out of sync on purpose
     off: (h >>> 8) % 10,
     cur: { state: states[0], frame: 0 },
-    setState(st) { if (frames[st] && part.cur.state !== st) { part.cur.state = st; apply(); } },
+    setState(st) {
+      if (part.cur.state === st || !states.includes(st)) return;
+      ensure(st);
+      part.cur.state = st; apply();
+    },
     setFrame(f) { f = ((f % BOIL_FRAMES) + BOIL_FRAMES) % BOIL_FRAMES; if (part.cur.frame !== f) { part.cur.frame = f; apply(); } },
     // alpha of the CURRENT canvas at uv — lets clicks pass through transparent px
     alphaAt(u, v) {

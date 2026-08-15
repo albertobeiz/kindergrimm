@@ -72,6 +72,8 @@ for (let r = 0; r < ROWS; r++) {
 }
 
 // ---- the page of faces ------------------------------------------
+// the default page reads like a field guide: one species per shelf
+const ROW_SPECIES = ['human', 'human', 'dog', 'cat', 'nightmare'];
 const cells = new Array(N).fill(null);
 let queue = [];
 
@@ -90,7 +92,9 @@ function drawCell(i, recipe = null) {
   if (!recipe) {
     recipe = newRecipe();
     recipe.media = media === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : media;
-    recipe.species = species === 'todas' ? SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0] : species;
+    // 'todas' shelves the page like a bestiary: two rows of people,
+    // then a row each of dogs, cats and nightmares
+    recipe.species = species === 'todas' ? ROW_SPECIES[i / COLS | 0] : species;
     recipe.base = null;   // ensureParams picks it from the species
   }
   ensureParams(recipe);
@@ -107,7 +111,7 @@ function drawCell(i, recipe = null) {
     blink: true, gaze: true, talk: false, sway: true, breath: true, boil: true,
     boilSpeed: .5, phase: Math.random() * 20, amp: 1.5,
   };
-  cells[i] = { i, recipe, face, holder, opts, talkUntil: 0, emote: null, animator: createAnimator(() => face, opts) };
+  cells[i] = { i, recipe, face, holder, opts, talkUntil: 0, poseUntil: 0, poseNext: null, faceUntil: 0, emote: null, animator: createAnimator(() => face, opts) };
 }
 
 function newPage() {
@@ -203,15 +207,16 @@ function makeEmoteMesh(kind) {
   return mesh;
 }
 
-const EMOTES = ['bang', 'quest', 'heart', 'zzz', 'dizzy', 'drop'];
+// no 'zzz' in the random pool: that one belongs to actual sleepers
+const EMOTES = ['bang', 'quest', 'heart', 'dizzy', 'drop'];
 
-function giveEmote(cell, t) {
+function giveEmote(cell, t, kind = null, dur = null) {
   clearEmote(cell);
-  const mesh = makeEmoteMesh(EMOTES[(Math.random() * EMOTES.length) | 0]);
+  const mesh = makeEmoteMesh(kind ?? EMOTES[(Math.random() * EMOTES.length) | 0]);
   mesh.position.set(.34 + Math.random() * .12, .74 + Math.random() * .15, .2);
   mesh.rotation.z = (Math.random() - .5) * .25;
   cell.holder.add(mesh);
-  cell.emote = { mesh, t0: t, dur: 1.6 + Math.random() * 1.2 };
+  cell.emote = { mesh, t0: t, dur: dur ?? 1.6 + Math.random() * 1.2 };
 }
 
 function clearEmote(cell) {
@@ -234,7 +239,90 @@ function glance(cell) {
 }
 
 let nextLife = 2;
-const lifeLog = window.__life = { glances: 0, talks: 0, emotes: 0 };
+const lifeLog = window.__life = { glances: 0, talks: 0, emotes: 0, poses: 0, faces: 0 };
+window.__crowd = { cells, fallAsleep: (i, t) => fallAsleep(cells[i], t) };   // debug handle
+const FACES = ['angry', 'scared', 'crying'];
+
+// ---- common sense: what a character does next depends on what it
+// is doing NOW. A sleeper wakes groggy into a sit, a sitter dozes
+// off, a walker breaks into a run or arrives somewhere and stops —
+// nobody leaps from flat asleep into a sprint, and nobody chats in
+// their sleep.
+
+function schedule(cell, t, dur, next = 'idle') {
+  cell.poseUntil = t + dur;
+  cell.poseNext = next;
+}
+
+function flashFace(cell, t, face, dur) {
+  cell.animator.setFace(face);
+  cell.faceUntil = t + dur;
+  lifeLog.faces++;
+}
+
+function fallAsleep(cell, t) {
+  const dur = 8 + Math.random() * 8;
+  cell.animator.setPose('sleep');
+  schedule(cell, t, dur, 'sit-wake');          // wakes up groggy, sitting
+  giveEmote(cell, t, 'zzz', dur);
+  // the zzz LOOPS for the whole nap: it rises, fades, and comes again
+  cell.emote.loop = true;
+  cell.emote.baseY = cell.emote.mesh.position.y;
+  lifeLog.poses++;
+}
+
+function attack(cell, t) {
+  cell.animator.setPose('attack');
+  flashFace(cell, t, 'angry', 1.6);
+  lifeLog.poses++;
+  // the neighbours flinch — unless they're asleep, which is funnier
+  for (const dj of [-1, 1]) {
+    const j = cell.i + dj;
+    if (j < 0 || j >= N || (j / COLS | 0) !== (cell.i / COLS | 0)) continue;
+    const nb = cells[j];
+    if (!nb || nb.animator.pose() === 'sleep') continue;
+    flashFace(nb, t, 'scared', 1.5 + Math.random());
+    if (Math.random() < .5) giveEmote(nb, t, Math.random() < .5 ? 'bang' : 'drop');
+  }
+}
+
+function decide(cell, t) {
+  const pose = cell.animator.pose();
+  const r = Math.random();
+  if (pose === 'sleep') {
+    if (r < .2) schedule(cell, t, 0, 'sit-wake');   // stirs awake early
+    return;                                          // asleep is asleep
+  }
+  if (pose === 'attack') return;                     // mid-lunge, busy
+  if (pose === 'sit') {
+    if (r < .25) { cell.animator.setPose('idle'); cell.poseUntil = 0; lifeLog.poses++; }
+    else if (r < .45) fallAsleep(cell, t);
+    else if (r < .6) { cell.talkUntil = t + .9 + Math.random() * 1.4; lifeLog.talks++; }
+    else if (r < .75) { giveEmote(cell, t); lifeLog.emotes++; }
+    return;
+  }
+  if (pose === 'walk') {
+    if (r < .3) { cell.animator.setPose('run'); schedule(cell, t, 1.5 + Math.random() * 2, 'walk-cool'); lifeLog.poses++; }
+    else if (r < .65) { cell.animator.setPose('idle'); cell.poseUntil = 0; lifeLog.poses++; }   // arrived
+    return;                                          // else: keeps going
+  }
+  if (pose === 'run') {
+    if (r < .6) { cell.animator.setPose('walk'); schedule(cell, t, 1.5 + Math.random() * 2.5); lifeLog.poses++; }
+    else { cell.animator.setPose('idle'); cell.poseUntil = 0; lifeLog.poses++; }
+    return;
+  }
+  // idle: the full menu. The glance stays idle-only — it is a full
+  // redraw, and mid-walk it would teleport the pose back to standing.
+  if (r < .07) { glance(cell); lifeLog.glances++; }
+  else if (r < .18) { cell.talkUntil = t + .9 + Math.random() * 1.4; lifeLog.talks++; }
+  else if (r < .28) { giveEmote(cell, t); lifeLog.emotes++; }
+  else if (r < .5) { cell.animator.setPose('walk'); schedule(cell, t, 3 + Math.random() * 4); lifeLog.poses++; }
+  else if (r < .6) { cell.animator.setPose('run'); schedule(cell, t, 1.5 + Math.random() * 2, 'walk-cool'); lifeLog.poses++; }
+  else if (r < .72) { cell.animator.setPose('sit'); schedule(cell, t, 5 + Math.random() * 6); lifeLog.poses++; }
+  else if (r < .78) attack(cell, t);
+  else if (r < .88) flashFace(cell, t, FACES[(Math.random() * FACES.length) | 0], 2.5 + Math.random() * 2.5);
+  // the rest of the time: nobody does anything, like a real crowd
+}
 
 // ---- loop -------------------------------------------------------
 onResize();
@@ -252,27 +340,53 @@ renderer.setAnimationLoop(now => {
     do { drawCell(queue.shift()); } while (queue.length && performance.now() < until);
     countEl.textContent = queue.length ? `dibujando… ${N - queue.length}/${N}` : '';
   } else if (t > nextLife) {
-    nextLife = t + .5 + Math.random() * .9;
+    nextLife = t + .25 + Math.random() * .45;
     const cell = cells[(Math.random() * N) | 0];
-    if (cell) {
-      // gaze runs continuously inside every animator now, so the big
-      // redraw-turn can be the rare gesture it should be
-      const roll = Math.random();
-      if (roll < .16) { glance(cell); lifeLog.glances++; }
-      else if (roll < .42) { cell.talkUntil = t + .9 + Math.random() * 1.4; lifeLog.talks++; }
-      else if (roll < .62) { giveEmote(cell, t); lifeLog.emotes++; }
-      // the rest of the time: nobody does anything, like a real crowd
-    }
+    if (cell) decide(cell, t);
   }
 
   for (const c of cells) {
     if (!c) continue;
     c.opts.talk = t < c.talkUntil;
+
+    // walkers actually GO somewhere: they pace their stretch of shelf
+    // and turn around at the ends; stopping eases them back home
+    const p = c.animator.pose();
+    if (p === 'walk' || p === 'run') {
+      c.wx ??= 0;
+      c.wdir ??= Math.random() < .5 ? -1 : 1;
+      c.wx += c.wdir * (p === 'run' ? .16 : .07) * dt;
+      if (Math.abs(c.wx) > CELL_W * .22) c.wdir = -Math.sign(c.wx);
+    } else if (c.wx) c.wx *= Math.pow(.25, dt);
+    c.holder.position.x = cellPos(c.i)[0] + (c.wx || 0);
+    if (c.poseUntil && t > c.poseUntil) {
+      c.poseUntil = 0;
+      const next = c.poseNext;
+      c.poseNext = null;
+      if (next === 'sit-wake') {            // groggy: sit a moment before standing
+        c.animator.setPose('sit');
+        clearEmote(c);                       // the zzz stops when they stir
+        schedule(c, t, 2 + Math.random() * 3);
+      } else if (next === 'walk-cool') {     // a runner slows before stopping
+        c.animator.setPose('walk');
+        schedule(c, t, 1.2 + Math.random() * 1.5);
+      } else c.animator.setPose(next || 'idle');
+    }
+    if (c.faceUntil && t > c.faceUntil) { c.animator.setFace('idle'); c.faceUntil = 0; }
     c.animator.update(t, dt);
     if (c.emote) {
       const age = t - c.emote.t0;
       if (age > c.emote.dur) clearEmote(c);
-      else {
+      else if (c.emote.loop) {
+        // the sleeper's zzz breathes: drifts up, fades, comes again
+        const cyc = (age % 2.4) / 2.4;
+        const m = c.emote.mesh;
+        m.position.y = c.emote.baseY + cyc * .12;
+        m.scale.setScalar(.7 + cyc * .5);
+        // …and the last breath tails off instead of popping out
+        const tail = Math.min(1, (c.emote.dur - age) / 1.2);
+        m.material.opacity = Math.min(1, age * 3) * Math.sin(cyc * Math.PI) * tail;
+      } else {
         const pop = Math.min(1, age * 5);
         c.emote.mesh.scale.setScalar(pop * (1.25 - .25 * pop));    // overshoot, settle
         c.emote.mesh.material.opacity = Math.min(1, (c.emote.dur - age) * 2.5);

@@ -12,9 +12,10 @@ python3 serve.py
 ```
 
 `index.html` is the editor, `crowd.html` is a 7×5 page of live
-characters. `serve.py` sends `no-store` on purpose: browsers cache ES
-modules by URL, and a stale module makes an edited file look like a
-phantom `SyntaxError`.
+characters, `game.html` is the Kindergrimm room (the game view).
+`serve.py` sends `no-store` on purpose: browsers cache ES modules by
+URL, and a stale module makes an edited file look like a phantom
+`SyntaxError`.
 
 ## The short rules
 
@@ -37,6 +38,17 @@ phantom `SyntaxError`.
   `draw()` is re-rolled every redraw — that is the line boil, and it
   will shimmer.
 - Anything two parts must agree on belongs in `src/layout.js`.
+- `game.html` (Kindergrimm) is the only **3D** scene: floor on XZ,
+  orbiting ortho camera, yaw-only billboards. It does NOT use
+  `addPaper()` — those are camera-facing quads and would go edge-on.
+  See ARCHITECTURE.md §6b before touching it. The editor and the
+  crowd are still flat pages and must stay working.
+- Adding a **pose** = one file in `src/poses/` + one line in
+  `src/poses/index.js`; handle all three bases (biped/sit/quad).
+  Adding an **expression** = one entry in `src/expressions.js`,
+  plus a state branch in a face part if it needs a new drawing.
+  Poses/expressions write OFFSETS scaled by their blend weight —
+  never absolute transforms — that is what makes transitions smooth.
 
 ## Style
 

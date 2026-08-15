@@ -4,6 +4,8 @@
 import { PARTS } from './rig.js';
 import { MEDIA } from './media.js';
 import { SPECIES } from './species.js';
+import { POSES } from './poses/index.js';
+import { EXPRESSIONS } from './expressions.js';
 
 const $ = id => document.getElementById(id);
 
@@ -28,6 +30,30 @@ export function initUI(app) {
   for (const m of Object.values(MEDIA)) $('media').add(new Option(m.label, m.id));
   $('media').onchange = () => { app.setMedia($('media').value); };
   $('color').onchange = () => { app.recipe().color = $('color').value; app.rebuild(); };
+
+  // ---- pose / expression chips ---------------------------------
+  const poseBtns = {}, faceBtns = {};
+  for (const p of POSES) {
+    const b = document.createElement('button');
+    b.textContent = p.label;
+    b.onclick = () => { app.animator.setPose(p.id); markAnim(); };
+    poseBtns[p.id] = b;
+    $('poses').appendChild(b);
+  }
+  for (const [id, ex] of Object.entries(EXPRESSIONS)) {
+    const b = document.createElement('button');
+    b.textContent = ex.label;
+    b.onclick = () => { app.animator.setFace(id); markAnim(); };
+    faceBtns[id] = b;
+    $('faces').appendChild(b);
+  }
+  function markAnim() {
+    const pose = app.animator.pose(), face = app.animator.face();
+    for (const [id, el] of Object.entries(poseBtns)) el.classList.toggle('sel', id === pose);
+    for (const [id, el] of Object.entries(faceBtns)) el.classList.toggle('sel', id === face);
+  }
+  markAnim();
+  setInterval(markAnim, 400);   // one-shots and sleep's face hand back on their own
 
   for (const key of ['blink', 'gaze', 'talk', 'sway', 'breath', 'boil'])
     $('anim-' + key).onchange = e => { app.anim[key] = e.target.checked; };

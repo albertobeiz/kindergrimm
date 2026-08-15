@@ -478,6 +478,11 @@ export const Paws = {
 export const QuadLegs = {
   id: 'quadlegs', label: 'patas', order: -3, depth: -.3, region: 'body',
   base: ['quad'],
+  // The quad walks as a FLIP-BOOK: all four legs live on one canvas,
+  // so the gait is pre-drawn — stepA/stepB lift alternating diagonal
+  // pairs (a trot) and the animator swaps them in rhythm. 'fold'
+  // tucks everything under for the sphinx sleep.
+  states: ['idle', 'stepA', 'stepB', 'fold'],
   gen: (rng, C) => ({
     thick: C.range(rng, 'thick', .8, 1.2),
     toes: C.chance(rng, 'toes', .7),
@@ -511,12 +516,24 @@ export const QuadLegs = {
                    [x + k * r * .42 * scale, y0 + len + r * .5]], 1.1, .42);
     };
 
+    // A lifted leg is a SHORTER leg — the paw rises off the floor and
+    // the flip-book reads as a step. Trot pairs are diagonal: stepA
+    // lifts front-near + back-far, stepB the other two.
+    const lift = (isBack, isFar) => {
+      if (st === 'fold') return B.legLen * .68;
+      if (st === 'stepA') return isBack === isFar ? B.legLen * .32 : 0;
+      if (st === 'stepB') return isBack === isFar ? 0 : B.legLen * .32;
+      return 0;
+    };
     // hind pair first: further out, a little shorter, drawn behind
     // Front and hind pairs sit at the two ENDS of the body, each drawn
     // twice with a small offset: the near leg and the far one behind it.
     for (const off of [D * S * .07, 0]) {
-      leg(B.backLegX + off, B.legTopY - B.h * .05, B.legLen * (off ? .88 : 1), off ? .9 : 1);
-      leg(B.frontLegX + off, B.legTopY, B.legLen * (off ? .9 : 1), off ? .9 : 1);
+      const isFar = !!off;
+      leg(B.backLegX + off, B.legTopY - B.h * .05,
+        Math.max(B.legLen * .22, B.legLen * (isFar ? .88 : 1) - lift(true, isFar)), isFar ? .9 : 1);
+      leg(B.frontLegX + off, B.legTopY,
+        Math.max(B.legLen * .22, B.legLen * (isFar ? .9 : 1) - lift(false, isFar)), isFar ? .9 : 1);
     }
   },
 };

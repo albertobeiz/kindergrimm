@@ -121,6 +121,7 @@ const app = {
     rebuild();
   },
   anim,
+  animator,
   onSelectionChange: () => applyHighlight(),
 };
 const ui = initUI(app);
