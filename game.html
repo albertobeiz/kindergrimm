@@ -207,6 +207,7 @@
     #card {
       top: auto; bottom: 84px; left: var(--pad); right: var(--pad);
       width: auto; padding: 10px 12px;
+      max-height: 42vh; overflow-y: auto;
     }
     #card h3 { font-size: 14px; margin-bottom: 7px; }
     #card dl { grid-template-columns: auto 1fr auto 1fr; gap: 2px 6px; margin-top: 7px; }
@@ -273,6 +274,55 @@
     #start h1 { font-size: 26px; letter-spacing: .22em; }
     #start .intro { margin-top: 16px; font-size: 12px; }
   }
+
+  /* ---- short screens: a phone on its side ------------------------
+     Height is the scarce axis, so everything that stacked now sits
+     side by side instead. Comes last so it wins over the portrait
+     phone rules above. */
+  @media (pointer: coarse) and (orientation: landscape), (max-height: 480px) {
+    /* the title: two columns, nothing to scroll before the button */
+    #start { padding: 14px 20px; }
+    #start .panel {
+      max-width: 660px; text-align: left;
+      display: grid; grid-template-columns: 1fr 1.25fr;
+      grid-template-areas: "head body" "foot body";
+      align-items: center; column-gap: 30px;
+    }
+    #start .head { grid-area: head; align-self: end; }
+    #start .body { grid-area: body; }
+    #start .foot { grid-area: foot; align-self: start; }
+    #start h1 { font-size: 24px; letter-spacing: .2em; }
+    #start .intro { margin-top: 12px; font-size: 12px; line-height: 1.6; }
+    #start .intro:first-child { margin-top: 0; }
+    #start button { margin-top: 14px; padding: 11px; font-size: 13px; }
+    #start .keys { display: none; }
+
+    /* the card goes back to being a narrow panel on the left — a
+       full-width strip would be most of a sideways screen */
+    #card {
+      left: var(--pad); right: auto; top: auto; bottom: 40px;
+      width: 210px; padding: 10px 12px;
+      max-height: calc(100vh - 96px); overflow-y: auto;
+    }
+    #card dl { grid-template-columns: 1fr auto; }
+
+    #log { width: 30vw; top: 40px; }
+    #hud { top: 12px; }
+    #title { font-size: 10px; }
+
+    /* the draft: two columns of the phone's row-cards, so six fit
+       without a long scroll */
+    #draft { padding: 10px 14px; gap: 7px; }
+    #draft h2 { font-size: 14px; }
+    #draft .cards { grid-template-columns: 1fr 1fr; gap: 7px; }
+    #draft button { padding: 7px 10px; gap: 8px; }
+    #draft button b { width: 27%; font-size: 13px; }
+    #draft button .txt { font-size: 10.5px; }
+    #draft button canvas { width: 40px; height: 40px; }
+
+    #pad { bottom: 14px; }
+    #pad button { width: 44px; height: 44px; }
+  }
 </style>
 </head>
 <body>
@@ -297,14 +347,20 @@
        child per frame behind it, so nothing has to build during play. -->
   <div id="start">
     <div class="panel">
-      <h1>kindergrimm</h1>
-      <p class="lede">a baby school, after dark</p>
-      <p class="intro">the parents are gone until morning. outside the lamps the room is black,
-        <b>the dark burns children down</b> — and they will do nothing you do not tell them to.</p>
-      <p class="intro">play fills the bar. the bar brings toys. the nightmares come for the toys.
-        and every fifth bell, <b>a knock at the door</b>.</p>
-      <button id="begin">open the school</button>
-      <div class="keys">enter · drag to pan · pinch or wheel to zoom · R restart</div>
+      <div class="head">
+        <h1>kindergrimm</h1>
+        <p class="lede">a baby school, after dark</p>
+      </div>
+      <div class="body">
+        <p class="intro">the parents are gone until morning. outside the lamps,
+          <b>the dark burns children down</b> — and they do nothing you do not tell them to.</p>
+        <p class="intro">play fills the bar. the bar brings toys. the nightmares come for the toys.
+          every fifth bell, <b>a knock at the door</b>.</p>
+      </div>
+      <div class="foot">
+        <button id="begin">open the school</button>
+        <div class="keys">enter · drag to pan · pinch or wheel to zoom · R restart</div>
+      </div>
     </div>
   </div>
 
