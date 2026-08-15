@@ -11,11 +11,13 @@ that document is written to make those mechanical.
 python3 serve.py
 ```
 
-`index.html` is the editor, `crowd.html` is a 7×5 page of live
-characters, `game.html` is the Kindergrimm room (the game view).
-`serve.py` sends `no-store` on purpose: browsers cache ES modules by
-URL, and a stale module makes an edited file look like a phantom
-`SyntaxError`.
+`index.html` is the **menu** and the only place the scenes are linked
+from — a scene never links to another, only back to the menu.
+`game.html` is the Kindergrimm room (the game), `editor.html` is the
+face editor, `crowd.html` a 7×5 page of live characters, `items.html`
+the object contact sheet. `serve.py` sends `no-store` on purpose:
+browsers cache ES modules by URL, and a stale module makes an edited
+file look like a phantom `SyntaxError`.
 
 ## The short rules
 
@@ -88,9 +90,10 @@ did not check.
 
 What is worth doing yourself is the cheap, decidable half:
 
-- load every page (`index.html`, `crowd.html`, `game.html`,
-  `items.html`) and confirm the console is clean — a stale import or a
-  renamed export is a real bug and takes one reload to find;
+- load every page (`index.html`, `editor.html`, `crowd.html`,
+  `game.html`, `items.html`) and confirm the console is clean — a
+  stale import or a renamed export is a real bug and takes one reload
+  to find;
 - assert on **numbers**, not vibes, through `window.__game`: drain
   rates, the shape of a draft hand, where the camera target lands;
 - check layout in both the desktop and the phone widths.

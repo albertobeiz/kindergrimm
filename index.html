@@ -2,150 +2,109 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>drawai — editor de caras</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>kindergrimm</title>
 <style>
-  :root {
-    --ink: #1f1d1a;
-    --paper: #f6f1e5;
-    --paper2: #ece6d6;
-    --line: #c4bba6;
-  }
+  :root { --ink: #1f1d1a; --paper: #f6f1e5; --paper2: #ece6d6; --line: #c4bba6; }
   * { box-sizing: border-box; margin: 0; }
-  html, body { height: 100%; }
   body {
-    display: flex; overflow: hidden;
+    /* dvh, or the phone's collapsing address bar makes the page jump */
+    min-height: 100vh; min-height: 100dvh;
     background: var(--paper); color: var(--ink);
-    font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px 20px 44px;
   }
-  #stage { flex: 1; position: relative; min-width: 0; }
-  #stage canvas { display: block; }
+  main { width: 100%; max-width: 760px; }
 
-  #ui {
-    width: 300px; flex: none; overflow-y: auto;
-    padding: 14px 16px 40px;
+  h1 { font-size: 22px; font-weight: normal; letter-spacing: .28em; }
+  .sub { opacity: .5; margin-top: 5px; letter-spacing: .05em; }
+  /* the hand-drawn rule: a border nobody ruled straight */
+  .rule {
+    height: 2px; margin: 16px 0 20px;
+    background: var(--ink); opacity: .8;
+    clip-path: polygon(0 30%, 12% 0, 34% 55%, 61% 8%, 83% 62%, 100% 22%,
+                       100% 78%, 78% 100%, 52% 44%, 26% 96%, 8% 40%, 0 82%);
+  }
+
+  .scenes { display: grid; gap: 10px; grid-template-columns: repeat(3, 1fr); }
+  a.scene {
+    position: relative; display: flex; flex-direction: column; gap: 5px;
+    padding: 14px 15px 15px; text-decoration: none; color: inherit;
+    border: 1px solid rgba(31,29,26,.22); border-radius: 4px;
     background: var(--paper2);
-    border-left: 2px solid var(--ink);
   }
-  #ui h1 { font-size: 15px; letter-spacing: .12em; margin-bottom: 2px; }
-  #ui .sub { opacity: .55; font-size: 11px; margin-bottom: 14px; }
-  #ui section { border-top: 1px solid var(--line); padding: 10px 0 12px; }
-  #ui h2 {
-    font-size: 10px; text-transform: uppercase; letter-spacing: .18em;
-    opacity: .6; margin-bottom: 8px;
+  a.scene:hover { border-color: var(--ink); background: #e4dcc7; }
+  a.scene b { font-weight: normal; font-size: 14px; letter-spacing: .1em; }
+  a.scene span { font-size: 11px; opacity: .6; line-height: 1.45; }
+  a.scene i {
+    position: absolute; right: 10px; top: 9px;
+    font-style: normal; font-size: 10px; opacity: .32;
   }
-  .row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  .row label { flex: 1; opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .row .val { width: 34px; text-align: right; opacity: .5; font-size: 11px; }
 
-  button, select, input[type=text], input[type=number] {
-    font: inherit; color: var(--ink);
-    background: var(--paper); border: 1.5px solid var(--ink);
-    border-radius: 3px; padding: 3px 8px;
+  /* the game is not one of three tools — it is what the tools are for */
+  a.game {
+    grid-column: 1 / -1; margin-bottom: 4px;
+    background: #22242c; color: #e8e0cd; border-color: #22242c;
+    padding: 20px 20px 21px;
   }
-  button { cursor: pointer; }
-  button:hover { background: #fff6e2; }
-  button:active { transform: translateY(1px); }
-  select { max-width: 150px; }
-  input[type=range] { flex: 1.4; accent-color: var(--ink); }
-  input[type=number] { width: 105px; }
-  input[type=checkbox] { accent-color: var(--ink); }
+  a.game:hover { background: #2c3040; border-color: #2c3040; }
+  a.game b { font-size: 19px; letter-spacing: .2em; }
+  a.game span { opacity: .62; font-size: 12px; }
+  a.game i { opacity: .4; }
 
-  #chips, .chiprow { display: flex; flex-wrap: wrap; gap: 5px; }
-  #chips button, .chiprow button { padding: 2px 8px; font-size: 12px; border-width: 1px; }
-  #chips button.sel, .chiprow button.sel { background: var(--ink); color: var(--paper); }
-  #chips button.locked::after { content: " 🔒"; font-size: 9px; }
-  .chiprow { margin: 2px 0 8px; }
+  footer { margin-top: 22px; font-size: 11px; opacity: .38; letter-spacing: .04em; }
+  footer a { color: inherit; }
 
-  #part-title { font-weight: bold; }
-  #recipe-box {
-    width: 100%; height: 150px; resize: vertical;
-    font: 10px/1.4 ui-monospace, Menlo, monospace;
-    background: var(--paper); color: var(--ink);
-    border: 1.5px solid var(--ink); border-radius: 3px; padding: 6px;
+  @media (max-width: 620px) {
+    body { padding: 24px 16px 36px; align-items: flex-start; }
+    .scenes { grid-template-columns: 1fr; }
+    h1 { font-size: 19px; letter-spacing: .22em; }
   }
-  .hint { font-size: 10px; opacity: .5; margin-top: 4px; }
 </style>
 </head>
 <body>
-  <div id="stage"></div>
-  <div id="ui">
-    <h1>drawai</h1>
-    <div class="sub">personajes procedurales · <a href="crowd.html" style="color:inherit">ver multitud 7×5 →</a> · <a href="items.html" style="color:inherit">juguetería →</a></div>
+  <main>
+    <h1>kindergrimm</h1>
+    <div class="sub">personajes dibujados a mano por una máquina · y el juego que viven</div>
+    <div class="rule"></div>
 
-    <section id="sec-face">
-      <h2>Cara</h2>
-      <div class="row">
-        <label>seed</label>
-        <input id="seed" type="number">
-        <button id="dice" title="seed aleatorio">🎲</button>
-      </div>
-      <div class="row">
-        <label>especie</label>
-        <select id="species"></select>
-      </div>
-      <div class="row">
-        <label>medio</label>
-        <select id="media"></select>
-      </div>
-      <div class="row">
-        <label>color</label>
-        <select id="color">
-          <option value="auto">auto (según seed)</option>
-          <option value="plain">solo grafito</option>
-          <option value="color">siempre color</option>
-        </select>
-      </div>
-      <div class="row"><button id="regen" style="flex:1">Regenerar (R)</button></div>
-      <div class="hint">las partes con 🔒 no se regeneran</div>
-    </section>
+    <div class="scenes">
+      <a class="scene game" href="game.html" data-k="1">
+        <b>el juego</b>
+        <span>una escuela infantil a oscuras. los niños no hacen nada solos:
+              diles a dónde ir y mantenlos dentro de la luz.</span>
+        <i>1</i>
+      </a>
 
-    <section id="sec-parts">
-      <h2>Partes <span style="opacity:.4;font-size:9px">(o click en la cara)</span></h2>
-      <div id="chips"></div>
-    </section>
+      <a class="scene" href="editor.html" data-k="2">
+        <b>editor</b>
+        <span>una cara y todos sus parámetros, con la receta en JSON.</span>
+        <i>2</i>
+      </a>
 
-    <section id="sec-part" hidden>
-      <h2>Parte · <span id="part-title"></span></h2>
-      <div class="row">
-        <button id="part-reroll">Reroll 🎲</button>
-        <label style="flex:none;display:flex;align-items:center;gap:4px">
-          <input id="part-lock" type="checkbox"> lock
-        </label>
-      </div>
-      <div id="part-params"></div>
-    </section>
+      <a class="scene" href="crowd.html" data-k="3">
+        <b>multitud</b>
+        <span>35 personajes vivos a la vez — la variedad de un vistazo.</span>
+        <i>3</i>
+      </a>
 
-    <section id="sec-anim">
-      <h2>Animación</h2>
-      <div class="hint">pose</div>
-      <div id="poses" class="chiprow"></div>
-      <div class="hint">cara</div>
-      <div id="faces" class="chiprow"></div>
-      <div class="row"><label>parpadeo</label><input id="anim-blink" type="checkbox" checked></div>
-      <div class="row"><label>mirada</label><input id="anim-gaze" type="checkbox" checked></div>
-      <div class="row"><label>hablar</label><input id="anim-talk" type="checkbox"></div>
-      <div class="row"><label>balanceo</label><input id="anim-sway" type="checkbox" checked></div>
-      <div class="row"><label>respiración</label><input id="anim-breath" type="checkbox" checked></div>
-      <div class="row"><label>line boil</label><input id="anim-boil" type="checkbox" checked></div>
-      <div class="row">
-        <label>vel. boil</label>
-        <input id="anim-speed" type="range" min="0.15" max="3" step="0.05" value="0.5">
-        <span class="val" id="anim-speed-val">0.50</span>
-      </div>
-    </section>
+      <a class="scene" href="items.html" data-k="4">
+        <b>juguetería</b>
+        <span>cada familia de objeto × cada rango: la hoja de contactos.</span>
+        <i>4</i>
+      </a>
+    </div>
 
-    <section id="sec-recipe">
-      <h2>Receta</h2>
-      <textarea id="recipe-box" spellcheck="false"></textarea>
-      <div class="row" style="margin-top:6px">
-        <button id="recipe-load">Aplicar JSON</button>
-        <button id="recipe-copy">Copiar</button>
-      </div>
-      <div class="hint">la receta reproduce la cara exacta: guárdala y cárgala donde quieras</div>
-    </section>
-  </div>
-  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
-  <script type="module" src="./src/main.js"></script>
+    <footer>grafito sobre papel crema · <a href="https://github.com/albertobeiz/kindergrimm">código</a></footer>
+  </main>
+
+  <script>
+    // the same number keys the draft uses, for the same reason
+    addEventListener('keydown', e => {
+      const a = document.querySelector(`a[data-k="${e.key}"]`);
+      if (a) location.href = a.getAttribute('href');
+    });
+  </script>
 </body>
 </html>

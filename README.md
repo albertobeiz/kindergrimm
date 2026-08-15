@@ -10,10 +10,15 @@ games.
 python3 serve.py
 ```
 
-- `index.html` — the editor: one face, click a part to tune it, reroll
-  or lock parts, seed and medium selectors, animation toggles.
+- `index.html` — the menu. The four scenes, and the only place they
+  are linked from: no scene links to another.
+- `game.html` — **Kindergrimm**: a baby school in the dark. The game.
+- `editor.html` — one face, click a part to tune it, reroll or lock
+  parts, seed and medium selectors, animation toggles.
 - `crowd.html` — a 7×5 page of living faces, no editing. Click a face
   and it is someone else; `R` draws a new page.
+- `items.html` — the juguetería: every object family × every rank, the
+  contact sheet the art gets reviewed on.
 
 ## How it fits together
 

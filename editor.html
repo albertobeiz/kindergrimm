@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>drawai — editor de caras</title>
+<style>
+  :root {
+    --ink: #1f1d1a;
+    --paper: #f6f1e5;
+    --paper2: #ece6d6;
+    --line: #c4bba6;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    display: flex; overflow: hidden;
+    background: var(--paper); color: var(--ink);
+    font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #stage canvas { display: block; }
+
+  #ui {
+    width: 300px; flex: none; overflow-y: auto;
+    padding: 14px 16px 40px;
+    background: var(--paper2);
+    border-left: 2px solid var(--ink);
+  }
+  #ui h1 { font-size: 15px; letter-spacing: .12em; margin-bottom: 2px; }
+  #ui .sub { opacity: .55; font-size: 11px; margin-bottom: 14px; }
+  #ui section { border-top: 1px solid var(--line); padding: 10px 0 12px; }
+  #ui h2 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .18em;
+    opacity: .6; margin-bottom: 8px;
+  }
+  .row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .row label { flex: 1; opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .val { width: 34px; text-align: right; opacity: .5; font-size: 11px; }
+
+  button, select, input[type=text], input[type=number] {
+    font: inherit; color: var(--ink);
+    background: var(--paper); border: 1.5px solid var(--ink);
+    border-radius: 3px; padding: 3px 8px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #fff6e2; }
+  button:active { transform: translateY(1px); }
+  select { max-width: 150px; }
+  input[type=range] { flex: 1.4; accent-color: var(--ink); }
+  input[type=number] { width: 105px; }
+  input[type=checkbox] { accent-color: var(--ink); }
+
+  #chips, .chiprow { display: flex; flex-wrap: wrap; gap: 5px; }
+  #chips button, .chiprow button { padding: 2px 8px; font-size: 12px; border-width: 1px; }
+  #chips button.sel, .chiprow button.sel { background: var(--ink); color: var(--paper); }
+  #chips button.locked::after { content: " 🔒"; font-size: 9px; }
+  .chiprow { margin: 2px 0 8px; }
+
+  #part-title { font-weight: bold; }
+  #recipe-box {
+    width: 100%; height: 150px; resize: vertical;
+    font: 10px/1.4 ui-monospace, Menlo, monospace;
+    background: var(--paper); color: var(--ink);
+    border: 1.5px solid var(--ink); border-radius: 3px; padding: 6px;
+  }
+  .hint { font-size: 10px; opacity: .5; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="ui">
+    <h1>drawai</h1>
+    <div class="sub">personajes procedurales · <a href="index.html" style="color:inherit">← menú</a></div>
+
+    <section id="sec-face">
+      <h2>Cara</h2>
+      <div class="row">
+        <label>seed</label>
+        <input id="seed" type="number">
+        <button id="dice" title="seed aleatorio">🎲</button>
+      </div>
+      <div class="row">
+        <label>especie</label>
+        <select id="species"></select>
+      </div>
+      <div class="row">
+        <label>medio</label>
+        <select id="media"></select>
+      </div>
+      <div class="row">
+        <label>color</label>
+        <select id="color">
+          <option value="auto">auto (según seed)</option>
+          <option value="plain">solo grafito</option>
+          <option value="color">siempre color</option>
+        </select>
+      </div>
+      <div class="row"><button id="regen" style="flex:1">Regenerar (R)</button></div>
+      <div class="hint">las partes con 🔒 no se regeneran</div>
+    </section>
+
+    <section id="sec-parts">
+      <h2>Partes <span style="opacity:.4;font-size:9px">(o click en la cara)</span></h2>
+      <div id="chips"></div>
+    </section>
+
+    <section id="sec-part" hidden>
+      <h2>Parte · <span id="part-title"></span></h2>
+      <div class="row">
+        <button id="part-reroll">Reroll 🎲</button>
+        <label style="flex:none;display:flex;align-items:center;gap:4px">
+          <input id="part-lock" type="checkbox"> lock
+        </label>
+      </div>
+      <div id="part-params"></div>
+    </section>
+
+    <section id="sec-anim">
+      <h2>Animación</h2>
+      <div class="hint">pose</div>
+      <div id="poses" class="chiprow"></div>
+      <div class="hint">cara</div>
+      <div id="faces" class="chiprow"></div>
+      <div class="row"><label>parpadeo</label><input id="anim-blink" type="checkbox" checked></div>
+      <div class="row"><label>mirada</label><input id="anim-gaze" type="checkbox" checked></div>
+      <div class="row"><label>hablar</label><input id="anim-talk" type="checkbox"></div>
+      <div class="row"><label>balanceo</label><input id="anim-sway" type="checkbox" checked></div>
+      <div class="row"><label>respiración</label><input id="anim-breath" type="checkbox" checked></div>
+      <div class="row"><label>line boil</label><input id="anim-boil" type="checkbox" checked></div>
+      <div class="row">
+        <label>vel. boil</label>
+        <input id="anim-speed" type="range" min="0.15" max="3" step="0.05" value="0.5">
+        <span class="val" id="anim-speed-val">0.50</span>
+      </div>
+    </section>
+
+    <section id="sec-recipe">
+      <h2>Receta</h2>
+      <textarea id="recipe-box" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:6px">
+        <button id="recipe-load">Aplicar JSON</button>
+        <button id="recipe-copy">Copiar</button>
+      </div>
+      <div class="hint">la receta reproduce la cara exacta: guárdala y cárgala donde quieras</div>
+    </section>
+  </div>
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
