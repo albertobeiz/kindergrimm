@@ -1,0 +1,18 @@
+# The deploy is the four pages and what they import — nothing else.
+# Anything listed here would otherwise be served as a static file at a
+# guessable URL, so this is a publish boundary, not tidiness.
+.env*
+.vercel
+.claude
+.git
+__pycache__
+.DS_Store
+
+# dev-only: serve.py exists to send no-store while editing modules;
+# Vercel serves the files itself
+serve.py
+
+# notes for whoever works on this, not part of the game
+CLAUDE.md
+ARCHITECTURE.md
+assets/music/README.md

@@ -400,10 +400,22 @@ You start with three children, one bed, one floor lantern and one toy.
 - **Orders persist**: a child on a toy plays until the toy breaks or
   you say otherwise; a child in a bed sleeps until it is full.
 - **Everything breaks** — beds and toys by use, lights by time.
-- **The dark is the threat.** A child outside the light is `scared`
-  and loses stamina fast; at zero its parents come and take it home.
-  Lose all three and the school closes. Children are never hurt and
-  never die — this is a baby school, do not escalate it.
+- **The dark is the threat — and the only one.** A child outside the
+  light is `scared` and loses stamina fast; at zero its parents come
+  and take it home. Lose all three and the school closes. Children are
+  never hurt and never die — this is a baby school, do not escalate it.
+  **Nothing but the dark may take a child's energy.** A version where
+  a nightmare standing over a child drained it too has been tried and
+  removed: it is a hidden mechanic, nothing on screen names it, and it
+  breaks the one promise the room makes plainly — inside the light you
+  are safe, outside it you are not. If driving a nightmare off needs to
+  be worth a child's time, buy that with something visible (what it
+  eats, where it goes, what it blocks), never with a clock the player
+  cannot read. Playing is the one other cost, and it is legible: the
+  card says `playing` and the bar it fills is on screen — and it has a
+  floor (`PLAY_STOP`): at 10% energy the child puts the toy down by
+  itself, the mirror of a full child getting out of bed. Playing may
+  drain a child, but only the dark can ever take the last of it.
 - **A child is three numbers**: **energy**, **attack**, **speed** —
   and those are exactly what the card shows. Everything else a stat
   bag carries (`reach`, `swingT`, `rest`, `lampR`, `scale`, `drain`,

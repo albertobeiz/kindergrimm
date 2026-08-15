@@ -6,15 +6,15 @@ you can add them one at a time.
 
 | file         | plays when                        | character |
 |--------------|-----------------------------------|-----------|
-| `calm.mp3`   | always; fades as threat rises     | sparse broken music box lullaby, minor key, lots of silence, tape wow |
-| `unease.mp3` | threat > 0                        | low drones, bowed metal, faint air — no melody |
-| `danger.mp3` | threat > ~0.45                    | slow heartbeat pulse, denser texture |
-| `draft.mp3`  | the draft / door scene is open    | the calm theme, thinner — a single music box, slower |
+| `calm.mp3`   | always; fades as threat rises     | playful dark waltz — pizzicato, celesta, music box; creepy-cute, Elfman-ish |
+| `unease.mp3` | threat > 0                        | creeping low pizzicato, bass clarinet, tiptoe tension — no melody |
+| `danger.mp3` | threat > ~0.45                    | dark circus march, heartbeat pulse, low brass stabs |
+| `draft.mp3`  | the draft / door scene is open    | the calm theme thinner — one music box, slower |
 
 Rules for generating (Lyria / Gemini or anything else):
 
 - **Same key and same tempo for all four**, so they stack. Suggest
-  A minor, 60 BPM.
+  A minor, 84 BPM.
 - **Same length** (e.g. exactly 64s), or at least an exact multiple —
   every layer loops independently from one shared start time, and
   mismatched lengths drift against each other.
@@ -25,8 +25,9 @@ Rules for generating (Lyria / Gemini or anything else):
   file (tail folded into the head) is the reliable way.
 
 Prompt direction that matches the game's register (graphite doodle,
-cute-but-dark, "always night in a baby school"):
+cute-but-dark, "always night in a baby school") — playful over
+mournful, mischief over dread:
 
-> slow broken music box lullaby, A minor, 60 bpm, sparse, detuned,
-> tape hiss and wow, long silences, childlike but wrong, no drums,
-> instrumental
+> playful dark waltz, pizzicato strings, celesta and music box,
+> mischievous and creepy-cute, danny elfman style, minor key, bouncy
+> but gentle, halloween toybox, instrumental

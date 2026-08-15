@@ -10,15 +10,19 @@
 //   of progress in this game is something you told someone to do.
 //
 //   Playing fills the bar — and costs the child energy, because the
-//   only thing here that makes progress has to be paid for. When the
+//   only thing here that makes progress has to be paid for. It can
+//   never take the LAST of it: at 10% the child puts the toy down by
+//   itself, so nobody is ever lost to a game they were told to enjoy.
+//   When the
 //   bar fills, everything STOPS and a hand of six objects is dealt: a
 //   lamp, a toy, a bed, and three things a child can carry. You keep
 //   ONE. Carried things ask which child; furniture asks where on the
 //   floor.
 //
-//   The room is black outside the lamps. Dark drains a child fast —
-//   and so does a nightmare stalking close enough to touch — and at
-//   zero its parents come and take it home. A child is three
+//   The room is black outside the lamps, and the dark is the ONLY
+//   thing that takes energy from a child. Nightmares eat the
+//   furniture; they never touch anybody. At zero energy a child's
+//   parents come and take it home. A child is three
 //   numbers — ENERGY, ATTACK, SPEED — and every object on a card
 //   moves one of them.
 //
@@ -65,11 +69,17 @@ const DRAIN_IDLE = .3, DRAIN_DARK = 2;
 // ON TOP of the dark, so playing out where you cannot see is the
 // worst thing you can ask of a child, which is exactly right.
 const DRAIN_PLAY = 1.6;
-// A nightmare close enough to touch is as bad as the dark. This is
-// what makes driving one off worth a child's time: the furniture it
-// chews is replaced by the next draft for free, but the children it
-// stands over are the one thing the game cannot deal you more of.
-const MARE_SCARE = 2.8, DRAIN_SCARE = 1.4;
+// …but playing may never send a child home. Below this fraction of
+// max energy they put the toy down on their own (see stepKid). Only
+// the DARK can take the last of a child's energy.
+const PLAY_STOP = .1;
+// THE DARK IS THE ONLY THING THAT TAKES ENERGY FROM A CHILD.
+// A nightmare standing over one used to drain it too, and that was a
+// hidden mechanic: nothing on screen said the child was being emptied,
+// and it broke the one promise the room makes plainly — that a child
+// inside the light is safe and outside it is not. Nightmares eat the
+// furniture. If driving them off needs to be worth a child's time,
+// buy it with something you can SEE, not with a clock nobody can read.
 const RECOVER = 4;
 const TIRED = 25;
 const PLAY_WEAR = 1.5, BED_WEAR = 1.2;
@@ -111,8 +121,9 @@ const state = {
   // every fifth level a new child knocks. `kidDue` is set when the bar
   // fills on such a level and cashed AFTER the card pick resolves, so
   // the two choices never sit on screen at once; `choosing` is the
-  // door scene itself.
-  kidDue: false, choosing: false,
+  // card screen, `pendingKid` the child waiting for a spot on the
+  // floor — the same two beats as an object.
+  kidDue: false, choosing: false, pendingKid: null,
   // how much the toybox likes each family of object. Picking one
   // makes it both commoner and better; everything else fades.
   favor: {},
@@ -1039,20 +1050,12 @@ function stepKid(k, t, dt) {
   if (k.curses.has('flicker')) k.lit *= .72 + .28 * Math.sin(t * 9 + k.id * 2);
   const dark = k.lit < .12;
 
-  // a nightmare looming this close frightens a child even in the light
-  k.spooked = false;
-  for (const m of mares) {
-    if (m.dying > 0) continue;
-    if (Math.hypot(m.x - k.x, m.z - k.z) < MARE_SCARE) { k.spooked = true; break; }
-  }
-
   // `k.act` is last frame's — the orders below are what set it — and
   // that one frame of lag is invisible at any drain rate we use here.
   if (k.act === 'sleep') k.stamina = Math.min(k.maxStam, k.stamina + RECOVER * k.rest * dt);
   else {
     let drain = dark ? DRAIN_DARK : DRAIN_IDLE;
     if (k.act === 'play') drain += DRAIN_PLAY;
-    if (k.spooked) drain += DRAIN_SCARE;
     k.stamina -= drain * k.drain * dt;
   }
 
@@ -1108,6 +1111,17 @@ function stepKid(k, t, dt) {
   // done, or you tell them otherwise
   const obj = o.obj;
   if (!things.includes(obj) || obj.dur <= 0) { k.order = null; k.act = 'idle'; return; }
+
+  // Playing has a FLOOR. Orders persist, so without one a child told
+  // to play would grind itself to zero and be carried home from a game
+  // it was told to enjoy. At 10% it puts the toy down by itself — the
+  // mirror of a full child getting out of bed, not a refused order:
+  // the order simply ENDS, the way "sleep" ends at full.
+  if (obj.kind === 'toy' && k.stamina < k.maxStam * PLAY_STOP) {
+    k.order = null; k.act = 'idle';
+    say(`${k.name} is too tired to play`);
+    return;
+  }
   if (Math.hypot(obj.x - k.x, obj.z - k.z) > .55) {
     k.act = 'walk';
     moveTo(k, obj.x, obj.z, dt);
@@ -1305,18 +1319,47 @@ function applyPending(ent, gx, gz) {
 }
 
 // ---- a new child at the door ------------------------------------
-// Every fifth level, three children stand at the door and you keep at
-// most one. They are REAL characters in the room — built, breathing,
-// tappable — because this game already knows how to show you a child;
-// a portrait on a card would be a second, lesser way. The room is
-// dark and the world is stopped, so they stand in their own light
-// (`spotlit`) like the door is open behind them.
+// Every fifth level, three children knock and you keep at most one.
+// They are offered the same way objects are — CARDS — because that is
+// the choosing screen this game already taught: portrait, name, the
+// numbers, the cost. Then the same second beat as furniture: click
+// the floor, and that is where the child walks in. Standing the trio
+// in the dark room instead read as a heap of strangers behind an
+// unreadable veil.
 //
 // Each candidate is born with one mutation, because base stats alone
-// differ by tenths — a thing you can SEE on the body is a choice you
-// can make from across the room, which is this game's whole promise.
+// differ by tenths — a thing you can SEE on the portrait is a choice,
+// which is this game's whole promise.
 const candidates = [];
-const DOOR = { x: 0, z: ROOM_R - 3 };
+
+// The portrait is the REAL child, not an approximation: the built
+// character is borrowed into a one-off transparent scene, rendered
+// once, and handed back. One shared renderer, sized per use — this
+// only ever runs while the draft has the world stopped.
+let portraitGL = null;
+function portraitOf(k, px = 160) {
+  const r = portraitGL ??= new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  r.setPixelRatio(1);
+  r.setSize(px, px);
+  const sc = new THREE.Scene();
+  const prev = k.holder.parent, vis = k.holder.visible;
+  k.holder.visible = true;
+  k.holder.rotation.y = 0;
+  k.holder.position.set(0, 0, 0);
+  k.holder.scale.set(k.scale, k.scale, 1);
+  sc.add(k.holder);
+  // feet at y=0; headroom above for horns and crowns, a sliver below
+  // so the feet are not kissing the card edge
+  const cam = new THREE.OrthographicCamera(-1.45, 1.45, 2.55, -.35, .1, 50);
+  cam.position.z = 10;
+  r.render(sc, cam);
+  const c = document.createElement('canvas');
+  c.width = c.height = px;
+  c.getContext('2d').drawImage(r.domElement, 0, 0);
+  if (prev) prev.add(k.holder);
+  k.holder.visible = vis;
+  return c;
+}
 
 function rollCandidateBase() {
   // wider dice than a founding child: these are strangers, and the
@@ -1333,43 +1376,59 @@ const CANDIDATE_RANKS = ['sketch', 'sketch', 'sketch', 'inked', 'inked', 'gilded
 function beginKidChoice() {
   state.kidDue = false;
   state.choosing = true;                   // the world stays paused
-  // a row along the camera's right axis, so they never hide each other
-  for (let i = -1; i <= 1; i++) {
-    const k = makeKid(DOOR.x + view.rightX * i * 1.7, DOOR.z + view.rightZ * i * 1.7,
-      rollCandidateBase());
-    k.spotlit = true;
+  for (let i = 0; i < 3; i++) {
+    const k = makeKid(0, 0, rollCandidateBase());
+    // built but not IN the room yet: invisible, unclickable, waiting
+    // on a card. The pick proxy comes back when the child does.
+    dropPick(k);
+    k.holder.visible = false;
+    k.shadow.visible = false;
     const mut = rollItem('mutation',
       CANDIDATE_RANKS[(Math.random() * CANDIDATE_RANKS.length) | 0],
       (Math.random() * 1e9) | 0);
     if (mut) giveItem(k, mut);             // ~40ms each; the world is stopped
-    k.h = Math.PI / 2;
+    k.portrait = portraitOf(k);            // after the mutation, so it shows
     candidates.push(k);
   }
-  lookAtXZ(DOOR.x, DOOR.z);
   audio.sfx('knock');
   say('a knock at the door');
   renderDraft();
 }
 
-function keepKid(i) {
+function chooseKid(i) {
   const k = candidates[i];
   if (!k) return;
-  k.spotlit = false;
   candidates.splice(i, 1);
-  kids.push(k);
-  sfxAt('scratch', k.x, k.z);            // drawn into the class
-  say(`${k.name} stays`);
-  endKidChoice();
+  for (const c of [...candidates]) despawn(c, candidates);
+  state.choosing = false;
+  state.pendingKid = k;                    // now: where do they come in?
+  renderDraft();
 }
 
+function placeKid(gx, gz) {
+  const k = state.pendingKid;
+  if (gx === undefined || Math.hypot(gx, gz) > ROOM_R) return false;
+  k.x = gx; k.z = gz;
+  k.holder.visible = true;
+  k.shadow.visible = true;
+  addPick(k, 1.1, 2.1);
+  fitBody(k);                              // re-cut the proxy for their size
+  kids.push(k);
+  sfxAt('scratch', gx, gz);                // drawn into the class
+  say(`${k.name} joins the class`);
+  state.pendingKid = null;
+  state.paused = false;
+  renderDraft();
+  return true;
+}
+
+// the way out, at either beat: from the cards, or with a child
+// already chosen but not yet placed
 function declineKids() {
+  if (state.pendingKid) { despawn(state.pendingKid, candidates); state.pendingKid = null; }
+  for (const c of [...candidates]) despawn(c, candidates);
   audio.sfx('paper');
   say('they went home with their parents');
-  endKidChoice();
-}
-
-function endKidChoice() {
-  for (const c of [...candidates]) despawn(c, candidates);
   state.choosing = false;
   state.paused = false;
   renderDraft();
@@ -1390,17 +1449,12 @@ addEventListener('keydown', e => {
   if (e.key === 'm' || e.key === 'M') say(audio.toggleMute() ? 'sound off' : 'sound on');
   if (e.key === 'Escape') {
     if (state.pending) discardPending();
-    else if (state.choosing) declineKids();
+    else if (state.choosing || state.pendingKid) declineKids();
     else state.selected = null;
   }
   const n = parseInt(e.key, 10);
   if (state.offers && n >= 1 && n <= state.offers.length) chooseOffer(n - 1);
-  // same two-beat rhythm as the taps: first press meets, second keeps
-  if (state.choosing && n >= 1 && n <= candidates.length) {
-    const c = candidates[n - 1];
-    if (state.selected === c) keepKid(n - 1);
-    else { state.selected = c; audio.sfx('tick'); }
-  }
+  if (state.choosing && n >= 1 && n <= candidates.length) chooseKid(n - 1);
 });
 addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 addEventListener('wheel', e => setZoom(halfH * (1 + Math.sign(e.deltaY) * .12)), { passive: true });
@@ -1534,16 +1588,8 @@ function handleTap(cx, cy) {
     applyPending(ent, onGround ? hitPt.x : undefined, onGround ? hitPt.z : undefined);
     return;
   }
-  if (state.choosing) {
-    // first tap meets a child (the card shows who they are), the
-    // second tap on the same one keeps them — an order needs two taps
-    // too, so the rhythm is already in the player's thumb
-    if (ent && ent.kind === 'kid') {
-      const ci = candidates.indexOf(ent);
-      if (ci >= 0 && state.selected === ent) { keepKid(ci); return; }
-      state.selected = ent;
-      audio.sfx('tick');
-    }
+  if (state.pendingKid) {
+    if (onGround && placeKid(hitPt.x, hitPt.z)) return;
     return;
   }
   if (state.paused) return;
@@ -1622,10 +1668,7 @@ const SLOT_WORD = {
 };
 
 function renderDraft() {
-  draftEl.classList.toggle('thin', (!!state.pending || state.choosing) && !state.offers);
-  // the door scene pins its words to the top of the screen, because
-  // the middle is where the children are standing
-  draftEl.classList.toggle('top', state.choosing && !state.pending && !state.offers);
+  draftEl.classList.toggle('thin', (!!state.pending || !!state.pendingKid) && !state.offers && !state.choosing);
   if (state.offers) {
     draftEl.style.display = 'flex';
     // Three paragraphs, never one sentence: what it is, what it does
@@ -1653,11 +1696,30 @@ function renderDraft() {
       ? 'click the child who gets it' : 'click the floor to put it down'}`
       + `<small> · esc to put it back</small></h2>`;
   } else if (state.choosing) {
+    // the same screen the toys use, because it is the choosing screen
+    // this game already taught: portrait, name, numbers, cost
     draftEl.style.display = 'flex';
-    draftEl.innerHTML = `<h2>a new child is at the door<small> · tap one to meet them`
-      + ` · tap again to keep them</small></h2>`
+    draftEl.innerHTML = `<h2>a new child is at the door<small> · keep one, or none</small></h2>`
+      + `<div class="cards">` + candidates.map((k, i) => {
+        const mut = k.items[0];
+        return `<button class="r-${mut?.rank ?? 'sketch'}" data-i="${i}"><b>${k.name}</b><div class="txt">`
+          + (mut?.copy.what ? `<p>${mut.copy.what}</p>` : '')
+          + `<p class="up">speed ${k.speed.toFixed(1)} · attack ${k.dmg.toFixed(1)}`
+          + ` · energy ${Math.round(k.maxStam)}</p>`
+          + (mut?.copy.costs ? `<p class="bad">${mut.copy.costs}</p>` : '')
+          + `</div><em>${mut ? `born with ${mut.name}` : 'a new classmate'}</em><i>${i + 1}</i></button>`;
+      }).join('') + `</div>`
       + `<button class="decline">send them all home</button>`;
+    draftEl.querySelectorAll('.cards button').forEach(b => {
+      const k = candidates[+b.dataset.i];
+      b.insertBefore(k.portrait, b.querySelector('em'));
+      b.onclick = () => chooseKid(+b.dataset.i);
+    });
     draftEl.querySelector('.decline').onclick = declineKids;
+  } else if (state.pendingKid) {
+    draftEl.style.display = 'flex';
+    draftEl.innerHTML = `<h2>click the floor where ${state.pendingKid.name} comes in`
+      + `<small> · esc sends them home</small></h2>`;
   } else {
     draftEl.style.display = 'none';
   }
@@ -1846,20 +1908,18 @@ renderer.setAnimationLoop(now => {
       c.aura.position.set(c.x, .06, c.z);
       c.aura.material.opacity = .18 + .12 * Math.sin(t * 2.2 + c.id);
     }
-    // a candidate at the door stands in the light spilling through it,
-    // whatever the room's lamps are doing — you cannot weigh a child
-    // you cannot see
-    const v = c.spotlit ? 1 : DARK_VIS + (1 - DARK_VIS) * lightAt(c.x, c.z);
+    const v = DARK_VIS + (1 - DARK_VIS) * lightAt(c.x, c.z);
     // a struck nightmare flares white for a moment — the only way to
     // tell a hit landed on something that is already a black scribble
     const flare = c.hitFlash > 0 ? c.hitFlash * .9 : 0;
     // Two tiers, and they never both fire: RED means losing energy
     // right now, AMBER means will need a bed soon. Red wins.
     const awake = c.kind === 'kid' && c.act !== 'sleep';
-    // the dark and a looming nightmare drain the same way, so they
-    // pulse the same colour — the mark means "losing energy NOW",
-    // whatever is doing the taking
-    const bleeding = awake && (c.lit < .12 || c.spooked);
+    // RED means the dark is taking energy right now — and the dark is
+    // the only thing that ever does, so this and `dark` in stepKid are
+    // the same test and must stay that way. A pulse that can fire for
+    // a reason the player cannot name is worse than no pulse.
+    const bleeding = awake && c.lit < .12;
     const tired = awake && !bleeding && c.stamina < c.maxStam * .25;
 
     if (c.dying > 0) {
@@ -1962,5 +2022,5 @@ renderer.setAnimationLoop(now => {
 
 window.__game = { state, kids, mares, pets, things, shots, lightAt, spawnMare, openDraft, audio,
   begin, giveItem, recomputeKid, camera, renderer, addXp, camWant, camAt, lookAtXZ,
-  candidates, beginKidChoice, keepKid, declineKids,
+  candidates, beginKidChoice, chooseKid, placeKid, declineKids,
   get xpNeed() { return xpNeed; }, get halfH() { return halfH; }, get az() { return camAzWant; } };
