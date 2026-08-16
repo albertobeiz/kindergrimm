@@ -71,9 +71,11 @@ const FIGURAS = {
 // one after each of the first two rounds, so round three is played
 // with three. (Measuring round three with four, which is the number it
 // looks like you should have, put its target 800 too high.)
-// Pass rates come out 94% / 69% / 45%: round one teaches, round two
-// bites, and about three runs in ten are finished.
-const TARGETS = [900, 1800, 3400];
+// Pass rates come out 92% / 69% / 46%: round one teaches, round two
+// bites, and about three runs in ten are finished. (Re-measured after
+// `boca` was swapped for `estampado` — one axis fewer to match on cost
+// round three about 300 points.)
+const TARGETS = [900, 1800, 3200];
 
 // What an object's rule is worth, by rank. The ladder is steep on
 // purpose: a gilded object should feel like it changed the run.
@@ -104,18 +106,36 @@ const RANK_BY_ROUND = [
 const P = (c, id) => c.recipe.parts[id]?.params ?? {};
 
 const SP_PLURAL = { human: 'humanos', dog: 'perros', cat: 'gatos', nightmare: 'pesadillas' };
+const PAT_PLURAL = { stripes: 'rayas', belly: 'barrigas', buttons: 'botones', pocket: 'bolsillos' };
 
-// The axes a figura can be made on. Species is the suit; eyes and
-// mouth cross-cut it (a human can have dot eyes and a nightmare can
-// have saucers), which is what stops every figura being a species
-// figura wearing a different word.
+// THE AXES a figura can be made on, and the choice is not free.
+//
+// Almost every legible trait in this engine is a species tell — that
+// is what a casting profile IS (ARCHITECTURE §8) — so an axis picked
+// carelessly scores species under another name and the player learns
+// nothing from it. Measured as mutual information with `recipe.species`
+// over 200k rolled children: crest .84, mouth .63, tail .53, base .52,
+// eyes .50, hair .37 … and `torso.pattern` **.00**, the one legible
+// trait no species has an opinion about, drawn on every base.
+//
+// So: species is the suit, pattern is the honest cross-cut, and eyes
+// sit in between — a dog is mostly dot-eyed but a human rolls dot 16%
+// of the time, so it still crosses.
+//
+// `boca` was here and is gone: it leaked the most of the three AND its
+// five commonest values (wobble, tiny, smirk, frown, grit) are all one
+// thin wiggly line at the size these are drawn, so "pareja de bocas"
+// was a figura the player could not check.
+//
+// `nul` is a value that means ABSENCE. Three children with no pattern
+// are not a trío of anything.
 const AXES = [
   { id: 'especie', of: c => c.recipe.species,
     word: (fig, v) => `${fig} de ${SP_PLURAL[v] ?? v}` },
+  { id: 'estampado', of: c => P(c, 'torso').pattern, nul: 'none',
+    word: (fig, v) => `${fig} de ${PAT_PLURAL[v] ?? v}` },
   { id: 'ojos', of: c => P(c, 'eyes').type,
     word: fig => `${fig} de ojos` },
-  { id: 'boca', of: c => P(c, 'mouth').style,
-    word: fig => `${fig} de bocas` },
 ];
 
 const HORNS = new Set(['horns', 'spikes', 'antlers', 'stalks']);
@@ -172,7 +192,7 @@ function figuraOn(photo, axis) {
   const seen = new Map();
   for (const c of photo) {
     const v = axis.of(c);
-    if (v === undefined) continue;
+    if (v === undefined || v === axis.nul) continue;
     seen.set(v, (seen.get(v) ?? 0) + 1);
   }
   const groups = [...seen.entries()].sort((a, b) => b[1] - a[1]);
@@ -211,7 +231,7 @@ function pairsIn(photo) {
     const seen = new Map();
     for (const c of photo) {
       const v = axis.of(c);
-      if (v !== undefined) seen.set(v, (seen.get(v) ?? 0) + 1);
+      if (v !== undefined && v !== axis.nul) seen.set(v, (seen.get(v) ?? 0) + 1);
     }
     for (const [, k] of seen) n += k >> 1;
   }
