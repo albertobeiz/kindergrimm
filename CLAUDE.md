@@ -13,8 +13,12 @@ python3 serve.py
 
 `index.html` is the **menu** and the only place the scenes are linked
 from — a scene never links to another, only back to the menu.
-`game.html` is the Kindergrimm room (the game), `editor.html` is the
-face editor, `crowd.html` a 7×5 page of live characters, `items.html`
+`orla.html` is **the game**: the class photo, scored like a poker
+hand — pick five of eight children, the objects on the wall do the
+rest. It is a FLAT page like the editor and the crowd, and its whole
+rule set is one file (`src/orla.js`). `game.html` is the older
+real-time room, kept working. `editor.html` is the face editor,
+`crowd.html` a 7×5 page of live characters, `items.html`
 the object contact sheet. `serve.py` sends `no-store` on purpose:
 browsers cache ES modules by URL, and a stale module makes an edited
 file look like a phantom `SyntaxError`.
@@ -64,6 +68,18 @@ file look like a phantom `SyntaxError`.
 - An item's `draw()` must be **deterministic from `P`**. It is baked
   once as a floor prop but re-drawn every boil frame on a child, so
   anything rolled with `s.jr()` shimmers. Roll it in `gen()`.
+- **Keep a game small.** A 2500-line turn-based build was thrown away
+  for being too complex; `src/orla.js` is the shape to copy — one
+  file, one screen, one verb, a rule you can say in a sentence. If an
+  idea needs a second subsystem, say what it would cost and wait.
+  And the test for any new game here: would it be as good with
+  coloured squares? Then it is the wrong game for this engine.
+- In `orla.html` the scoring vocabulary may only name things you can
+  SEE. Two traps are already written down in `src/orla.js`: gear is
+  `base:['biped']`, so "carries something" secretly means "is not a
+  dog or a cat"; and a dog is 84% floppy-eared, so "floppy ears"
+  secretly means "is a dog". Check any new predicate against
+  `species.js` before adding it.
 - Adding a **pose** = one file in `src/poses/` + one line in
   `src/poses/index.js`; handle all three bases (biped/sit/quad).
   Adding an **expression** = one entry in `src/expressions.js`,
@@ -94,12 +110,21 @@ What is worth doing yourself is the cheap, decidable half:
   `game.html`, `items.html`) and confirm the console is clean — a
   stale import or a renamed export is a real bug and takes one reload
   to find;
-- assert on **numbers**, not vibes, through `window.__game`: drain
-  rates, the shape of a draft hand, where the camera target lands;
+- assert on **numbers**, not vibes, through `window.__game` /
+  `window.__orla`: drain rates, the shape of a draft hand, where the
+  camera target lands;
+- **balance is measurable here, so measure it.** A recipe is cheap —
+  no canvas is touched until a character is built — so thousands of
+  scoring passes can be run in the console against the real code.
+  That is how `TARGETS` in `src/orla.js` was set, and a guessed
+  number in its place was out by a factor of five;
 - check layout in both the desktop and the phone widths.
 
 Screenshots in a background browser panel can be misleading: the
 browser throttles `requestAnimationFrame` when the page is not
 visible, so a scene can look frozen or slow when it is fine. Measure
 before concluding anything about performance (a character costs ~20ms
-to build).
+to build). Give a new scene a named `frame()` and an async
+`pump(n)` on its debug object (see `src/orla.js`) — it is the only
+way to drive an animation to its end while the panel is hidden, and
+it must yield between frames or the awaits never resolve.

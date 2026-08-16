@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>drawai — la orla</title>
+<style>
+  :root {
+    --ink: #1f1d1a; --paper: #f6f1e5; --paper2: #ece6d6; --line: #c4bba6;
+    --good: #3f6b3a; --bad: #9a3b32; --gold: #a07a1e;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 12px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+    touch-action: none; -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: absolute; inset: 0; }
+  #stage canvas { display: block; touch-action: none; }
+
+  /* ---- the top line: the whole state of the run ------------------ */
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding: 11px 16px 10px; letter-spacing: .06em;
+    background: linear-gradient(var(--paper) 64%, rgba(246,241,229,0));
+    pointer-events: none;
+  }
+  #hud h1 { font-size: 14px; letter-spacing: .16em; font-weight: normal; }
+  #hud a { color: inherit; pointer-events: auto; opacity: .5; }
+  #hud .sp { flex: 1; }
+  #hud b { font-weight: normal; color: var(--gold); }
+
+  /* the target, and how far up it you are */
+  #meter { display: flex; align-items: center; gap: 8px; }
+  #meter .bar {
+    position: relative; width: 148px; height: 12px; overflow: hidden;
+    border: 1px solid rgba(31,29,26,.4); border-radius: 2px; background: var(--paper2);
+  }
+  #meter .bar i {
+    position: absolute; inset: 0 auto 0 0; width: 0;
+    background: rgba(63,107,58,.42); transition: width .35s ease-out;
+  }
+  #meter .bar i.over { background: rgba(160,122,30,.55); }
+
+  /* ---- the objects you own -------------------------------------- */
+  #kit {
+    position: absolute; left: 12px; top: 46px; z-index: 3;
+    display: flex; flex-direction: column; gap: 6px; width: 176px;
+  }
+  #kit .obj {
+    display: flex; gap: 8px; align-items: center; padding: 6px 8px;
+    background: var(--paper2); border: 1px solid rgba(31,29,26,.28);
+    border-radius: 4px; transition: transform .12s, box-shadow .12s;
+  }
+  #kit .obj canvas { display: block; flex: none; width: 34px; height: 34px; }
+  #kit .obj span { font-size: 10.5px; line-height: 1.35; }
+  #kit .obj em { font-style: normal; color: var(--gold); }
+  #kit .obj.r-inked { border-color: rgba(31,29,26,.55); }
+  #kit .obj.r-gilded { border-color: rgba(160,122,30,.75); background: #efe6cd; }
+  #kit .obj.r-nightmare { border-color: rgba(122,44,96,.7); border-width: 2px; background: #e9dfd6; }
+  /* the beat where this object fires */
+  #kit .obj.fire {
+    transform: translateX(7px) scale(1.06);
+    box-shadow: 0 0 0 2px rgba(160,122,30,.7);
+  }
+
+  /* ---- the scoring readout, dead centre -------------------------- */
+  /* It sits in the GAP between the two shelves. Anywhere higher and
+     the sum is printed across the faces the player is being asked to
+     look at, and every line of it needs its own paper behind it — the
+     page underneath is a drawing, not a background. */
+  #score {
+    position: absolute; left: 0; right: 0; top: 43%; z-index: 4;
+    text-align: center; pointer-events: none; display: none;
+  }
+  #score .figura {
+    display: inline-block; font-size: 18px; letter-spacing: .18em;
+    text-transform: uppercase; margin-bottom: 7px; padding: 2px 14px;
+    background: var(--paper); border-radius: 3px; opacity: .9;
+  }
+  #score .sum {
+    display: inline-flex; align-items: stretch; gap: 0;
+    font-size: 30px; letter-spacing: .04em;
+    border: 2px solid var(--ink); border-radius: 4px; overflow: hidden;
+    background: var(--paper);
+  }
+  #score .sum b, #score .sum i {
+    font-style: normal; font-weight: normal; padding: 5px 16px; min-width: 96px;
+  }
+  #score .sum b { background: rgba(31,29,26,.06); }
+  #score .sum i { background: rgba(154,59,50,.14); color: var(--bad); }
+  #score .sum .x { padding: 5px 6px; opacity: .4; font-size: 22px; align-self: center; }
+  #score .sum.pop { animation: pop .22s ease-out; }
+  @keyframes pop { 0% { transform: scale(1); } 45% { transform: scale(1.09); } 100% { transform: scale(1); } }
+  /* block, not inline: beside the sum it reads as a third term of the
+     multiplication instead of its answer */
+  #score .total {
+    display: block; width: fit-content; margin: 9px auto 0; padding: 2px 18px;
+    font-size: 32px; letter-spacing: .06em;
+    background: var(--paper); border-radius: 3px;
+  }
+
+  /* numbers that fly off a child or an object */
+  #floats { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+  #floats span {
+    position: absolute; font-size: 17px; letter-spacing: .03em;
+    transform: translate(-50%, -50%); animation: rise 1s ease-out forwards;
+    text-shadow: 0 1px 0 var(--paper), 0 0 6px var(--paper);
+  }
+  #floats span.mult { color: var(--bad); font-size: 20px; }
+  #floats span.pts { color: var(--ink); }
+  @keyframes rise {
+    0% { opacity: 0; transform: translate(-50%, -20%) scale(.75); }
+    20% { opacity: 1; transform: translate(-50%, -55%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -145%) scale(1); }
+  }
+
+  /* ---- the bottom bar -------------------------------------------- */
+  #bar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 12px 16px 16px;
+    background: linear-gradient(rgba(246,241,229,0), var(--paper) 42%);
+  }
+  #bar .picked { font-size: 12px; opacity: .55; letter-spacing: .08em; min-width: 96px; text-align: right; }
+  #bar button {
+    font: inherit; font-size: 13px; letter-spacing: .14em; color: var(--paper);
+    background: var(--ink); border: 1px solid var(--ink); border-radius: 4px;
+    padding: 11px 22px; cursor: pointer; touch-action: manipulation;
+  }
+  #bar button:disabled { background: transparent; color: rgba(31,29,26,.32); border-color: rgba(31,29,26,.22); cursor: default; }
+  #bar .hint { font-size: 11px; opacity: .4; min-width: 96px; }
+
+  /* ---- the draft between rounds, and the ending ------------------ */
+  #over {
+    position: absolute; inset: 0; z-index: 6; display: none;
+    flex-direction: column; align-items: center; justify-content: safe center;
+    gap: 16px; padding: 24px; overflow-y: auto;
+    background: rgba(246,241,229,.86);
+  }
+  #over h2 { font-size: 18px; font-weight: normal; letter-spacing: .18em; text-transform: lowercase; }
+  #over h2 small { opacity: .5; letter-spacing: .1em; }
+  #over .cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  #over .cards button {
+    width: 210px; min-height: 176px; cursor: pointer; font: inherit; color: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 14px;
+    background: var(--paper2); border: 1px solid rgba(31,29,26,.3); border-radius: 5px;
+    text-align: center; touch-action: manipulation;
+  }
+  #over .cards button:hover { background: #e4dcc7; border-color: var(--ink); }
+  #over .cards button canvas { display: block; width: 92px; height: 92px; }
+  #over .cards button b { font-size: 13px; letter-spacing: .06em; font-weight: normal; }
+  #over .cards button .rule { font-size: 11.5px; color: var(--gold); line-height: 1.4; }
+  #over .cards button .cost { font-size: 11px; color: var(--bad); }
+  #over .cards button.r-gilded { border-color: rgba(160,122,30,.75); }
+  #over .cards button.r-nightmare { border-color: rgba(122,44,96,.7); border-width: 2px; }
+  #over .quiet {
+    font: inherit; font-size: 11.5px; letter-spacing: .1em; color: inherit;
+    background: none; border: none; border-bottom: 1px solid rgba(31,29,26,.4);
+    cursor: pointer; opacity: .6; padding: 2px 0;
+  }
+  #over .big { font-size: 26px; letter-spacing: .1em; }
+  #over .sub { opacity: .6; }
+
+  /* ---- phones ----------------------------------------------------- */
+  @media (max-width: 760px), (pointer: coarse) {
+    #hud { font-size: 11px; gap: 9px; padding: 9px 12px 8px; }
+    #hud h1 { font-size: 12px; }
+    #meter .bar { width: 92px; }
+    /* the objects become a strip across the top. It sits BELOW the hud,
+       which wraps to two lines at this width — at 40px it printed
+       itself over the target the player is chasing. */
+    #kit {
+      left: 8px; right: 8px; top: 62px; width: auto;
+      flex-direction: row; gap: 5px; overflow-x: auto;
+    }
+    #kit .obj { flex: 1 1 0; min-width: 0; padding: 4px 5px; gap: 5px; }
+    #kit .obj canvas { width: 26px; height: 26px; }
+    #kit .obj span { font-size: 9px; line-height: 1.25; overflow: hidden; }
+    #score { top: 30%; }
+    #score .figura { font-size: 14px; letter-spacing: .14em; }
+    #score .sum { font-size: 22px; }
+    #score .sum b, #score .sum i { min-width: 68px; padding: 4px 10px; }
+    #score .total { font-size: 26px; }
+    #bar { gap: 8px; padding: 10px 10px 14px; }
+    #bar button { padding: 12px 16px; font-size: 12px; }
+    #bar .hint { display: none; }
+    #bar .picked { min-width: 0; }
+    #over .cards button { width: 100%; max-width: 320px; min-height: 0; flex-direction: row; text-align: left; }
+    #over .cards button canvas { width: 56px; height: 56px; flex: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+
+  <div id="hud">
+    <h1>la orla</h1>
+    <span id="round"></span>
+    <span id="meter"><span class="bar"><i></i></span><span id="meterTxt"></span></span>
+    <span class="sp"></span>
+    <a href="index.html">← menú</a>
+  </div>
+
+  <div id="kit"></div>
+  <div id="score"></div>
+  <div id="floats"></div>
+
+  <div id="bar">
+    <span class="hint">toca a cinco niños</span>
+    <button id="go" disabled>hacer la orla</button>
+    <span class="picked" id="picked"></span>
+  </div>
+
+  <div id="over"></div>
+
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+  <script type="module" src="./src/orla.js"></script>
+</body>
+</html>
