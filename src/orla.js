@@ -384,6 +384,10 @@ addPaper(scene, 5.4);
 const cells = new Array(SHELF).fill(null);
 const buildQueue = [];
 
+// the only expression this game ever asks for, and the parts it moves
+// (see `crying` in expressions.js)
+const WARM = { eyes: ['cry'], brows: ['sad'], mouth: ['cry'], tearsWet: ['flow'] };
+
 function buildCell(i) {
   if (cells[i]) {
     scene.remove(cells[i].holder);
@@ -395,6 +399,22 @@ function buildCell(i) {
   recipe.base = null;                       // the species picks it
   ensureParams(recipe);
   const face = buildCharacter(recipe);
+
+  // PREWARM THE CRYING FACE. States are drawn lazily, which is right
+  // for the crowd page where nobody ever emotes and wrong here, where
+  // three children start crying the instant the photo fills up — that
+  // is four canvases each, drawn mid-tap. Paying for them now costs a
+  // couple of milliseconds inside a build that is already happening
+  // behind the fill-in. (ARCHITECTURE.md §6b, the same reason game.js
+  // has a WARM table.)
+  for (const e of face.entries) {
+    const want = WARM[e.id];
+    if (!want) continue;
+    const cur = e.part.cur.state;
+    for (const st of want) e.part.setState(st);
+    e.part.setState(cur);
+  }
+
   const holder = new THREE.Group();
   holder.add(face.group);                   // the animator owns face.group
   scene.add(holder);
