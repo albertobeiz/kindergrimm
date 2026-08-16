@@ -2,23 +2,28 @@
 // LA ORLA — the class photo, scored like a poker hand.
 //
 // THE LOOP
-//   Eight children stand on two shelves. You pick FIVE for the photo
-//   and press the button. The photo is scored the way a hand of cards
-//   is scored: the five make a FIGURA — pareja, trío, full, camada —
-//   on whichever trait they share most of (species, eyes, mouth), and
-//   that figura is worth PUNTOS × MULTI. Then every child adds a few
-//   puntos of their own, and then every OBJECT you own fires in turn
-//   and pushes one of the two numbers. Multiply, and that is the shot.
+//   Ten children ARE the class, and the class is the run: nobody
+//   leaves, nobody is replaced. You pick FIVE for a photo and press
+//   the button. The photo is scored the way a hand of cards is
+//   scored: the five make a FIGURA — pareja, trío, full, camada — on
+//   whichever trait they share most of, and that figura is worth
+//   PUNTOS × MULTI. Then every child adds their own puntos, then the
+//   DEBUTS pay (below), then every OBJECT you own fires in turn and
+//   pushes one of the two numbers. Multiply, and that is the shot.
 //
-//   Two photos a round, added together against a target. The five in
-//   the photo graduate and leave; the ones you left out stay on the
-//   shelf and sulk — so keeping a nightmare back to finish a trío next
-//   photo is a real decision. Three rounds, and between them you keep
-//   one of two new objects.
+//   Two photos a round against a target, three rounds, and after
+//   every photo you keep one of two new objects — the engine grows a
+//   piece at a time, which is where the fun compounds.
 //
-// WHY IT IS A GAME AND NOT A QUIZ: the objects. One says "+20 puntos
-// por cada perro" and the next says "×2 multi si ninguno lleva gafas",
-// and the photo you want is the one where they both go off.
+// VETERANS AND DEBUTS — the reason a persistent class is a game and
+// not the same photo six times:
+//   · a photographed child gains a STAR, and every star is +8 puntos
+//     forever. Your veterans get heavy.
+//   · a child in their FIRST photo is a debut: +1 MULTI each.
+//   Puntos are linear and multi is not, so the rookies are usually
+//   worth more than the veterans — and you only have ten debuts in
+//   the whole run. Spending them is the strategy: burn five on photo
+//   one, or hold rookies back for the round-three targets.
 //
 // THE FLAT PAGE. This is a 2D scene like the editor and the crowd —
 // cream stock, an orthographic camera straight on, no orbit and no
@@ -29,7 +34,7 @@
 // in this file reads elapsed time.
 // ---------------------------------------------------------------
 import * as THREE from 'three';
-import { PAPER } from './sketch.js';
+import { PAPER, Sketch } from './sketch.js';
 import { setRender, U } from './part.js';
 import { addPaper, makeFloorLine } from './paper.js';
 import { newRecipe, buildCharacter, ensureParams, setDepthRank } from './rig.js';
@@ -45,37 +50,39 @@ THREE.ColorManagement.enabled = false;
 // THE NUMBERS. Everything tunable is here and nowhere else.
 // =================================================================
 const PHOTO = 5;                 // children in a photo
-const SHELF = 8;                 // children on the shelves
+const SHELF = 10;                // the whole class, for the whole run
 const SHOTS = 2;                 // photos per round
 const CHILD_PTS = 10;            // what one child brings, just by being in it
+const STAR_PTS = 8;              // …plus this per star they have earned
+const STAR_CAP = 6;              // the sticker chart only has so much room
 
 // The figuras, in the order a player learns them. `pts` are chips and
 // `multi` is the multiplier — the split is the whole reason a score
 // can explode: objects that add puntos are linear, objects that touch
-// multi are not, and the good photo is the one that feeds both.
+// multi are not, and the good photo is the one that feeds both. The
+// ladder leans on MULTI harder than the first build did, because the
+// multiplier is where the pleasure lives.
 const FIGURAS = {
   nada:        { pts: 5,   multi: 1, word: 'ni una pareja' },
   pareja:      { pts: 20,  multi: 1, word: 'pareja' },
   doble:       { pts: 35,  multi: 2, word: 'doble pareja' },
-  trio:        { pts: 55,  multi: 2, word: 'trío' },
+  trio:        { pts: 50,  multi: 3, word: 'trío' },
   arcoiris:    { pts: 60,  multi: 3, word: 'orla arcoíris' },
-  full:        { pts: 90,  multi: 3, word: 'full' },
-  poker:       { pts: 130, multi: 4, word: 'póker' },
-  camada:      { pts: 200, multi: 6, word: 'camada' },
+  full:        { pts: 80,  multi: 4, word: 'full' },
+  poker:       { pts: 110, multi: 5, word: 'póker' },
+  camada:      { pts: 160, multi: 8, word: 'camada' },
 };
 
-// Measured, not guessed. Simulated with the real scoring code over 500
-// runs a round, against a player who looks at twelve of the fifty-six
-// possible photos and keeps the best — roughly what a person does —
-// and with the object count the game ACTUALLY gives: one to start and
-// one after each of the first two rounds, so round three is played
-// with three. (Measuring round three with four, which is the number it
-// looks like you should have, put its target 800 too high.)
-// Pass rates come out 92% / 69% / 46%: round one teaches, round two
-// bites, and about three runs in ten are finished. (Re-measured after
-// `boca` was swapped for `estampado` — one axis fewer to match on cost
-// round three about 300 points.)
-const TARGETS = [900, 1800, 3200];
+// Measured, not guessed: 400 simulated runs against the real scoring
+// code for each of two player models. A casual player (samples ten of
+// the 252 possible photos, ignores their objects when choosing) passes
+// 99% / 73% / 47%; a strong one (24 samples, projects the objects)
+// wins 72%. Round one teaches, round two asks you to have spent your
+// debuts well, round three needs the engine you drafted.
+const TARGETS = [1700, 3400, 6600];
+
+// how likely each rank is to be offered, by round — an offer now comes
+// after every photo, so the ladder climbs by round, not by count
 
 // What an object's rule is worth, by rank. The ladder is steep on
 // purpose: a gilded object should feel like it changed the run.
@@ -86,7 +93,6 @@ const POWER = {
   nightmare: { per: 48, mper: 3, flat: 180, mflat: 6, x: 4,   iff: 240, pair: 3 },
 };
 
-// how likely each rank is to be offered, by round
 const RANK_BY_ROUND = [
   [['sketch', 70], ['inked', 26], ['gilded', 4]],
   [['sketch', 40], ['inked', 42], ['gilded', 15], ['nightmare', 3]],
@@ -134,7 +140,15 @@ const AXES = [
     word: (fig, v) => `${fig} de ${SP_PLURAL[v] ?? v}` },
   { id: 'estampado', of: c => P(c, 'torso').pattern, nul: 'none',
     word: (fig, v) => `${fig} de ${PAT_PLURAL[v] ?? v}` },
-  { id: 'ojos', of: c => P(c, 'eyes').type,
+  // BOTH eyes, not one. eyes.js draws the right eye from `type2`
+  // whenever it is set, so a child rolled dot/xcross has one dot and
+  // one black X — keying on `type` alone paired children whose eyes
+  // visibly differ, which is the one thing an axis is not allowed to
+  // do. 27% of children have a mismatch, so this is not a corner.
+  { id: 'ojos', of: c => {
+      const e = P(c, 'eyes');
+      return `${e.type}|${e.type2 && e.type2 !== 'none' ? e.type2 : e.type}`;
+    },
     word: fig => `${fig} de ojos` },
 ];
 
@@ -260,7 +274,10 @@ function pairsIn(photo) {
 const KIND_BY_FAMILY = {
   sword: 'per', bat: 'per', lantern: 'mper',
   wand: 'x', doll: 'x', charm: 'mper', crown: 'mflat', hat: 'mflat',
-  shield: 'flat', toy: 'pair', bed: 'flat', mutation: 'mflat',
+  // a shield PROTECTS a condition: its points only pay if the photo
+  // kept the promise. (It carried 'flat' for a while and that left
+  // the `iff` kind unreachable — review caught the dead rule.)
+  shield: 'iff', toy: 'pair',
 };
 
 function makeRule(kind, rank) {
@@ -324,7 +341,7 @@ function rollObject(round, forceRank = null) {
 // empty above and below them. Portrait gets two columns of four, which
 // is less of a photo and twice the child.
 const CELL_W = 1.6, CELL_H = 2.15, FACE_SCALE = .92;
-let COLS = 4, ROWS = 2;
+let COLS = 5, ROWS = 2;
 // what the camera must contain, plus room for the HUD strip on top
 // and the button bar underneath
 const needW = () => COLS * CELL_W / 2 + .35;
@@ -372,7 +389,7 @@ function onResize() {
   if (!w || !h) return;                    // a hidden page measures 0×0
   const aspect = w / h;
 
-  const wantCols = aspect < .95 ? 2 : 4;
+  const wantCols = aspect < .95 ? 2 : 5;
   if (wantCols !== COLS || !shelves.length) {
     COLS = wantCols;
     ROWS = SHELF / COLS;
@@ -408,10 +425,65 @@ const buildQueue = [];
 // (see `crying` in expressions.js)
 const WARM = { eyes: ['cry'], brows: ['sad'], mouth: ['cry'], tearsWet: ['flow'] };
 
+// ---- the sticker chart ------------------------------------------
+// A photographed child gets a pencil star over their spot, the way a
+// classroom wall does it. The row is a fixed height per shelf — a
+// sticker chart is about the SPOT, not the child's own height — and
+// it is redrawn only when the count changes.
+function starTexture(n) {
+  const SZ = 44, W = SZ * n;
+  const s = new Sketch(W, SZ);
+  s.boil((n * 7919 + 13) >>> 0);
+  for (let k = 0; k < n; k++) {
+    const cx = SZ / 2 + k * SZ, cy = SZ / 2, r1 = SZ * .38, r0 = r1 * .44;
+    const pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const a = -Math.PI / 2 + (i / 10) * Math.PI * 2;
+      const r = (i % 2 ? r0 : r1) + s.jr(-1.5, 1.5);
+      pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+    }
+    s.scribbleFill(pts, 3.5, .3);
+    s.sline(pts, 2.2, .85);
+  }
+  return new THREE.CanvasTexture(s.canvas);
+}
+
+function updateStars(c) {
+  dropStars(c);
+  const n = Math.min(STAR_CAP, c.stars);
+  if (!n) return;
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(.21 * n, .21),
+    new THREE.MeshBasicMaterial({ map: starTexture(n), transparent: true, depthWrite: false }));
+  // parented to the CHILD, floating just over their head — the rows
+  // are too tight for a fixed chart line (the bottom row's stickers
+  // would sit on the top row's feet), and over-the-head follows the
+  // step forward for free. F.s is the head scale in px; /U for units.
+  m.position.set(0, (c.face.F.s * 1.9) / U, .6);
+  m.renderOrder = 300000;
+  c.holder.add(m);
+  c.starMesh = m;
+}
+
+function dropStars(c) {
+  if (!c.starMesh) return;
+  c.starMesh.parent?.remove(c.starMesh);
+  c.starMesh.geometry.dispose();
+  c.starMesh.material.map.dispose();
+  c.starMesh.material.dispose();
+  c.starMesh = null;
+}
+
+// what one child is worth in a photo, stars and all — the ONE place
+// this sum lives, so the preview and the animation can never disagree
+const kidPts = c => CHILD_PTS + STAR_PTS * Math.min(STAR_CAP, c.stars);
+const debutsIn = photo => photo.filter(c => c.stars === 0).length;
+
 function buildCell(i) {
   if (cells[i]) {
     scene.remove(cells[i].holder);
     cells[i].face.dispose();
+    dropStars(cells[i]);
     cells[i] = null;
   }
   const recipe = newRecipe();
@@ -440,6 +512,7 @@ function buildCell(i) {
   scene.add(holder);
   const c = {
     i, recipe, face, holder, picked: false, fade: 1, opacity: 1,
+    stars: 0, starMesh: null,
     parts: face.entries.map(e => e.part.matl),
     animator: createAnimator(() => face, {
       blink: true, gaze: true, talk: false, sway: true, breath: true, boil: true,
@@ -466,7 +539,7 @@ function placeCell(c) {
   const s = FACE_SCALE * (c.picked ? 1.16 : 1);
   c.holder.position.set(x, fy + (c.face.F.B.floorY / U) * s + (c.picked ? -.26 : 0), c.picked ? .5 : 0);
   c.holder.scale.setScalar(s);
-  setDepthRank(c.face, c.picked ? 8 + c.i : c.i);
+  setDepthRank(c.face, c.picked ? SHELF + c.i : c.i);
 }
 
 const photoOf = () => cells.filter(c => c && c.picked);
@@ -537,6 +610,7 @@ const el = {
   floats: document.getElementById('floats'),
   go: document.getElementById('go'),
   picked: document.getElementById('picked'),
+  preview: document.getElementById('preview'),
   over: document.getElementById('over'),
 };
 
@@ -551,7 +625,10 @@ function float(sx, sy, text, cls) {
   const s = document.createElement('span');
   s.className = cls;
   s.textContent = text;
-  s.style.left = `${sx}px`;
+  // clamped inside the clipping box: on the phone layout the object
+  // chips run edge to edge, so "beside the chip" is past the viewport
+  // and the one number that says the rule fired was invisible
+  s.style.left = `${Math.min(sx, (el.floats.clientWidth || innerWidth) - 34)}px`;
   s.style.top = `${sy}px`;
   el.floats.appendChild(s);
   setTimeout(() => s.remove(), 1050);
@@ -567,6 +644,26 @@ function paintHud() {
   const n = photoOf().length;
   el.picked.textContent = busy ? '' : `${n}/${PHOTO}`;
   el.go.disabled = busy || n !== PHOTO;
+
+  // THE PREVIEW — the figura this photo would make, live as you pick.
+  // It is how the game teaches its own hand ladder: nobody reads a
+  // rules screen, everybody reads a label that changes as they tap.
+  // It shows only the figura and the debuts, never the objects — the
+  // objects firing one by one IS the show, and spoiling the total
+  // would flatten it.
+  if (!busy && n === PHOTO) {
+    const photo = photoOf();
+    const fig = bestFigura(photo);
+    const d = debutsIn(photo);
+    el.preview.style.display = 'block';
+    el.preview.innerHTML = `${fig.name} · <b>${fig.pts}</b> × <i>${fig.multi}</i>`
+      + (d ? ` <em>+${d} multi de debut</em>` : '');
+  } else if (!busy && n > 0) {
+    el.preview.style.display = 'block';
+    el.preview.innerHTML = `elige ${PHOTO - n} más`;
+  } else {
+    el.preview.style.display = 'none';
+  }
 }
 
 function paintKit() {
@@ -617,16 +714,31 @@ async function scorePhoto() {
     sum.classList.add('pop');
   };
 
-  // every child pays, left to right, the way you would count them
+  // every child pays, left to right, the way you would count them —
+  // veterans pay their stars on top
   for (const c of [...photo].sort((a, b) => a.i - b.i)) {
-    s.pts += CHILD_PTS;
+    const pay = kidPts(c);
+    s.pts += pay;
     const [x, y] = cellPos(c.i);
     const [sx, sy] = screenOf(x, y + 1.1);
-    float(sx, sy, `+${CHILD_PTS}`, 'pts');
+    float(sx, sy, `+${pay}`, 'pts');
     c.animator.setFace('idle');
     show();
     audio.sfx('tick', { vol: .4 });
     await sleep(150);
+  }
+
+  // THE DEBUTS. A child in their first photo brings nerve nobody has
+  // worn down yet: +1 multi each. Multi is the number the game is
+  // about, so the beat gets its own splash.
+  const debut = debutsIn(photo);
+  if (debut) {
+    s.multi += debut;
+    const r = el.score.querySelector('.sum')?.getBoundingClientRect();
+    if (r) float(r.left + r.width / 2, r.top - 24, `+${debut} multi · debut`, 'mult');
+    show();
+    audio.sfx('squiggle', { vol: .6 });
+    await sleep(430);
   }
 
   // then the objects, in the order you own them
@@ -662,68 +774,73 @@ async function scorePhoto() {
 
   S.banked += total;
   S.shot++;
-  paintHud();
   el.score.style.display = 'none';
 
-  // the five graduate: they bow out and their places are refilled.
-  // Nothing may build while the player is looking at a still page, so
-  // the new ones are queued and drawn in over the next few frames.
-  await tween(.55, k => { for (const c of photo) c.fade = 1 - k; });
-  for (const c of photo) buildQueue.push(c.i);
-
-  await sleep(260);
-  finishShot();
-}
-
-function finishShot() {
-  const target = TARGETS[S.round];
-  if (S.banked >= target) { winRound(); return; }
-  if (S.shot >= SHOTS) { lose(); return; }
-  // the replacements may still be drawing themselves in; the loop
-  // hands control back when the shelf is full
-  busy = buildQueue.length > 0;
+  // NOBODY LEAVES. The five step back into the class and each gets a
+  // star on the chart — tick, tick, tick, the way a teacher does it.
+  for (const c of [...photo].sort((a, b) => a.i - b.i)) {
+    c.stars++;
+    updateStars(c);
+    c.picked = false;
+    placeCell(c);
+    const [x, y] = cellPos(c.i);
+    const [sx, sy] = screenOf(x, y + 1.55);
+    float(sx, sy, '★', 'pts');
+    audio.sfx('tick', { vol: .35 });
+    await sleep(110);
+  }
   paintHud();
+
+  // where the run goes next: on to the next round, out, or the draft
+  const target = TARGETS[S.round];
+  if (S.banked >= target) {
+    if (S.round + 1 >= TARGETS.length) { win(); return; }
+    S.round++;
+    S.shot = 0;
+    S.banked = 0;
+    openDraft(`ronda ${S.round} superada`);
+    return;
+  }
+  if (S.shot >= SHOTS) { lose(); return; }
+  openDraft('foto hecha');
 }
 
 // =================================================================
-// ROUNDS
+// THE DRAFT — after EVERY photo, one of two. Six or seven objects by
+// the end of a run instead of three: the engine is most of the fun,
+// so it has to actually get to exist.
 // =================================================================
-function winRound() {
-  if (S.round + 1 >= TARGETS.length) { win(); return; }
+function openDraft(title) {
   audio.sfx('paper');
   // two offers that DO DIFFERENT THINGS. Rolled freely, "+4 multi" and
   // "+4 multi" comes up often enough to be the first thing you notice,
-  // and a choice between two identical rules is not a choice.
+  // and a choice between two identical rules is not a choice. There is
+  // no "take nothing" button: an object is never bad here, so refusing
+  // one was a strictly dominated choice wearing a third button.
   const offers = [];
   for (let t = 0; t < 12 && offers.length < 2; t++) {
-    const o = rollObject(S.round + 1);
+    const o = rollObject(S.round);
     if (!o) continue;                                  // a family declined to roll
     if (offers.length && o.kind === offers[0].kind) continue;
     offers.push(o);
   }
   if (!offers.length) { takeObject(null); return; }    // nothing to offer: move on
   el.over.style.display = 'flex';
-  el.over.innerHTML = `<h2>ronda ${S.round + 1} superada<small> · quédate con uno</small></h2>`
+  el.over.innerHTML = `<h2>${title}<small> · quédate con uno</small></h2>`
     + `<div class="cards">` + offers.map((o, i) =>
       `<button class="r-${o.rank}" data-i="${i}"><b>${o.item.name}</b>`
       + `<div class="rule">${o.text}</div>`
-      + (o.item.copy?.costs ? `<div class="cost">${o.item.copy.costs}</div>` : '')
-      + `</button>`).join('') + `</div>`
-    + `<button class="quiet">no coger nada</button>`;
+      + `</button>`).join('') + `</div>`;
   el.over.querySelectorAll('.cards button').forEach(b => {
     const o = offers[+b.dataset.i];
     b.insertBefore(thumbFor(o.item, 92), b.firstChild);
     b.onclick = () => takeObject(o);
   });
-  el.over.querySelector('.quiet').onclick = () => takeObject(null);
 }
 
 function takeObject(o) {
   if (o) { S.objects.push(o); paintKit(); audio.sfx('scratch'); }
   el.over.style.display = 'none';
-  S.round++;
-  S.shot = 0;
-  S.banked = 0;
   busy = false;
   paintHud();
 }
@@ -827,6 +944,7 @@ window.__orla = {
   S, cells, FIGURAS, TARGETS, AXES, PREDS, POWER,
   bestFigura, figuraOn, pairsIn, rollObject, makeRule, scorePhoto, togglePick,
   photoOf, buildQueue, camera, renderer, frame,
+  kidPts, debutsIn, SHELF, PHOTO,
   get busy() { return busy; },
   pick: i => togglePick(cells[i]),
   // Pump frames by hand. It has to be ASYNC and yield between them:

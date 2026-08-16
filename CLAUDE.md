@@ -14,8 +14,11 @@ python3 serve.py
 `index.html` is the **menu** and the only place the scenes are linked
 from — a scene never links to another, only back to the menu.
 `orla.html` is **the game**: the class photo, scored like a poker
-hand — pick five of eight children, the objects on the wall do the
-rest. It is a FLAT page like the editor and the crowd, and its whole
+hand — pick five of ten children. The class is PERSISTENT for the
+whole run: veterans earn stars (puntos), first-timers are debuts
+(multi), and an object is drafted after every photo. The tension the
+whole design hangs on: puntos are linear, multi is not, and you only
+get ten debuts a run. It is a FLAT page like the editor and the crowd, and its whole
 rule set is one file (`src/orla.js`). `game.html` is the older
 real-time room, kept working. `editor.html` is the face editor,
 `crowd.html` a 7×5 page of live characters, `items.html`
