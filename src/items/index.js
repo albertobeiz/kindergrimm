@@ -52,14 +52,20 @@ import { Hat } from './hat.js';
 import { Charm } from './charm.js';
 import { Doll } from './doll.js';
 import { Mutation } from './mutation.js';
+import { Lamp } from './lamp.js';
 import { Lantern } from './lantern.js';
 import { Toy } from './toy.js';
 import { Bed } from './bed.js';
 
+// Toy and Bed are still built, still drawn, and still browsable on
+// items.html — but the room stopped dealing furniture when it stopped
+// having any (see HAND). They are left registered rather than deleted
+// because a family is a drawing first and a game rule second.
 export const FAMILIES = [
   Sword, Bat, Wand, Shield,       // held / offhand
   Crown, Hat,                     // worn
   Charm, Doll, Mutation,          // carried / bodily
+  Lamp,                           // held, and the only other way to SEE
   Lantern, Toy, Bed,              // floor
 ];
 export const FAMILY_BY_ID = Object.fromEntries(FAMILIES.map(f => [f.id, f]));
@@ -198,21 +204,25 @@ function rankWeights(f) {
 }
 
 // ---- the hand ---------------------------------------------------
-// A draft is not three random cards: it is a HAND with a fixed shape.
-// The room only ever runs out of one of three things — somewhere to
-// sleep, somewhere to play, and light — so all three are always on the
-// table. A draft that failed to offer the one you were short of was a
-// turn you did not get to play, and the run died of the shuffle rather
-// than of anything you did.
+// A draft is not five random cards: it is a HAND with a fixed shape.
+// There is exactly ONE thing this room can run out of — a way of
+// seeing — so a way of seeing is always on the table. A draft that
+// failed to offer one was a turn you did not get to play, and the run
+// died of the shuffle rather than of anything you did.
 //
-// The other three are the KIT: anything a child can carry. That is
-// where the run's character comes from, so it is the half that is
-// still a gamble, and the half favour actually steers.
+// EVERY LIGHT IN A DRAFT IS CARRIED. A floor lantern is a place, and
+// a place is worthless to a class that never stops walking — it was
+// dealt for a while and it was always the dead card. The room still
+// has them: it scatters them out in the dark for you to walk into,
+// rolled from this same family, which is the only way one should ever
+// arrive. So the light group is `kind: 'light'` MINUS the floor.
+//
+// The other four are the KIT — anything a child can carry that is not
+// a light. That is where the run's character comes from, so it is the
+// half that is still a gamble, and the half favour actually steers.
 const HAND = [
-  { n: 1, pick: f => f.slot === 'floor' && f.kind === 'light' },
-  { n: 1, pick: f => f.slot === 'floor' && f.kind === 'toy' },
-  { n: 1, pick: f => f.slot === 'floor' && f.kind === 'bed' },
-  { n: 3, pick: f => f.slot !== 'floor' },
+  { n: 1, pick: f => f.kind === 'light' && f.slot !== 'floor' },
+  { n: 4, pick: f => f.slot !== 'floor' && f.kind !== 'light' },
 ];
 
 // One card out of a group's pool. A family gets ONE shot at the slot —

@@ -31,59 +31,11 @@
   }
   #title a { color: inherit; }
 
-  /* the child you are commanding */
-  #card {
-    position: absolute; left: 14px; top: 62px; z-index: 3; display: none;
-    width: 196px; padding: 12px 13px 11px;
-    background: rgba(16,18,25,.9); border: 1px solid rgba(232,224,205,.3);
-    border-radius: 5px; backdrop-filter: blur(2px);
-  }
-  #card h3 { font-size: 15px; font-weight: normal; letter-spacing: .12em; margin-bottom: 9px; }
-  #card .e {
-    position: relative; height: 18px; border-radius: 3px; overflow: hidden;
-    background: rgba(0,0,0,.45); border: 1px solid rgba(232,224,205,.22);
-  }
-  #card .e i { position: absolute; inset: 0 auto 0 0; background: rgba(196,214,168,.5); transition: width .15s linear; }
-  #card .e i.low { background: rgba(224,168,96,.55); }
-  #card .e i.dark { background: rgba(206,96,86,.55); }
-  #card .e u {
-    position: absolute; inset: 0; text-decoration: none; font-size: 11px;
-    display: flex; align-items: center; justify-content: center;
-    letter-spacing: .06em; text-shadow: 0 1px 2px #000;
-  }
-  #card dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 9px 0 0; font-size: 12px; }
-  #card dt { opacity: .55; }
-  #card dd { text-align: right; }
-  #card p { margin-top: 9px; font-size: 11px; opacity: .5; letter-spacing: .05em; }
-  /* a curse, in words — same red the draft prints its costs in */
-  #card p.quirk { margin-top: 4px; opacity: .9; color: rgba(206,110,100,.95); }
+  /* There is no character panel. What a child carries is drawn on the
+     child, and how it is doing is the red pulse and the mark over its
+     head — a panel would only restate the paper in words. */
 
-  /* what the child is carrying. The kit is emptied when there is
-     nothing, so the rule above it is drawn only when it has rows. */
-  #card .kit:not(:empty) {
-    margin-top: 10px; padding-top: 9px;
-    border-top: 1px solid rgba(232,224,205,.14);
-  }
-  #card .kit-h { font-size: 11px; opacity: .5; letter-spacing: .05em; }
-  #card ul {
-    list-style: none; margin: 5px 0 0; padding: 0;
-    display: flex; flex-direction: column; gap: 3px;
-  }
-  #card li {
-    display: flex; align-items: center; gap: 7px; cursor: pointer;
-    padding: 2px 4px 2px 6px; font-size: 11px; letter-spacing: .04em;
-    border-left: 2px solid rgba(232,224,205,.28); border-radius: 0 3px 3px 0;
-  }
-  #card li:hover { background: rgba(232,224,205,.07); }
-  #card li canvas { display: block; flex: none; width: 22px; height: 22px; }
-  #card li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* rank as a stripe down the left edge — same four words the draft uses */
-  #card li.r-sketch { border-left-color: rgba(232,224,205,.28); }
-  #card li.r-inked { border-left-color: rgba(232,224,205,.6); }
-  #card li.r-gilded { border-left-color: rgba(240,214,150,.7); }
-  #card li.r-nightmare { border-left-color: rgba(196,96,150,.75); }
-
-  /* the bar playing fills — a strip pinned to the very bottom edge,
+  /* the bar the kills fill — a strip pinned to the very bottom edge,
      so nothing else can ever land on top of it */
   #barwrap {
     position: absolute; left: 0; right: 0; bottom: 0; height: 7px; z-index: 4;
@@ -204,15 +156,6 @@
     #title { font-size: 11px; opacity: .3; }
     #hud { top: 34px; font-size: 14px; }
 
-    #card {
-      top: auto; bottom: 84px; left: var(--pad); right: var(--pad);
-      width: auto; padding: 10px 12px;
-      max-height: 42vh; overflow-y: auto;
-    }
-    #card h3 { font-size: 14px; margin-bottom: 7px; }
-    #card dl { grid-template-columns: auto 1fr auto 1fr; gap: 2px 6px; margin-top: 7px; }
-    #card p { margin-top: 6px; }
-
     #log { top: 56px; right: var(--pad); width: 46vw; font-size: 11px; }
     #log div { padding: 3px 6px; }
 
@@ -297,15 +240,6 @@
     #start button { margin-top: 14px; padding: 11px; font-size: 13px; }
     #start .keys { display: none; }
 
-    /* the card goes back to being a narrow panel on the left — a
-       full-width strip would be most of a sideways screen */
-    #card {
-      left: var(--pad); right: auto; top: auto; bottom: 40px;
-      width: 210px; padding: 10px 12px;
-      max-height: calc(100vh - 96px); overflow-y: auto;
-    }
-    #card dl { grid-template-columns: 1fr auto; }
-
     #log { width: 30vw; top: 40px; }
     #hud { top: 12px; }
     #title { font-size: 10px; }
@@ -328,14 +262,14 @@
 <body>
   <div id="stage"></div>
   <canvas id="grain"></canvas>
-  <div id="title"><a href="index.html">← menú</a></div>
+  <div id="title"><a href="index.html">← menu</a></div>
   <div id="hud"></div>
-  <div id="card"></div>
   <div id="log"></div>
   <div id="barwrap"><div id="bar"></div></div>
-  <div id="hint">tap a child, then tap a bed / toy / nightmare / the floor · drag to pan · pinch or wheel to zoom · R restart</div>
+  <div id="hint">tap the floor — they all walk there · they stop to fight what they can see · drag to pan · space or ⌾ to find them again · R restart</div>
   <div id="pad">
     <button id="rot-l" title="turn left">↺</button>
+    <button id="centre" title="back to the class">⌾</button>
     <button id="zoom-out" title="zoom out">−</button>
     <button id="zoom-in" title="zoom in">+</button>
     <button id="rot-r" title="turn right">↻</button>
@@ -352,14 +286,17 @@
         <p class="lede">a baby school, after dark</p>
       </div>
       <div class="body">
-        <p class="intro">the parents are gone until morning. outside the lamps,
-          <b>the dark burns children down</b> — and they do nothing you do not tell them to.</p>
-        <p class="intro">play fills the bar. the bar brings toys. the nightmares come for the toys.
-          every fifth bell, <b>a knock at the door</b>.</p>
+        <p class="intro">tap the floor and they all walk there. that is the only
+          thing you can tell them. <b>a child that can see a nightmare stops and
+          fights it</b> — and will not move again until it is over.</p>
+        <p class="intro">a lamp is not a weapon and not a shelter. it only lets
+          them <b>see</b>, and a hand holding one is a hand holding nothing else.</p>
+        <p class="intro">the floor has no end. the other children are out there
+          in it, <b>crying somewhere</b>.</p>
       </div>
       <div class="foot">
         <button id="begin">open the school</button>
-        <div class="keys">enter · drag to pan · pinch or wheel to zoom · R restart</div>
+        <div class="keys">enter · drag to pan · space to find the class · R restart</div>
       </div>
     </div>
   </div>

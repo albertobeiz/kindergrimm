@@ -12,15 +12,23 @@ python3 serve.py
 ```
 
 `index.html` is the **menu** and the only place the scenes are linked
-from — a scene never links to another, only back to the menu.
-`orla.html` is **the game**: the class photo, scored like a poker
-hand — pick five of ten children. The class is PERSISTENT for the
-whole run: veterans earn stars (puntos), first-timers are debuts
-(multi), and an object is drafted after every photo. The tension the
-whole design hangs on: puntos are linear, multi is not, and you only
-get ten debuts a run. It is a FLAT page like the editor and the crowd, and its whole
-rule set is one file (`src/orla.js`). `game.html` is the older
-real-time room, kept working. `editor.html` is the face editor,
+from — a scene never links to another, only back to the menu. There are
+TWO games and they get the SAME card on it: same size, same dark ink,
+same weight. The menu is not allowed to say which one is the real one.
+`orla.html` is **the class photo**, scored like a poker
+hand — pick five of ten children. The five in the photo LEAVE FOR
+GOOD and five strangers replace them, so the shelf is always half
+faces you have weighed up and half new ones; an object is drafted
+after every photo. A persistent class with veteran bonuses was tried
+and removed — a bonus that grows on use makes picking the same five
+optimal, and it did. It is a FLAT page like the editor and the crowd, and its whole
+rule set is one file (`src/orla.js`). `game.html` is **Kindergrimm**:
+an endless dark floor, one verb (tap where the class walks), children
+who stop to fight whatever they can SEE, and a lamp that competes with
+a weapon for the same hand. Its rules are in ARCHITECTURE.md §6b and
+they are not the ones an older version of this file described — no
+beds, no toys, no play, and light no longer slows anything.
+`editor.html` is the face editor,
 `crowd.html` a 7×5 page of live characters, `items.html`
 the object contact sheet. `serve.py` sends `no-store` on purpose:
 browsers cache ES modules by URL, and a stale module makes an edited
@@ -52,14 +60,24 @@ file look like a phantom `SyntaxError`.
   `addPaper()` — those are camera-facing quads and would go edge-on.
   See ARCHITECTURE.md §6b before touching it. The editor and the
   crowd are still flat pages and must stay working.
+- In `game.html` the one rule that everything else hangs off is
+  **light is sight, and nothing else**. It does not slow a nightmare,
+  it does not shelter a child, and standing in it is free — but a
+  child cannot fight what it cannot see. Give light a second job and
+  the lamp-or-weapon choice in the `held` slot collapses, which is the
+  only decision the game has.
 - Adding an **object** = one file in `src/items/` + one line in
   `src/items/index.js`. **The stats ARE the drawing**: the same rolled
   params feed `draw()` and `statsOf()`, so a long blade is drawn long
   AND reaches further. Never add a stat you cannot see; never draw a
   feature that means nothing.
-- A `floor` family must also declare `kind: 'light' | 'toy' | 'bed'`.
-  The draft deals a fixed HAND — one of each of those three, plus
-  three carried — so a floor family without a `kind` is never dealt.
+- The draft deals a fixed HAND: **one lamp and four kit**, and every
+  card is something a child CARRIES. The light group is
+  `kind: 'light'` minus `floor`, so it only ever deals the held
+  `Lamp`; the kit group takes everything else that is not `floor`.
+  Floor lanterns are not dealt — `placeLantern()` scatters them in the
+  dark for you to walk into. `Toy` and `Bed` still exist and are still
+  on `items.html`, but nothing deals them any more.
 - An item is authored ONCE, in `REF` space with the origin at its
   anchor, and `stamp()` puts it on the card, on the floor and in a
   child's fist. Scale through `ctx.scale`, never by multiplying your
@@ -89,6 +107,14 @@ file look like a phantom `SyntaxError`.
   plus a state branch in a face part if it needs a new drawing.
   Poses/expressions write OFFSETS scaled by their blend weight —
   never absolute transforms — that is what makes transitions smooth.
+
+## Language
+
+**Everything is in English** — every page, every menu, every button,
+every generated rule, every parameter label in the editor, and the code
+itself (ids, keys, function names, comments). The project was half
+Spanish and is not any more; a new Spanish string is a bug. `lang="en"`
+on every page.
 
 ## Style
 

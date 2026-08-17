@@ -192,13 +192,13 @@ export const MODS = [
 // What `fxOf(P)` may return. UNITS ARE THE CONTRACT: everything here
 // is a RADIUS IN WORLD UNITS except where noted, because the game
 // compares them against `Math.hypot(dx, dz)` directly. Return a 0-1
-// "strength" instead and it silently never fires — the room is 13
-// units across, so a believable earshot is 2 to 6.
+// "strength" instead and it silently never fires — a class walks
+// around inside about 4 units, so a believable earshot is 2 to 6.
 //
 //   fear:   r   on a hit, every nightmare within r flinches
-//   chill:  r   nightmares within r are mired as if under a lamp
-//   lull:   r   children sleeping within r rest faster
-//   thrift: r   beds and toys within r wear out slower
+//   chill:  r   nightmares within r are mired (light no longer does this)
+//   lull:   r   children within r get their courage back faster
+//   thrift: r   lanterns within r burn longer
 //   sticky: SECONDS a nightmare this child hits stays mired
 //   throw:  { every: SECONDS, dmg, speed: units/s, r: range }
 //   familiar: { species, scale, bite, r } — a whole live character

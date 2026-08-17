@@ -130,7 +130,7 @@ export const MyPart = {
   // editor controls, one entry per param you want to expose
   meta: () => ({
     style: { label: 'estilo', pick: ['a', 'b'] },
-    size:  { label: 'tamaño', range: [.3, 2] },        // add step:1 for ints
+    size:  { label: 'size', range: [.3, 2] },          // add step:1 for ints
     on:    { label: 'visible', bool: true },
   }),
 
@@ -280,11 +280,15 @@ shadow      its own scene object, never a child of the holder, or it
             inherits the yaw, the mirror and the breath.
             rotation.order = 'YXZ' so the yaw spins the ellipse WITHIN
             the floor instead of tipping it out of it.
-floor       drawn TOP-DOWN and tiled. Never paint perspective into it
-            — a baked vanishing point swings around with the camera —
-            and never draw a long straight line, because one that
-            starts at a tile edge lines up with its neighbour's and
-            the floor turns back into graph paper.
+floor       drawn TOP-DOWN and tiled, and the tiles STREAM: a fixed
+            grid that follows the view, each cell showing the variant
+            (and quarter-turn) its coordinate hashes to, so the floor
+            is endless for a constant cost and never bakes mid-play.
+            Never paint perspective into it — a baked vanishing point
+            swings around with the camera — and never draw a long
+            straight line, because one that starts at a tile edge
+            lines up with its neighbour's and the floor turns back
+            into graph paper.
 ```
 
 The one fact that makes all this cheap: **`anim.js` never writes
@@ -327,8 +331,12 @@ The camera orbits a **pan target** (`camWant`, eased into `camAt`), not
 the origin. Panning **grabs the floor**: remember the world point under
 the finger and move the target so that point stays under it. Never
 convert pixels to world units by hand — the foreshortening term is easy
-to get subtly wrong and reads as drift. `clampPan()` shrinks the
-allowed radius as you zoom out, or you drag the floor's edge into shot.
+to get subtly wrong and reads as drift. There is no pan clamp any more
+— the floor has no edge to drag into shot — so what stops you getting
+lost is `keepInFrame()`, which fetches the camera back only once the
+class is *entirely* out of frame. A leash that pulled sooner would
+fight a player looking ahead into the dark, which is the one thing
+this game most wants them to do.
 
 **Both rays must be cast in the same frame, and the target set
 absolutely.** The camera *eases* toward `camWant`, so it is always a
@@ -389,60 +397,122 @@ and what the game thinks is lit can never disagree.
 
 ### The game
 
-You start with three children, one bed, one floor lantern and one toy.
+You start with three children on an endless dark floor: one carrying
+a lamp, one a bat, one a sword, standing in the light of a single
+lantern.
 
-- **Children do NOTHING on their own.** There is no autonomy at all:
-  every child stands where it is, burning stamina, until you tell it
-  otherwise. Click a child to select it, then click a bed (rest), a
-  toy (play), a nightmare (go at it) or the floor (walk there). An
-  idle child is a child running down, which is what makes the clock
-  feel like yours.
-- **Orders persist**: a child on a toy plays until the toy breaks or
-  you say otherwise; a child in a bed sleeps until it is full.
-- **Everything breaks** — beds and toys by use, lights by time.
-- **The dark is the threat — and the only one.** A child outside the
-  light is `scared` and loses stamina fast; at zero its parents come
-  and take it home. Lose all three and the school closes. Children are
-  never hurt and never die — this is a baby school, do not escalate it.
-  **Nothing but the dark may take a child's energy.** A version where
-  a nightmare standing over a child drained it too has been tried and
-  removed: it is a hidden mechanic, nothing on screen names it, and it
-  breaks the one promise the room makes plainly — inside the light you
-  are safe, outside it you are not. If driving a nightmare off needs to
-  be worth a child's time, buy that with something visible (what it
-  eats, where it goes, what it blocks), never with a clock the player
-  cannot read. Playing is the one other cost, and it is legible: the
-  card says `playing` and the bar it fills is on screen — and it has a
-  floor (`PLAY_STOP`): at 10% energy the child puts the toy down by
-  itself, the mirror of a full child getting out of bed. Playing may
-  drain a child, but only the dark can ever take the last of it.
+- **There is ONE verb.** Tap the floor and every child that is not
+  fighting walks there (`state.goto`). That is the whole control
+  scheme. There is **no selection and no character panel**: a child is
+  only ever tapped while the draft is holding an object out, waiting
+  to know who gets it. A panel would only restate in words what is
+  already drawn on the child — what it carries is in its fists, and
+  how it is doing is the red pulse and the mark over its head.
+- **Light is not a weapon and not a shelter.** It does exactly one
+  thing: you can *see*. It does not slow a nightmare (it used to mire
+  them at 17%; that is gone), it does not hurt one, and standing in it
+  costs and saves nothing. **A child cannot fight what it cannot see**
+  — engagement requires `lightAt(mare) >= SEE` — so the lamps decide
+  which of two games you are playing: in the light you stand and
+  fight, in the dark you run.
+- **A hand holds a lamp or a weapon, never both.** `Lamp` is a `held`
+  family, so it competes with sword/bat/wand for the same slot. Its
+  belly gives `lampR` *and* takes `dmg`/`swingT` — measured, a fat one
+  leaves a child swinging at about 45% of an empty hand. That trade is
+  the whole composition problem and it must never get cheap.
+- **Every light in a draft is CARRIED.** The hand's light group is
+  `kind: 'light'` minus `floor`, so it only ever deals a `Lamp`. A
+  floor lantern is a *place*, and a place is worthless to a class that
+  never stands still — it was dealt for a while and it was always the
+  dead card. They still exist: `placeLantern()` scatters them out in
+  the dark on a timer, rolled from the same `Lantern` family through
+  `propDrawFor`, and you find one by walking toward a glow. On a floor
+  with no landmarks that is the only thing that can pull a class
+  anywhere, and unlike a lost child it needs no beacon because it *is*
+  one.
+- **Fighting roots you, but nobody fights alone.** A child with a lit
+  nightmare in reach plants its feet and swings until one of them is
+  finished; it will not walk away and you cannot call it off. A child
+  with nothing in reach but a lit nightmare within `HELP_R` walks over
+  and piles on — so one that arrives in the lamplight is swarmed by
+  whoever is free, instead of duelling one child while the rest walk
+  past. `HELP_R` is kept short so it reads as piling on and never as
+  hunting. The group still tears itself in half at every crossing, and
+  waiting for the stragglers *is* the game. A child that is not
+  engaged can always be walked away from something it never saw —
+  that is the mercy that makes the dark playable.
+- **Nightmares hunt children** (`nearestKid`), not furniture. They do
+  not bite: they **frighten**, `MARE_SCARE` energy per second while in
+  contact, and a child at zero is collected by its parents. Nobody is
+  ever hurt — this is a baby school, do not escalate it. The rule that
+  a drain must be *visible* still stands, and this one is: a monster
+  standing on the child, a red pulse, a mark over the head, a sound.
+  Nothing else takes energy — there is no idle drain, the dark itself
+  costs nothing, and a child left alone recovers (`REGEN`).
 - **A child is three numbers**: **energy**, **attack**, **speed** —
   and those are exactly what the card shows. Everything else a stat
   bag carries (`reach`, `swingT`, `rest`, `lampR`, `scale`, `drain`,
   `knock`) is a modifier on how those three play out, not a fourth
-  pillar. There is no morale system: a child never refuses an order.
-- **Nightmares** chew on the furniture, never on a child. **Light does
-  not kill them — it mires them** (17% speed under a lamp). The
-  children do the killing. They want the closest bed or toy and do not
-  care who is using it, so they have their own `nearestBreakable()`.
-- **Playing costs energy.** `DRAIN_PLAY` is charged on top of the
-  idle drain (and on top of the dark, which is why playing out where
-  you cannot see is the worst thing you can ask for). The only thing
-  in the game that makes progress has to be paid for in the same
-  currency the dark charges, or the answer is always "everyone on a
-  toy, forever" and a bed is just something the nightmares eat.
-- **The bar and the draft.** Playing fills one shared bar. When it
-  fills the world STOPS (`state.paused` zeroes `dt`, rendering
-  continues) and a HAND of six generated objects is dealt, of which
-  you keep exactly one: carried things are applied to a child you then
-  click, furniture is put where you then click. There is no currency —
-  the draft is the whole economy.
+  pillar. There is no morale system.
+- **The floor has no edge** and no pan limit. Tiles are a fixed
+  `GRID×GRID` block that follows the view, snapped to `TILE`, each
+  showing the variant its coordinate hashes to (plus a quarter-turn
+  from the same hash). So it is infinite, deterministic — walk away
+  and back and the same scuffs are there — and a constant number of
+  draw calls. **Nothing is baked during play**: the variants are drawn
+  once at boot. The darkness plane follows the view too. What replaces
+  `clampPan` is `keepInFrame`, which only fires once the class is
+  entirely out of frame, plus the ⌾ button and `space`.
+- **The camera rides the FLOCK** — `flockAt()`, the children who are
+  actually walking. Whoever stopped to fight is deliberately left out:
+  anchoring the frame to the one who stayed behind drags it backwards
+  at exactly the moment you are deciding whether to leave them. A drag
+  takes the camera back for `FOLLOW_HOLD` seconds so you can still
+  look ahead into the dark, then it returns on its own.
+- **You find the rest of the class in the dark.** `lost[]` children
+  stand out there holding something, crying on a timer (a panned
+  `squiggle`), with a question-mark mark that is the one thing visible
+  through the black — it fades up as you close, so it is a direction
+  and not an answer. Walk within `FIND_R` and they enlist. They are
+  built ahead of time, one per frame, never in the same frame as a
+  nightmare, and their kit is pre-seeded into the recipe so a found
+  child costs ONE build and not two.
+- **The class is meant to grow FAST** — four children by about level
+  three, and up from there. `LOST_MIN`/`LOST_SPAN` is the whole dial:
+  at 24-44 units a lost child was a two-way expedition that cost more
+  than it brought, and at 11-23 it is a detour, which is what it
+  should be. Several are out there at once (`LOST_MAX`) and the next
+  is placed before you have reached the last.
+- **Kills are the only economy.** `strike()` grants exactly 1 on a
+  kill and nothing else fills the bar, so the number under it is *how
+  many more nightmares*. The FIRST nightmare buys the first card
+  (`xpNeed` starts at 1) — a player has to be shown what the bar is
+  for before they can want it — and `XP_STEP` keeps them coming
+  quickly after it. When it fills the world STOPS (`state.paused`
+  zeroes `dt`, rendering continues) and a HAND of five generated
+  objects is dealt — one lamp and four things to carry — of which you
+  keep one, handing it to a child you then tap. There is no currency.
+- **The tempo is spawn-gated, not fight-gated.** Measured: a class
+  parked in the light kills a nightmare almost exactly as fast as one
+  arrives, so `MARE_EVERY` *is* the pace of the whole game. Two
+  numbers were badly wrong when this was first built and both were
+  found by measuring, not by playing: nightmares at `.5` units/second
+  from a spawn ring of 19 took **fifty seconds** to reach anybody, and
+  a knockback of `2.6` threw them past a rooted child's reach so a
+  fight was one hit every six seconds and nothing ever died.
 - **The title screen** (`#start`, `state.started`) is also the load
   screen: the class is built one child per frame behind it, so the
   ~20 ms build cost lands while nobody is playing. `started` and
   `paused` are separate flags because they stop the world for opposite
   reasons — one holds a game that has not begun, the other freezes one
   in progress.
+- **`frame()` and `pump()`** are the debug pair (`window.__game`). The
+  loop is a named function so `pump(n)` can drive it by hand, because
+  a hidden panel throttles rAF to a crawl and every measurement taken
+  off one is a lie. It yields through a **MessageChannel**: a
+  `setTimeout` is clamped to ~1s in a hidden tab, and a microtask
+  never lets the event loop run at all, so the page hangs and nothing
+  can read the result.
 
 **Picking** is done with invisible proxy quads (`addPick`), one per
 clickable entity, raycast in place of the real drawings: hit-testing
@@ -694,13 +764,20 @@ procedural.
 
 ### The hand — what a draft is made of
 
-`HAND` in `items/index.js` is the shape of a draft: one **light**, one
-**toy**, one **bed**, and three from the **kit** (anything a child can
-carry). The three floor kinds are guaranteed because the room only
-ever runs out of one of those three, and a draft that failed to offer
-the one you were short of killed the run by shuffle rather than by
-anything you did. Favour still steers *which* family and *what rank*
-inside each group, and the kit half is where the gamble lives.
+`HAND` in `items/index.js` is the shape of a draft: one **lamp** and
+four from the **kit**. The lamp is guaranteed because seeing is the
+only thing the room can run out of, and a draft that failed to offer
+it killed the run by shuffle rather than by anything you did. The
+light group is `kind: 'light'` **minus `floor`** — every card in a
+draft is something a child carries, because a floor lantern is a place
+and a place is worthless to a class that never stands still. Favour
+still steers *which* family and *what rank* inside each group, and the
+kit half is where the gamble lives.
+
+`Toy` and `Bed` are still registered, still drawn and still on
+`items.html`, but no group picks them: the room stopped dealing
+furniture when it stopped having any. A family is a drawing first and
+a game rule second, so they were left in rather than deleted.
 
 The card copy is three separate statements — `copy.what` (flavour),
 `copy.does` (the numbers, read off the bag) and `copy.costs` (the
@@ -773,10 +850,10 @@ where a radius is expected and it silently never fires — the room is
 
 | effect | what it does | drawn as |
 |---|---|---|
-| `fear` | on a hit, every nightmare in range flinches | — |
-| `chill` | nightmares in range are mired as if under a lamp | a chalk ring |
-| `lull` | children sleeping in range rest faster | a chalk ring |
-| `thrift` | beds and toys in range wear out slower | a chalk ring |
+| `fear` | on a hit, every nightmare in range flinches | a chalk ring |
+| `chill` | nightmares in range are mired — light no longer does this, so a charm is the only thing that can | a chalk ring |
+| `lull` | children in range get their courage back faster | a chalk ring |
+| `thrift` | lanterns in range burn longer | a chalk ring |
 | `sticky` | a nightmare this child hits stays mired | — |
 | `throw` | the child lobs a drawn marble while fighting | a flying billboard |
 | `familiar` | a live doodle animal trails the child and bites | a whole character |
