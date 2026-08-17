@@ -30,7 +30,14 @@ they are not the ones an older version of this file described — no
 beds, no toys, no play, and light no longer slows anything.
 `editor.html` is the face editor,
 `crowd.html` a 7×5 page of live characters, `items.html`
-the object contact sheet. `serve.py` sends `no-store` on purpose:
+the object contact sheet. `voxel.html` is the **voxel lab** — the same
+recipe idea built out of cubes instead of graphite, with its own hand,
+layout, parts and animator under `src/voxel/`; it shares nothing with
+the drawn generator but `rng.js`, and ARCHITECTURE.md §11 is its
+contract. `voxelcrowd.html` is the voxel crowd: twenty of them on a
+midnight platform, the ONE scene in the project with real (moving,
+shadow-casting) lights, and characters that assemble voxel by voxel
+via `setDrawRange` — its rules are at the end of §11. `serve.py` sends `no-store` on purpose:
 browsers cache ES modules by URL, and a stale module makes an edited
 file look like a phantom `SyntaxError`.
 
@@ -101,6 +108,25 @@ file look like a phantom `SyntaxError`.
   dog or a cat"; and a dog is 84% floppy-eared, so "floppy ears"
   secretly means "is a dog". Check any new predicate against
   `species.js` before adding it.
+- The voxel lab is a **parallel** generator, not a port. Adding a part
+  = one file in `src/voxel/vparts/` + one line in
+  `src/voxel/vparts/index.js`; a species = one entry in `vspecies.js`;
+  a palette = one entry in `vpalette.js`. Its two rules are: **build
+  order is ownership** (every cell belongs to the LAST part that wrote
+  it, so nothing is drawn twice), and **the plate rule** — every state
+  of a part fills the same cells and only the colours change, which is
+  what makes a blink a visibility swap. `__voxel.audit()` checks the
+  second one and it is worth running after touching an animated part.
+- A voxel part places cells through the hand in `carve.js` and never
+  touches three.js. `dab` only lands on what an earlier part already
+  filled — anything that lives on a surface (a spot, an eye, a sock)
+  is dabbed, so it can never float. Colours come from `V.pal.*`, never
+  a hex literal: that is what `media.js` is to the drawn parts.
+- The voxel head's shape lives in `vlayout.js` (`V.contains`,
+  `V.frontZ`, `V.crownY`), not in the Skull part, because the whole
+  face is painted onto it. Same reason as the muzzle in the drawn rig:
+  publish where the thing landed and the parts that sit on it never
+  learn how it got there.
 - Adding a **pose** = one file in `src/poses/` + one line in
   `src/poses/index.js`; handle all three bases (biped/sit/quad).
   Adding an **expression** = one entry in `src/expressions.js`,

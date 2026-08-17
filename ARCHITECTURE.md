@@ -64,6 +64,7 @@ recipe ──► gen() ─────┴──► params ──► layout.js �
 | `src/items/index.js` | the item registry, the roll, and favour | you add a family file |
 | `src/parts/gear.js` | `Held` / `Offhand` / `Worn` — items on a body | almost never |
 | `src/main.js` / `src/crowd.js` / `src/game.js` | the three scenes | new scene features |
+| `src/voxel/*` | **the voxel generator** — a second, parallel rig that builds solids instead of drawings. Same recipe idea, its own hand, layout, parts and animator. | see §11 |
 
 ---
 
@@ -889,3 +890,260 @@ animator never writes `face.group`), and the depth rank (a fresh face
 has `rank === null`, which the board sort re-stamps for free). The
 animator's getter must read the **live** face — `() => k.face`, never
 a closure over the original.
+
+---
+
+## 11. The voxel generator (`voxel.html`, `src/voxel/`)
+
+A second character generator built on the same idea and sharing almost
+no code with the first: a **recipe** goes in, parts are asked for their
+params, a **layout** computes every shared measurement, and each part
+builds itself — except that a part here places **cells**, not strokes,
+and what comes out is a solid you can walk around.
+
+```
+              vspecies.js  (loads the dice)
+                   │
+recipe ──► gen() ──┴──► params ──► vlayout.js ──► V (head profile,
+                                       │           anchors, palette)
+        vparts/index.js ───────────────┼──► build(v, P, st, V) → cells
+                                       ▼
+                                    vrig.js ──► one mesh per part
+                                                per state ──► vanim.js
+```
+
+The same three levers, deliberately independent:
+
+| Lever | Answers | Where |
+|---|---|---|
+| **species** | *what creature is it* | `vspecies.js` — biases generation only |
+| **palette** | *what is it made of* | `vpalette.js` — graphite, crayon, clay, gloom, candy |
+| **params** | *which individual is it* | the recipe itself |
+
+It keeps its own copy of the casting helper and its own species table
+on purpose. The two generators share an *idea*, not a runtime, and a
+change to the drawn one must not be able to break this one. The only
+thing imported across is `rng.js`, which is arithmetic.
+
+### Coordinates — and they are NOT the drawn rig's
+
+Integers, **y up**, **+z toward the viewer** (so the face is on the +z
+side), x mirrored about 0, and the origin is the **floor between the
+feet**: cell `y = 0` is the lowest layer and its underside sits at
+world y = 0, so standing a character on a floor is `position.y = 0`.
+
+That is a deliberate break from the drawn rig's px/y-down/origin-at-the-head
+convention. There is no canvas to hang off here, and a solid wants to
+be measured from the ground it stands on. Widths and depths are
+**half-extents**, so every dimension is odd and exactly symmetric —
+which is what makes `v.sym()` exact instead of half a voxel off.
+
+`VX` (world units per voxel, 1/16) is resolution only. Every
+measurement in the generator is in whole voxels.
+
+### The hand (`carve.js`)
+
+`sketch.js` draws; this carves. A part never touches three.js — it
+calls `set` / `dab` / `disc` / `blob` / `stroke` / `sym` on a `Carve`
+and hands back a bag of coloured cells.
+
+**`dab` vs `set` is the distinction to learn.** `set` adds a solid;
+`dab` only recolours a cell that some EARLIER part already filled. A
+spot, a blush, a sock, an eye — anything that lives on a surface rather
+than adding to a silhouette — is dabbed, and then it can never float in
+mid-air no matter what shape the body under it turned out to be.
+
+`disc`/`blob` are superellipses: `n` is the whole shape family in one
+number (2 is a ball, 4 a rounded box, 8 a box with the corners knocked
+off). That is the voxel answer to the drawn skull's `radius(ang)`.
+
+`h01(x,y,z,salt)` is a positional **hash**, not an rng: spots, freckles
+and grain are placed from it, so they are stable across rebuilds and
+across states and nothing shimmers. The drawn version's boil is
+welcome; a solid's is not.
+
+### The mesher, and the one trap in it
+
+One `BufferGeometry` per part per state. Interior faces are culled
+against the **whole character's** occupancy, not the part's own, which
+is what welds a head to a torso instead of stacking two boxes. Two
+things are baked into vertex colours rather than lit at runtime: a
+fixed **face shade** (so it cannot swim when the camera orbits, and no
+lights are needed) and **corner AO** — the classic voxel trick, three
+lookups per corner, and the single thing that stops a model reading as
+a pile of cubes. Geometry is opaque and depth-tested, so unlike the
+drawn scenes there is no `renderOrder` to keep straight.
+
+> **`cross(u, v)` must equal `n`** for every entry in `FACES`. Get it
+> wrong and that face comes out wound backwards and is back-face
+> culled — which does not look like a missing face, it looks like the
+> whole model rendered inside-out and a shade too dark. Two of the six
+> were wrong when this was written and it took a floor to notice.
+
+Because culling crosses group boundaries, anything that MOVES relative
+to its neighbour has to **overlap** it. The head sinks two voxels into
+the shoulders (`neckY` in `vlayout.js`) so that a head cocking toward a
+glance can never swing the culled seam into view.
+
+### Build order is ownership
+
+`vparts/index.js` is an ordered list, and that order is the whole story:
+
+1. Every part builds its **resting** cells in registry order into one
+   shared grid. Later parts overwrite earlier ones, so each cell ends
+   up owned by **exactly one** part.
+2. Each part is then meshed on its own, drawing only the cells it owns.
+
+So a later part does not cover an earlier one, it **takes the cell** —
+nothing is ever drawn twice and there is no z-fighting to sort out.
+That is why the face is listed after the skull (an eye takes the skin
+cell it sits on), and why the marks are listed *before* the hair and
+the face (a spot must never land on a hairstyle or an eye).
+
+### The plate rule
+
+**Every state of a part must fill the same cells. Only the colours may
+change.** A blink is then a visibility swap between two meshes built
+once — two boolean writes — and because the footprint never moves,
+swapping one in cannot leave a hole in the head.
+
+The rig is forgiving and the audit is not: a cell a state forgets keeps
+its resting colour, and a cell a state invents that some later part
+owns is silently invisible. `auditPlates(face)` builds every state of
+every part and reports both. It is the one bug class this design can
+still have, it is decidable, and it costs a console call.
+
+### The head profile lives in the LAYOUT
+
+`V.contains(x,y,z)` and `V.frontZ(x,y)` are the head's own solid test,
+and they live in `vlayout.js`, not in the Skull part. Skull fills them
+in; every face part paints onto the surface they describe, asking each
+column for its own front. So an eye wraps around a round head and sits
+flat on a boxy one without the eye part knowing which it got — and when
+a species grows a muzzle, the profile swells, `frontZ` reports the new
+tip, and the nose and the mouth climb onto the snout without ever
+learning that muzzles exist. That is the muzzle lesson from §8, and it
+is why the face parts are a few lines each.
+
+`V.crownY(x,z)` and `V.edgeX(y,z)` are published for the same reason:
+ears, hats and hair root themselves by asking, never by assuming a head
+size.
+
+> **A hairline is a HEIGHT, not a column top.** "Cover the topmost
+> solid cell of every column" sounds like a shell and is not: on the
+> front of a round head a column is a couple of cells halfway down the
+> face, so that rule lays hair across the cheeks and a hat brim over
+> the eyes. Cover by absolute y — then the three fractions in `CUT`
+> (front, side, back) are an actual haircut.
+
+### Bases
+
+`recipe.base` is `biped` or `quad`, picked by the species. It changes
+exactly two things, the same mechanism as §8: `vlayout.js` branches and
+publishes different anchors, and parts declare `base: ['biped']` /
+`['quad']` so the rig skips the rest. Arms and Legs are biped-only,
+Legs4 is quad-only, and everything above the neck is shared untouched.
+A quad lies along z with its front at 0 and carries its head out in
+front, sunk into the shoulders.
+
+### Animation — breath and face, and nothing else
+
+There is no line boil to keep a solid alive and no poses to blend, so
+all the life comes from two places:
+
+- **The breath.** The body group swells about the feet and the head
+  group rides up *exactly* the amount the chest grew under it. The head
+  is a sibling of the body, not a child, so it has to be told — and
+  that one coupling is the difference between a character breathing and
+  a head bobbing next to a torso.
+- **The face.** Blink, glance, talk and expression, all of them
+  visibility swaps between pre-built meshes. Expressions land while the
+  eyes are shut, the same trick `anim.js` uses: a discrete swap is
+  invisible behind a blink and obvious without one. The body language
+  that goes with a mood is continuous and rides its own crossfade.
+- Plus two garnishes: `animator.hop()` is a one-shot jump with
+  anticipation and landing squash (the crowd's director calls it), and
+  half of all glances cock the whole head toward what was noticed —
+  the puzzled-puppy tilt, one rotation.
+
+The glance is worth one note: in 3D the head really turns (`rotation.y`),
+which is the one move a drawn billboard could never make. And both eyes
+must look the **same way** — `Eyes` deliberately does not use `v.sym()`,
+because mirroring x would flip the glance and give you a walleyed child.
+
+### Verifying it
+
+The decidable half, all from the console on `voxel.html`:
+
+```js
+__voxel.audit()                     // the plate rule, per part per state
+__voxel.stats()                     // voxels, tris, height, build ms
+await __voxel.pump(240)             // drive the animation by hand
+```
+
+`pump()` stops the real rAF loop first and carries on from the last
+frame's clock. Both matter: interleaved real frames run on a different
+clock, and restarting at `performance.now()` rewinds the virtual one so
+every `dt` clamps to zero and the animator quietly stops advancing.
+`frame()` clamps `dt` at **both** ends for the same reason — a negative
+`dt` runs the gaze spring backwards and it reaches 1e36 in about twenty
+frames.
+
+Measured, over 120 characters across every species and palette: a build
+is ~9 ms median and ~30 ms worst case (comparable to a drawn one), a
+character is 1000–3500 voxels and 2000–5000 triangles.
+
+### Recipes for common jobs
+
+**Add a part:** one file in `src/voxel/vparts/`, one line in
+`vparts/index.js` at the right build order. The contract is
+`{ id, label, group, states?, base?, species?, gen, meta, skip?, build }`
+and `build(v, P, st, V)` is the whole job.
+
+**Add a species:** one entry of weights in `vspecies.js`. Data only.
+
+**Add a palette:** one entry in `vpalette.js`. It shows up in the editor
+and the recipe automatically. Note what `gloom` does: it INVERTS the
+eye, because a black void on near-black skin is a face you cannot see.
+That decision belongs to the material, which is the point of having one.
+
+**Add an expression:** one entry in `VFACES` in `vanim.js`, naming a
+state per part id. If it needs a face nobody can make, add that state to
+the eye/brow/mouth part first — and obey the plate rule.
+
+**Add a head shape:** one row in `SHAPES` in `vlayout.js` plus its name
+in `Skull.gen`'s pick list.
+
+### The voxel crowd (`voxelcrowd.html`, `src/voxel/vcrowd.js`)
+
+Twenty characters on an exact grid, all facing the camera, on a
+midnight platform — spiral hill curling over a voxel moon, bare trees,
+lit pumpkins — under three coloured lanterns that orbit on their own
+clocks. The scenery is ONE Carve and one mesh, so the mesher welds it
+and the AO pools where a tree meets the ground.
+
+Three things this page does that nothing else here may:
+
+- **Real lights.** Characters are built `lit: true`: the fixed face
+  shading stays out of the vertex colours (a baked key light fights a
+  lamp that moves) and the material is Lambert; AO and grain stay baked
+  because occlusion is geometry, not illumination. ACES tone mapping,
+  a shadow-casting moon key light, a soft front fill (the moon is
+  BEHIND a crowd that faces the camera — without the fill it rims
+  twenty backs and shows nobody's face), and one lantern dragging real
+  shadows. Glow sprites are additive with `depthTest: false` — a
+  billboarded quad crossing the moon's own plane depth-fails on one
+  side of the intersection and prints a hard diagonal seam across the
+  disc.
+- **The mount.** A character assembles voxel by voxel: the rig sorts
+  every mesh's triangles bottom-up (with hash jitter, so it speckles),
+  and the scene sweeps `geometry.setDrawRange` from 0 to full over
+  ~1.4 s. No geometry is touched at runtime, and the shadow assembles
+  with the body because shadow maps render the same geometry. The
+  animator is gated until the mount ends — a body should not breathe
+  until it has finished existing.
+- **A parked camera.** Nothing animates it; drag still orbits. On this
+  page the light is the animation.
+
+The platform needed cell coordinates out to ±108, which is why `KOFF`
+in carve.js is 128 (range −128…127) rather than 64.
