@@ -7,7 +7,7 @@
 // rather than jogging on the spot is that nothing is symmetrical and
 // nothing lands on the beat.
 export const Play = {
-  id: 'play', label: 'jugar',
+  id: 'play', label: 'play',
   auto: { sway: .3, breath: .5, gaze: .5, arms: 0 },
   update(ctx) {
     const { S, base } = ctx;

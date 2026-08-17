@@ -18,7 +18,7 @@ const NOSES = [
 ];
 
 export const Nose = {
-  id: 'nose', label: 'nariz', order: 3, depth: 1.15,
+  id: 'nose', label: 'nose', order: 3, depth: 1.15,
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', NOSES),
     nostril: rng.chance(.6),
@@ -29,12 +29,12 @@ export const Nose = {
     snoutTip: C.range(rng, 'snoutTip', -.1, .18),   // <0 upturned, >0 drooping
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: NOSES.map(p => p[0]) },
-    nostril: { label: 'aleta', bool: true },
-    size: { label: 'tamaño', range: [.6, 2.4] },
-    snoutLen: { label: 'hocico largo', range: [.5, 2] },
-    snoutFat: { label: 'hocico grueso', range: [.6, 1.6] },
-    snoutTip: { label: 'hocico caído', range: [-.25, .3] },
+    style: { label: 'style', pick: NOSES.map(p => p[0]) },
+    nostril: { label: 'nostril', bool: true },
+    size: { label: 'size', range: [.6, 2.4] },
+    snoutLen: { label: 'long snout', range: [.5, 2] },
+    snoutFat: { label: 'thick snout', range: [.6, 1.6] },
+    snoutTip: { label: 'drooping snout', range: [-.25, .3] },
   }),
   skip: P => P.style === 'none',
   // noseY comes from the layout: on a muzzled head it lands on the
@@ -125,7 +125,7 @@ const MOUTHS = [
 const ALL = [...MOUTHS.map(p => p[0]), 'beak', 'flat', 'open'];
 
 export const Mouth = {
-  id: 'mouth', label: 'boca', order: 3, depth: 1, pivot: [.5, .7],
+  id: 'mouth', label: 'mouth', order: 3, depth: 1, pivot: [.5, .7],
   // idle/open are the talk pair; angry/scared/cry/sleep are EXPRESSION
   // states — the emotion redraws the mouth wholesale, whatever style
   // the character was cast with. Drawn lazily, on first use.
@@ -142,13 +142,13 @@ export const Mouth = {
     nStitch: rng.ri(3, 5),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ALL },
-    myF: { label: 'altura', range: [.45, .72] },
-    wF: { label: 'ancho', range: [.5, 1.8] },
-    beakLen: { label: 'pico largo', range: [.5, 2] },
-    upperLip: { label: 'labio', bool: true },
-    crease: { label: 'pliegue', bool: true },
-    nTeeth: { label: 'dientes', range: [2, 7], step: 1 },
+    style: { label: 'style', pick: ALL },
+    myF: { label: 'height', range: [.45, .72] },
+    wF: { label: 'width', range: [.5, 1.8] },
+    beakLen: { label: 'long beak', range: [.5, 2] },
+    upperLip: { label: 'lip', bool: true },
+    crease: { label: 'crease', bool: true },
+    nTeeth: { label: 'teeth', range: [2, 7], step: 1 },
   }),
   bones: (P, F) => [{ name: 'mouth', x: F.L.mx / U, y: -F.L.my / U }],
   size: (P, F) => [(F.L.mw * 4.2 + 20) / U, (F.s * .9) / U],

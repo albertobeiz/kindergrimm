@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>drawai — editor de caras</title>
+<title>drawai — face editor</title>
 <style>
   :root {
     --ink: #1f1d1a;
@@ -71,42 +71,42 @@
   <div id="stage"></div>
   <div id="ui">
     <h1>drawai</h1>
-    <div class="sub">personajes procedurales · <a href="index.html" style="color:inherit">← menú</a></div>
+    <div class="sub">procedural characters · <a href="index.html" style="color:inherit">← menu</a></div>
 
     <section id="sec-face">
-      <h2>Cara</h2>
+      <h2>Face</h2>
       <div class="row">
         <label>seed</label>
         <input id="seed" type="number">
-        <button id="dice" title="seed aleatorio">🎲</button>
+        <button id="dice" title="random seed">🎲</button>
       </div>
       <div class="row">
-        <label>especie</label>
+        <label>species</label>
         <select id="species"></select>
       </div>
       <div class="row">
-        <label>medio</label>
+        <label>medium</label>
         <select id="media"></select>
       </div>
       <div class="row">
-        <label>color</label>
+        <label>colour</label>
         <select id="color">
-          <option value="auto">auto (según seed)</option>
-          <option value="plain">solo grafito</option>
-          <option value="color">siempre color</option>
+          <option value="auto">auto (from the seed)</option>
+          <option value="plain">graphite only</option>
+          <option value="color">always colour</option>
         </select>
       </div>
-      <div class="row"><button id="regen" style="flex:1">Regenerar (R)</button></div>
-      <div class="hint">las partes con 🔒 no se regeneran</div>
+      <div class="row"><button id="regen" style="flex:1">Regenerate (R)</button></div>
+      <div class="hint">parts marked 🔒 are not regenerated</div>
     </section>
 
     <section id="sec-parts">
-      <h2>Partes <span style="opacity:.4;font-size:9px">(o click en la cara)</span></h2>
+      <h2>Parts <span style="opacity:.4;font-size:9px">(or click the face)</span></h2>
       <div id="chips"></div>
     </section>
 
     <section id="sec-part" hidden>
-      <h2>Parte · <span id="part-title"></span></h2>
+      <h2>Part · <span id="part-title"></span></h2>
       <div class="row">
         <button id="part-reroll">Reroll 🎲</button>
         <label style="flex:none;display:flex;align-items:center;gap:4px">
@@ -117,32 +117,32 @@
     </section>
 
     <section id="sec-anim">
-      <h2>Animación</h2>
+      <h2>Animation</h2>
       <div class="hint">pose</div>
       <div id="poses" class="chiprow"></div>
-      <div class="hint">cara</div>
+      <div class="hint">face</div>
       <div id="faces" class="chiprow"></div>
-      <div class="row"><label>parpadeo</label><input id="anim-blink" type="checkbox" checked></div>
-      <div class="row"><label>mirada</label><input id="anim-gaze" type="checkbox" checked></div>
-      <div class="row"><label>hablar</label><input id="anim-talk" type="checkbox"></div>
-      <div class="row"><label>balanceo</label><input id="anim-sway" type="checkbox" checked></div>
-      <div class="row"><label>respiración</label><input id="anim-breath" type="checkbox" checked></div>
+      <div class="row"><label>blink</label><input id="anim-blink" type="checkbox" checked></div>
+      <div class="row"><label>gaze</label><input id="anim-gaze" type="checkbox" checked></div>
+      <div class="row"><label>talk</label><input id="anim-talk" type="checkbox"></div>
+      <div class="row"><label>sway</label><input id="anim-sway" type="checkbox" checked></div>
+      <div class="row"><label>breath</label><input id="anim-breath" type="checkbox" checked></div>
       <div class="row"><label>line boil</label><input id="anim-boil" type="checkbox" checked></div>
       <div class="row">
-        <label>vel. boil</label>
+        <label>boil speed</label>
         <input id="anim-speed" type="range" min="0.15" max="3" step="0.05" value="0.5">
         <span class="val" id="anim-speed-val">0.50</span>
       </div>
     </section>
 
     <section id="sec-recipe">
-      <h2>Receta</h2>
+      <h2>Recipe</h2>
       <textarea id="recipe-box" spellcheck="false"></textarea>
       <div class="row" style="margin-top:6px">
-        <button id="recipe-load">Aplicar JSON</button>
-        <button id="recipe-copy">Copiar</button>
+        <button id="recipe-load">Apply JSON</button>
+        <button id="recipe-copy">Copy</button>
       </div>
-      <div class="hint">la receta reproduce la cara exacta: guárdala y cárgala donde quieras</div>
+      <div class="hint">the recipe reproduces the exact face: save it and load it anywhere</div>
     </section>
   </div>
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>

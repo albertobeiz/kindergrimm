@@ -28,9 +28,9 @@ const TOP_MARGIN = .18;          // the HUD sits over this strip
 const rowFloorY = row => -(row - (ROWS - 1) / 2) * CELL_H - CELL_H * .40;
 
 const params = new URLSearchParams(location.search);
-// 'todos'/'todas' mix them per character — the whole range on one page
-const media = [...MEDIA_IDS, 'todos'].includes(params.get('media')) ? params.get('media') : 'todos';
-const species = [...SPECIES_IDS, 'todas'].includes(params.get('species')) ? params.get('species') : 'todas';
+// 'all' mixes them per character — the whole range on one page
+const media = [...MEDIA_IDS, 'all'].includes(params.get('media')) ? params.get('media') : 'all';
+const species = [...SPECIES_IDS, 'all'].includes(params.get('species')) ? params.get('species') : 'all';
 
 const links = (host, items, current, key) => {
   document.getElementById(host).innerHTML = items.map(([val, label]) => {
@@ -39,8 +39,8 @@ const links = (host, items, current, key) => {
     return `<a href="?${q}"${val === current ? ' class="sel"' : ''}>${label}</a>`;
   }).join(' · ');
 };
-links('medias', [['todos', 'todos'], ...MEDIA_IDS.map(m => [m, MEDIA[m].label])], media, 'media');
-links('species', [['todas', 'todas'], ...SPECIES_IDS.map(s => [s, SPECIES[s].label])], species, 'species');
+links('medias', [['all', 'all'], ...MEDIA_IDS.map(m => [m, MEDIA[m].label])], media, 'media');
+links('species', [['all', 'all'], ...SPECIES_IDS.map(s => [s, SPECIES[s].label])], species, 'species');
 
 const stage = document.getElementById('stage');
 const countEl = document.getElementById('count');
@@ -91,10 +91,10 @@ function drawCell(i, recipe = null) {
   }
   if (!recipe) {
     recipe = newRecipe();
-    recipe.media = media === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : media;
-    // 'todas' shelves the page like a bestiary: two rows of people,
+    recipe.media = media === 'all' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : media;
+    // 'all' shelves the page like a bestiary: two rows of people,
     // then a row each of dogs, cats and nightmares
-    recipe.species = species === 'todas' ? ROW_SPECIES[i / COLS | 0] : species;
+    recipe.species = species === 'all' ? ROW_SPECIES[i / COLS | 0] : species;
     recipe.base = null;   // ensureParams picks it from the species
   }
   ensureParams(recipe);
@@ -338,7 +338,7 @@ renderer.setAnimationLoop(now => {
   if (queue.length) {
     const until = performance.now() + 24;
     do { drawCell(queue.shift()); } while (queue.length && performance.now() < until);
-    countEl.textContent = queue.length ? `dibujando… ${N - queue.length}/${N}` : '';
+    countEl.textContent = queue.length ? `drawing… ${N - queue.length}/${N}` : '';
   } else if (t > nextLife) {
     nextLife = t + .25 + Math.random() * .45;
     const cell = cells[(Math.random() * N) | 0];

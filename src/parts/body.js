@@ -78,14 +78,14 @@ export const Torso = {
     tone: C.pick(rng, 'tone', [['light', 46], ['hatch', 22], ['scribble', 18], ['black', 14]]),
   }),
   meta: () => ({
-    shape: { label: 'forma', pick: ['bean', 'round', 'square', 'pear', 'tiny', 'barrel', 'drop'] },
-    wF: { label: 'ancho', range: [.3, 1.0] },
-    hF: { label: 'alto', range: [.3, 1.3] },
-    lean: { label: 'inclinación', range: [-.2, .2] },
-    pattern: { label: 'estampado', pick: ['none', 'stripes', 'belly', 'buttons', 'pocket'] },
-    tone: { label: 'tono', pick: ['light', 'hatch', 'scribble', 'black'] },
-    clothOn: { label: 'ropa color', bool: true },
-    clothIdx: { label: 'tinte ropa', range: [0, 7], step: 1 },
+    shape: { label: 'shape', pick: ['bean', 'round', 'square', 'pear', 'tiny', 'barrel', 'drop'] },
+    wF: { label: 'width', range: [.3, 1.0] },
+    hF: { label: 'height', range: [.3, 1.3] },
+    lean: { label: 'tilt', range: [-.2, .2] },
+    pattern: { label: 'pattern', pick: ['none', 'stripes', 'belly', 'buttons', 'pocket'] },
+    tone: { label: 'tone', pick: ['light', 'hatch', 'scribble', 'black'] },
+    clothOn: { label: 'clothes colour', bool: true },
+    clothIdx: { label: 'clothes dye', range: [0, 7], step: 1 },
   }),
   bones: (P, F) => [{ name: 'torso', x: (F.B.quad ? F.B.cx : 0) / U, y: -F.B.top / U }],
   size: (P, F) => [(F.B.halfW * (F.B.quad ? 4.2 : 3.2)) / U, (F.B.h * 2.4) / U],
@@ -173,7 +173,7 @@ export const Torso = {
 export const Arms = {
   // order -1: in front of the torso, but BEHIND the head — a raised
   // arm must pass behind the face, never across it
-  id: 'arms', label: 'brazos', order: -1, depth: -.15, region: 'body',
+  id: 'arms', label: 'arms', order: -1, depth: -.15, region: 'body',
   base: ['biped'],
   // Every character has arms — they are half the pose. Every style
   // here is an IDLE: nothing reaches for the sky, because a standing
@@ -188,11 +188,11 @@ export const Arms = {
     hand: C.pick(rng, 'hand', [['mitten', 58], ['dot', 26], ['claw', 16]]),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ['stub', 'noodle', 'wing', 'hips', 'clasped', 'behind'] },
-    len: { label: 'largo', range: [.4, 1.8] },
-    droop: { label: 'caída', range: [-.2, 1.2] },
-    asym: { label: 'asimetría', range: [-.5, .5] },
-    hand: { label: 'mano', pick: ['mitten', 'dot', 'claw'] },
+    style: { label: 'style', pick: ['stub', 'noodle', 'wing', 'hips', 'clasped', 'behind'] },
+    len: { label: 'length', range: [.4, 1.8] },
+    droop: { label: 'fall', range: [-.2, 1.2] },
+    asym: { label: 'asymmetry', range: [-.5, .5] },
+    hand: { label: 'hand', pick: ['mitten', 'dot', 'claw'] },
   }),
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'arm' + (sd < 0 ? 'L' : 'R'),
@@ -256,7 +256,7 @@ export const Arms = {
 // LEGS — one bone per side. 'none' leaves a blob sitting on the floor
 // =================================================================
 export const Legs = {
-  id: 'legs', label: 'piernas', order: -3, depth: -.35, region: 'body',
+  id: 'legs', label: 'legs', order: -3, depth: -.35, region: 'body',
   base: ['biped'],
   // every character stands on something — no floating blobs
   gen: (rng, C) => ({
@@ -265,9 +265,9 @@ export const Legs = {
     foot: C.pick(rng, 'foot', [['oval', 62], ['mitten', 26], ['claw', 12]]),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ['stub', 'noodle', 'wide'] },
-    len: { label: 'largo', range: [.3, 1.8] },
-    foot: { label: 'pie', pick: ['oval', 'mitten', 'claw'] },
+    style: { label: 'style', pick: ['stub', 'noodle', 'wide'] },
+    len: { label: 'length', range: [.3, 1.8] },
+    foot: { label: 'foot', pick: ['oval', 'mitten', 'claw'] },
   }),
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'leg' + (sd < 0 ? 'L' : 'R'),
@@ -303,15 +303,15 @@ export const Legs = {
 // everything, and wagged by the animator.
 // =================================================================
 export const Tail = {
-  id: 'tail', label: 'rabo', order: -4, depth: -.4, region: 'body',
+  id: 'tail', label: 'tail', order: -4, depth: -.4, region: 'body',
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['none', 62], ['wag', 14], ['curl', 12], ['puff', 8], ['spike', 4]]),
     len: C.range(rng, 'len', .8, 1.4),
     side: rng.chance(.5) ? -1 : 1,
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ['none', 'wag', 'curl', 'puff', 'spike'] },
-    len: { label: 'largo', range: [.4, 2] },
+    style: { label: 'style', pick: ['none', 'wag', 'curl', 'puff', 'spike'] },
+    len: { label: 'length', range: [.4, 2] },
   }),
   skip: P => P.style === 'none',
   bones: (P, F) => [{
@@ -361,7 +361,7 @@ export const Tail = {
 // an arm into a wing, so some shapes have to belong to somebody.
 // =================================================================
 export const Wings = {
-  id: 'wings', label: 'alas', order: -1, depth: -.15, region: 'body',
+  id: 'wings', label: 'wings', order: -1, depth: -.15, region: 'body',
   species: ['nightmare'], base: ['biped'],
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['folded', 40], ['open', 24], ['none', 22], ['tucked', 14]]),
@@ -370,9 +370,9 @@ export const Wings = {
   }),
   skip: P => P.style === 'none',
   meta: () => ({
-    style: { label: 'estilo', pick: ['folded', 'open', 'tucked', 'none'] },
-    len: { label: 'largo', range: [.5, 2] },
-    feathers: { label: 'plumas', range: [2, 6], step: 1 },
+    style: { label: 'style', pick: ['folded', 'open', 'tucked', 'none'] },
+    len: { label: 'length', range: [.5, 2] },
+    feathers: { label: 'feathers', range: [2, 6], step: 1 },
   }),
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'wing' + (sd < 0 ? 'L' : 'R'),
@@ -414,7 +414,7 @@ export const Wings = {
 // is 'sit', which is what a base IS.
 // =================================================================
 export const Paws = {
-  id: 'paws', label: 'patas', order: -1, depth: -.2, region: 'body',
+  id: 'paws', label: 'paws', order: -1, depth: -.2, region: 'body',
   base: ['sit'],
   gen: (rng, C) => ({
     front: C.pick(rng, 'front', [['oval', 62], ['mitten', 26], ['claw', 12]]),
@@ -422,9 +422,9 @@ export const Paws = {
     toes: rng.chance(.45),
   }),
   meta: () => ({
-    front: { label: 'patas', pick: ['oval', 'mitten', 'claw'] },
-    spread: { label: 'apertura', range: [.6, 1.5] },
-    toes: { label: 'deditos', bool: true },
+    front: { label: 'paws', pick: ['oval', 'mitten', 'claw'] },
+    spread: { label: 'spread', range: [.6, 1.5] },
+    toes: { label: 'toes', bool: true },
   }),
   bones: (P, F) => [{ name: 'paws', x: 0, y: -F.B.bot / U }],
   size: (P, F) => [(F.B.halfW * 3.4 * P.spread) / U, (F.s * .7) / U],
@@ -469,7 +469,7 @@ export const Paws = {
 // which reads as "behind" without drawing any perspective.
 // =================================================================
 export const QuadLegs = {
-  id: 'quadlegs', label: 'patas', order: -3, depth: -.3, region: 'body',
+  id: 'quadlegs', label: 'paws', order: -3, depth: -.3, region: 'body',
   base: ['quad'],
   // The quad walks as a FLIP-BOOK: all four legs live on one canvas,
   // so the gait is pre-drawn — stepA/stepB lift alternating diagonal
@@ -482,9 +482,9 @@ export const QuadLegs = {
     back: C.chance(rng, 'back', .85),      // are the hind legs visible
   }),
   meta: () => ({
-    thick: { label: 'grosor', range: [.5, 1.6] },
-    toes: { label: 'deditos', bool: true },
-    back: { label: 'patas traseras', bool: true },
+    thick: { label: 'thickness', range: [.5, 1.6] },
+    toes: { label: 'toes', bool: true },
+    back: { label: 'hind legs', bool: true },
   }),
   bones: (P, F) => [{ name: 'quadlegs', x: F.B.cx / U, y: -F.B.legTopY / U }],
   size: (P, F) => [(F.B.halfW * 4.4) / U, (F.B.legLen * 2.6 + F.s * .6) / U],

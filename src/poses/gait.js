@@ -38,11 +38,11 @@ function gaitPose(id, label, o) {
   };
 }
 
-export const Walk = gaitPose('walk', 'andar', {
+export const Walk = gaitPose('walk', 'walk', {
   hz: 1.6, bounce: .03, rock: .018, step: .06, legRot: .28, armRot: .3,
   gaze: .5, tail: 1.4, amp: 1,
 });
-export const Run = gaitPose('run', 'correr', {
+export const Run = gaitPose('run', 'run', {
   hz: 2.7, bounce: .06, rock: .03, step: .11, legRot: .5, armRot: .6,
   gaze: .15, tail: 2, amp: 1.7,
 });

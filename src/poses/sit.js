@@ -5,7 +5,7 @@
 //          hind paws and the head stays level, looking up a little
 //   sit:   was born sitting; it just settles a touch lower
 export const Sit = {
-  id: 'sit', label: 'sentado',
+  id: 'sit', label: 'sitting',
   auto: { sway: .6, tail: .6, arms: .4 },
   update(ctx) {
     const { B, S, base } = ctx;

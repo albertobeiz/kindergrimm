@@ -22,7 +22,7 @@ export const EXPRESSIONS = {
   idle: { label: 'normal', states: {} },
 
   angry: {
-    label: 'enfadado',
+    label: 'angry',
     states: { eyes: 'angry', brows: 'angry', mouth: 'angry' },
     auto: { gaze: .3 },
     update(ctx) {
@@ -34,7 +34,7 @@ export const EXPRESSIONS = {
   },
 
   scared: {
-    label: 'asustado',
+    label: 'scared',
     states: { eyes: 'scared', brows: 'raised', mouth: 'scared' },
     auto: { gaze: 0, sway: 0 },
     update(ctx) {
@@ -47,7 +47,7 @@ export const EXPRESSIONS = {
   },
 
   crying: {
-    label: 'llorando',
+    label: 'crying',
     states: { eyes: 'cry', brows: 'sad', mouth: 'cry', tearsWet: 'flow' },
     auto: { gaze: 0 },
     update(ctx) {
@@ -60,7 +60,7 @@ export const EXPRESSIONS = {
   },
 
   sleeping: {
-    label: 'dormido',
+    label: 'asleep',
     states: { eyes: 'closed', mouth: 'sleep', brows: 'sad' },
     auto: { gaze: 0, blink: 0, sway: .3, breath: 1.6 },
     update(ctx) { ctx.head(0, -ctx.S * .05, .05); },

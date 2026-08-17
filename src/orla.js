@@ -1,12 +1,13 @@
 // ---------------------------------------------------------------
-// LA ORLA — the class photo, scored like a poker hand.
+// THE CLASS PHOTO — a class photo, scored like a poker hand.
 //
 // THE LOOP
 //   Ten children stand on two shelves. You pick FIVE for the photo
 //   and press the button. The photo is scored the way a hand of cards
-//   is scored: the five make a FIGURA — pareja, trío, full, camada —
-//   on whichever trait they share most of, and that figura is worth
-//   PUNTOS × MULTI. Then every child adds their own puntos, then
+//   is scored: the five make a HAND — a pair, three of a kind, a full
+//   house, the whole litter — on whichever trait they share most of,
+//   and that hand is worth POINTS × MULTI. Then every child adds their
+//   own points, then
 //   every OBJECT you own fires in turn and pushes one of the two
 //   numbers. Multiply, and that is the shot.
 //
@@ -20,11 +21,11 @@
 // which is the whole reason to leave a good child behind.
 //
 // A PERSISTENT CLASS WAS TRIED AND REMOVED. Children used to stay all
-// run, earning +8 puntos a photo as veterans; it made picking the
+// run, earning +8 points a photo as veterans; it made picking the
 // same five mathematically optimal, and Alberto played it and said so:
-// "siempre acabo eligiendo a los mismos niños". A bonus that grows on
+// he always ended up picking the same children. A bonus that grows on
 // use is a bonus that punishes variety. The multi now lives entirely
-// in the figura ladder and in the objects, which is where it belongs.
+// in the hand ladder and in the objects, which is where it belongs.
 //
 // THE FLAT PAGE. This is a 2D scene like the editor and the crowd —
 // cream stock, an orthographic camera straight on, no orbit and no
@@ -55,21 +56,21 @@ const SHELF = 10;                // on the shelves at once
 const SHOTS = 2;                 // photos per round
 const CHILD_PTS = 10;            // what one child brings, just by being in it
 
-// The figuras, in the order a player learns them. `pts` are chips and
+// The hands, in the order a player learns them. `pts` are chips and
 // `multi` is the multiplier — the split is the whole reason a score
-// can explode: objects that add puntos are linear, objects that touch
+// can explode: objects that add points are linear, objects that touch
 // multi are not, and the good photo is the one that feeds both. The
 // ladder leans on MULTI harder than the first build did, because the
 // multiplier is where the pleasure lives.
-const FIGURAS = {
-  nada:        { pts: 5,   multi: 1, word: 'ni una pareja' },
-  pareja:      { pts: 20,  multi: 1, word: 'pareja' },
-  doble:       { pts: 35,  multi: 2, word: 'doble pareja' },
-  trio:        { pts: 50,  multi: 3, word: 'trío' },
-  arcoiris:    { pts: 60,  multi: 3, word: 'orla arcoíris' },
-  full:        { pts: 80,  multi: 4, word: 'full' },
-  poker:       { pts: 110, multi: 5, word: 'póker' },
-  camada:      { pts: 160, multi: 8, word: 'camada' },
+const HANDS = {
+  none:    { pts: 5,   multi: 1, word: 'not even a pair' },
+  pair:    { pts: 20,  multi: 1, word: 'a pair' },
+  two:     { pts: 35,  multi: 2, word: 'two pair' },
+  three:   { pts: 50,  multi: 3, word: 'three of a kind' },
+  rainbow: { pts: 60,  multi: 3, word: 'a rainbow class' },
+  full:    { pts: 80,  multi: 4, word: 'a full house' },
+  four:    { pts: 110, multi: 5, word: 'four of a kind' },
+  litter:  { pts: 160, multi: 8, word: 'the whole litter' },
 };
 
 // Measured, not guessed: 350 simulated runs against the real scoring
@@ -111,10 +112,10 @@ const RANK_BY_ROUND = [
 // =================================================================
 const P = (c, id) => c.recipe.parts[id]?.params ?? {};
 
-const SP_PLURAL = { human: 'humanos', dog: 'perros', cat: 'gatos', nightmare: 'pesadillas' };
-const PAT_PLURAL = { stripes: 'rayas', belly: 'barrigas', buttons: 'botones', pocket: 'bolsillos' };
+const SP_PLURAL = { human: 'humans', dog: 'dogs', cat: 'cats', nightmare: 'nightmares' };
+const PAT_PLURAL = { stripes: 'stripes', belly: 'bellies', buttons: 'buttons', pocket: 'pockets' };
 
-// THE AXES a figura can be made on, and the choice is not free.
+// THE AXES a hand can be made on, and the choice is not free.
 //
 // Almost every legible trait in this engine is a species tell — that
 // is what a casting profile IS (ARCHITECTURE §8) — so an axis picked
@@ -128,18 +129,22 @@ const PAT_PLURAL = { stripes: 'rayas', belly: 'barrigas', buttons: 'botones', po
 // sit in between — a dog is mostly dot-eyed but a human rolls dot 16%
 // of the time, so it still crosses.
 //
-// `boca` was here and is gone: it leaked the most of the three AND its
-// five commonest values (wobble, tiny, smirk, frown, grit) are all one
-// thin wiggly line at the size these are drawn, so "pareja de bocas"
-// was a figura the player could not check.
+// `mouth` was here and is gone: it leaked the most of the three AND
+// its five commonest values (wobble, tiny, smirk, frown, grit) are all
+// one thin wiggly line at the size these are drawn, so "mouths · a
+// pair" was a hand the player could not check.
 //
 // `nul` is a value that means ABSENCE. Three children with no pattern
-// are not a trío of anything.
+// are not three of a kind of anything.
+//
+// The trait comes FIRST and the hand second — "dogs · three of a kind".
+// The other way round, English hands do not compose: "four of a kind of
+// dogs" is not a sentence anybody says.
 const AXES = [
-  { id: 'especie', of: c => c.recipe.species,
-    word: (fig, v) => `${fig} de ${SP_PLURAL[v] ?? v}` },
-  { id: 'estampado', of: c => P(c, 'torso').pattern, nul: 'none',
-    word: (fig, v) => `${fig} de ${PAT_PLURAL[v] ?? v}` },
+  { id: 'species', of: c => c.recipe.species,
+    word: (fig, v) => `${SP_PLURAL[v] ?? v} · ${fig}` },
+  { id: 'pattern', of: c => P(c, 'torso').pattern, nul: 'none',
+    word: (fig, v) => `${PAT_PLURAL[v] ?? v} · ${fig}` },
   // BOTH eyes, not one. eyes.js draws the right eye from `type2`
   // whenever it is set, so a child rolled dot/xcross has one dot and
   // one black X — keying on `type` alone paired children whose eyes
@@ -149,7 +154,7 @@ const AXES = [
       const e = P(c, 'eyes');
       return `${e.type}|${e.type2 && e.type2 !== 'none' ? e.type2 : e.type}`;
     },
-    word: fig => `${fig} de ojos` },
+    word: fig => `eyes · ${fig}` },
 ];
 
 const HORNS = new Set(['horns', 'spikes', 'antlers', 'stalks']);
@@ -159,35 +164,35 @@ const EARS = new Set(['floppy', 'cat', 'bear', 'bunny']);
 // one of these is something you can see across the page.
 //
 // NOT HERE, and on purpose: anything about what a child is CARRYING.
-// Held/Offhand declare base:['biped'], so "lleva algo" would secretly
-// mean "no es un perro ni un gato" — a rule that reads as one thing
-// and tests another.
-// Every predicate carries BOTH forms. One is not enough: "por cada
-// perro" and "todos son perro" cannot come from the same string, and
+// Held/Offhand declare base:['biped'], so "carries something" would
+// secretly mean "is not a dog and not a cat" — a rule that reads as one
+// thing and tests another.
+// Every predicate carries BOTH forms. One is not enough: "per dog" and
+// "all five are dogs" cannot come from the same string, and
 // generated copy that does not agree in number reads as a bug in the
 // game rather than a rule in it.
 const PREDS = [
-  { id: 'perro', one: 'perro', many: 'perros', test: c => c.recipe.species === 'dog' },
-  { id: 'gato', one: 'gato', many: 'gatos', test: c => c.recipe.species === 'cat' },
-  { id: 'humano', one: 'humano', many: 'humanos', test: c => c.recipe.species === 'human' },
-  { id: 'pesadilla', one: 'pesadilla', many: 'pesadillas', test: c => c.recipe.species === 'nightmare' },
-  { id: 'cuernos', one: 'niño con cuernos', many: 'niños con cuernos', test: c => HORNS.has(P(c, 'crest').style) },
-  { id: 'orejas', one: 'niño con orejas', many: 'niños con orejas', test: c => EARS.has(P(c, 'crest').style) },
-  { id: 'gafas', one: 'niño con gafas', many: 'niños con gafas', test: c => !!P(c, 'extras').glasses },
-  { id: 'llora', one: 'niño que llora', many: 'niños que lloran', test: c => !!P(c, 'extras').tears },
-  { id: 'manchas', one: 'niño con manchas', many: 'niños con manchas', test: c => !!P(c, 'extras').spots },
-  { id: 'pelo', one: 'niño con pelo', many: 'niños con pelo', test: c => (P(c, 'hair').style ?? 'bald') !== 'bald' },
-  { id: 'rabo', one: 'niño con rabo', many: 'niños con rabo', test: c => (P(c, 'tail').style ?? 'none') !== 'none' },
-  { id: 'cuatro', one: 'niño a cuatro patas', many: 'niños a cuatro patas', test: c => c.recipe.base === 'quad' },
+  { id: 'dog', one: 'dog', many: 'dogs', test: c => c.recipe.species === 'dog' },
+  { id: 'cat', one: 'cat', many: 'cats', test: c => c.recipe.species === 'cat' },
+  { id: 'human', one: 'human', many: 'humans', test: c => c.recipe.species === 'human' },
+  { id: 'nightmare', one: 'nightmare', many: 'nightmares', test: c => c.recipe.species === 'nightmare' },
+  { id: 'horns', one: 'child with horns', many: 'children with horns', test: c => HORNS.has(P(c, 'crest').style) },
+  { id: 'ears', one: 'child with ears', many: 'children with ears', test: c => EARS.has(P(c, 'crest').style) },
+  { id: 'glasses', one: 'child with glasses', many: 'children with glasses', test: c => !!P(c, 'extras').glasses },
+  { id: 'crying', one: 'crying child', many: 'crying children', test: c => !!P(c, 'extras').tears },
+  { id: 'spots', one: 'spotted child', many: 'spotted children', test: c => !!P(c, 'extras').spots },
+  { id: 'hair', one: 'child with hair', many: 'children with hair', test: c => (P(c, 'hair').style ?? 'bald') !== 'bald' },
+  { id: 'tail', one: 'child with a tail', many: 'children with tails', test: c => (P(c, 'tail').style ?? 'none') !== 'none' },
+  { id: 'quad', one: 'child on all fours', many: 'children on all fours', test: c => c.recipe.base === 'quad' },
 ];
 
-// Conditions over the whole photo. "los cinco son…" rather than
-// "todos son…" because it also names how many there are, which the
+// Conditions over the whole photo. "all five are…" rather than
+// "everyone is…" because it also names how many there are, which the
 // player is otherwise left to remember.
 const CONDS = [
-  { id: 'ninguno', label: p => `no hay ningún ${p.one}`, test: (ph, p) => !ph.some(p.test) },
-  { id: 'todos', label: p => `los cinco son ${p.many}`, test: (ph, p) => ph.every(p.test) },
-  { id: 'tres', label: p => `hay tres o más ${p.many}`, test: (ph, p) => ph.filter(p.test).length >= 3 },
+  { id: 'none', label: p => `there is no ${p.one}`, test: (ph, p) => !ph.some(p.test) },
+  { id: 'all', label: p => `all five are ${p.many}`, test: (ph, p) => ph.every(p.test) },
+  { id: 'three', label: p => `three or more are ${p.many}`, test: (ph, p) => ph.filter(p.test).length >= 3 },
 ];
 
 const rnd = n => (Math.random() * n) | 0;
@@ -199,10 +204,10 @@ function wpick(pairs) {
   return pairs[pairs.length - 1][0];
 }
 
-// ---- the figura --------------------------------------------------
+// ---- the hand ----------------------------------------------------
 // Count how many children share each value on an axis, and read the
 // group sizes the way a poker hand is read.
-function figuraOn(photo, axis) {
+function handOn(photo, axis) {
   const seen = new Map();
   for (const c of photo) {
     const v = axis.of(c);
@@ -213,29 +218,29 @@ function figuraOn(photo, axis) {
   if (!groups.length) return null;
   const [topVal, top] = groups[0];
   const second = groups[1]?.[1] ?? 0;
-  let key = 'nada';
-  if (top >= 5) key = 'camada';
-  else if (top === 4) key = 'poker';
+  let key = 'none';
+  if (top >= 5) key = 'litter';
+  else if (top === 4) key = 'four';
   else if (top === 3 && second === 2) key = 'full';
-  else if (top === 3) key = 'trio';
-  else if (top === 2 && second === 2) key = 'doble';
-  else if (top === 2) key = 'pareja';
-  else if (groups.length === photo.length) key = 'arcoiris';
-  const f = FIGURAS[key];
+  else if (top === 3) key = 'three';
+  else if (top === 2 && second === 2) key = 'two';
+  else if (top === 2) key = 'pair';
+  else if (groups.length === photo.length) key = 'rainbow';
+  const f = HANDS[key];
   return { key, ...f, axis, value: topVal, name: axis.word(f.word, topVal) };
 }
 
-// the best figura across every axis — that is the one the photo is
+// the best hand across every axis — that is the one the photo is
 // worth, and its name is what gets printed
-function bestFigura(photo) {
+function bestHand(photo) {
   let best = null;
   for (const axis of AXES) {
-    const f = figuraOn(photo, axis);
+    const f = handOn(photo, axis);
     if (!f) continue;
     const score = f.pts * f.multi;
     if (!best || score > best.pts * best.multi) best = f;
   }
-  return best ?? { key: 'nada', ...FIGURAS.nada, name: FIGURAS.nada.word };
+  return best ?? { key: 'none', ...HANDS.none, name: HANDS.none.word };
 }
 
 // how many plain pairs are in the photo, on any axis — what a toy pays
@@ -257,7 +262,7 @@ function pairsIn(photo) {
 //
 // An object is a rolled item from the existing catalogue — its own
 // drawing, its own name, its own rank — carrying ONE rule. The rule's
-// KIND comes from the family, so a sword hits (puntos) and a wand
+// KIND comes from the family, so a sword hits (points) and a wand
 // multiplies and a crown is worth something just for being worn; its
 // SIZE comes from the rank. Only the predicate is free.
 //
@@ -284,29 +289,29 @@ function makeRule(kind, rank) {
   const pw = POWER[rank];
   if (kind === 'per') {
     const p = pick(PREDS);
-    return { kind, text: `+${pw.per} puntos por cada ${p.one}`,
+    return { kind, text: `+${pw.per} points per ${p.one}`,
              apply: (s, ph) => { s.pts += pw.per * ph.filter(p.test).length; } };
   }
   if (kind === 'mper') {
     const p = pick(PREDS);
-    return { kind, text: `+${pw.mper} multi por cada ${p.one}`,
+    return { kind, text: `+${pw.mper} multi per ${p.one}`,
              apply: (s, ph) => { s.multi += pw.mper * ph.filter(p.test).length; } };
   }
   if (kind === 'x') {
     const p = pick(PREDS), cond = pick(CONDS);
-    return { kind, text: `×${pw.x} multi si ${cond.label(p)}`,
+    return { kind, text: `×${pw.x} multi if ${cond.label(p)}`,
              apply: (s, ph) => { if (cond.test(ph, p)) s.multi *= pw.x; } };
   }
   if (kind === 'iff') {
     const p = pick(PREDS), cond = pick(CONDS);
-    return { kind, text: `+${pw.iff} puntos si ${cond.label(p)}`,
+    return { kind, text: `+${pw.iff} points if ${cond.label(p)}`,
              apply: (s, ph) => { if (cond.test(ph, p)) s.pts += pw.iff; } };
   }
   if (kind === 'pair') {
-    return { kind, text: `+${pw.pair} multi por cada pareja de la orla`,
+    return { kind, text: `+${pw.pair} multi per pair in the photo`,
              apply: (s, ph) => { s.multi += pw.pair * pairsIn(ph); } };
   }
-  if (kind === 'flat') return { kind, text: `+${pw.flat} puntos`, apply: s => { s.pts += pw.flat; } };
+  if (kind === 'flat') return { kind, text: `+${pw.flat} points`, apply: s => { s.pts += pw.flat; } };
   return { kind: 'mflat', text: `+${pw.mflat} multi`, apply: s => { s.multi += pw.mflat; } };
 }
 
@@ -581,7 +586,7 @@ function float(sx, sy, text, cls) {
 
 function paintHud() {
   const target = TARGETS[S.round];
-  el.round.innerHTML = `ronda <b>${S.round + 1}/${TARGETS.length}</b> · foto <b>${Math.min(S.shot + 1, SHOTS)}/${SHOTS}</b>`;
+  el.round.innerHTML = `round <b>${S.round + 1}/${TARGETS.length}</b> · photo <b>${Math.min(S.shot + 1, SHOTS)}/${SHOTS}</b>`;
   const frac = Math.max(0, Math.min(1, S.banked / target));
   el.meterBar.style.width = `${frac * 100}%`;
   el.meterBar.classList.toggle('over', S.banked >= target);
@@ -590,18 +595,18 @@ function paintHud() {
   el.picked.textContent = busy ? '' : `${n}/${PHOTO}`;
   el.go.disabled = busy || n !== PHOTO;
 
-  // THE PREVIEW — the figura this photo would make, live as you pick.
+  // THE PREVIEW — the hand this photo would make, live as you pick.
   // It is how the game teaches its own hand ladder: nobody reads a
   // rules screen, everybody reads a label that changes as they tap.
-  // It shows only the figura, never the objects — the objects firing
+  // It shows only the hand, never the objects — the objects firing
   // one by one IS the show, and spoiling the total would flatten it.
   if (!busy && n === PHOTO) {
-    const fig = bestFigura(photoOf());
+    const fig = bestHand(photoOf());
     el.preview.style.display = 'block';
     el.preview.innerHTML = `${fig.name} · <b>${fig.pts}</b> × <i>${fig.multi}</i>`;
   } else if (!busy && n > 0) {
     el.preview.style.display = 'block';
-    el.preview.innerHTML = `elige ${PHOTO - n} más`;
+    el.preview.innerHTML = `pick ${PHOTO - n} more`;
   } else {
     el.preview.style.display = 'none';
   }
@@ -641,16 +646,16 @@ async function scorePhoto() {
   busy = true;
   paintHud();
 
-  const fig = bestFigura(photo);
+  const fig = bestHand(photo);
   const s = { pts: fig.pts, multi: fig.multi };
 
   el.score.style.display = 'block';
-  el.score.innerHTML = `<div class="figura">${fig.name}</div>${sumEl(s.pts, s.multi)}`;
+  el.score.innerHTML = `<div class="hand">${fig.name}</div>${sumEl(s.pts, s.multi)}`;
   audio.sfx('scratch', { vol: .7 });
   await sleep(520);
 
   const show = () => {
-    el.score.innerHTML = `<div class="figura">${fig.name}</div>${sumEl(s.pts, s.multi)}`;
+    el.score.innerHTML = `<div class="hand">${fig.name}</div>${sumEl(s.pts, s.multi)}`;
     const sum = el.score.querySelector('.sum');
     sum.classList.add('pop');
   };
@@ -693,7 +698,7 @@ async function scorePhoto() {
 
   // and only now do they multiply
   const total = Math.round(s.pts * s.multi);
-  el.score.innerHTML = `<div class="figura">${fig.name}</div>${sumEl(s.pts, s.multi)}`
+  el.score.innerHTML = `<div class="hand">${fig.name}</div>${sumEl(s.pts, s.multi)}`
     + `<div class="total">${total}</div>`;
   audio.sfx('paper', { vol: .8 });
   await sleep(900);
@@ -718,11 +723,11 @@ async function scorePhoto() {
     S.round++;
     S.shot = 0;
     S.banked = 0;
-    openDraft(`ronda ${S.round} superada`);
+    openDraft(`round ${S.round} cleared`);
     return;
   }
   if (S.shot >= SHOTS) { lose(); return; }
-  openDraft('foto hecha');
+  openDraft('photo taken');
 }
 
 // =================================================================
@@ -746,7 +751,7 @@ function openDraft(title) {
   }
   if (!offers.length) { takeObject(null); return; }    // nothing to offer: move on
   el.over.style.display = 'flex';
-  el.over.innerHTML = `<h2>${title}<small> · quédate con uno</small></h2>`
+  el.over.innerHTML = `<h2>${title}<small> · keep one</small></h2>`
     + `<div class="cards">` + offers.map((o, i) =>
       `<button class="r-${o.rank}" data-i="${i}"><b>${o.item.name}</b>`
       + `<div class="rule">${o.text}</div>`
@@ -770,7 +775,7 @@ function ending(title, sub) {
   busy = true;
   el.over.style.display = 'flex';
   el.over.innerHTML = `<div class="big">${title}</div><div class="sub">${sub}</div>`
-    + `<button class="quiet" onclick="location.reload()">otra orla</button>`;
+    + `<button class="quiet" onclick="location.reload()">another photo</button>`;
   paintHud();
 }
 
@@ -778,17 +783,17 @@ function win() {
   audio.sfx('paper');
   const best = Math.max(TARGETS.length, +localStorage.getItem('kg-orla') || 0);
   localStorage.setItem('kg-orla', best);
-  ending('la orla está hecha',
-    `las tres rondas, con ${S.objects.length} objeto${S.objects.length === 1 ? '' : 's'} en la pared`);
+  ending('the photo is taken',
+    `all three rounds, with ${S.objects.length} object${S.objects.length === 1 ? '' : 's'} on the wall`);
 }
 
 function lose() {
   audio.sfx('tear');
   const prev = +localStorage.getItem('kg-orla') || 0;
   if (S.round + 1 > prev) localStorage.setItem('kg-orla', S.round + 1);
-  ending('no salió la foto',
-    `te quedaste en la ronda ${S.round + 1} de ${TARGETS.length}`
-    + ` · ${Math.round(S.banked)} de ${TARGETS[S.round]}`);
+  ending('the photo did not come out',
+    `you stopped on round ${S.round + 1} of ${TARGETS.length}`
+    + ` · ${Math.round(S.banked)} of ${TARGETS[S.round]}`);
 }
 
 el.go.onclick = () => scorePhoto();
@@ -861,8 +866,8 @@ renderer.setAnimationLoop(frame);
 
 // the decidable half — see CLAUDE.md
 window.__orla = {
-  S, cells, FIGURAS, TARGETS, AXES, PREDS, POWER,
-  bestFigura, figuraOn, pairsIn, rollObject, makeRule, scorePhoto, togglePick,
+  S, cells, HANDS, TARGETS, AXES, PREDS, POWER,
+  bestHand, handOn, pairsIn, rollObject, makeRule, scorePhoto, togglePick,
   photoOf, buildQueue, camera, renderer, frame,
   SHELF, PHOTO,
   get busy() { return busy; },

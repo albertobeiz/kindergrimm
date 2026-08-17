@@ -11,12 +11,12 @@ import { chaikin } from '../sketch.js';
 import { U } from '../part.js';
 
 export const Tears = {
-  id: 'tearsWet', label: 'llanto', order: 6, depth: 1.05,
+  id: 'tearsWet', label: 'weeping', order: 6, depth: 1.05,
   states: ['none', 'flow'],
   gen: rng => ({ len: rng.r(.7, 1.15), wob: rng.r(.85, 1.2) }),
   meta: () => ({
-    len: { label: 'largo', range: [.4, 1.6] },
-    wob: { label: 'caudal', range: [.6, 1.6] },
+    len: { label: 'length', range: [.4, 1.6] },
+    wob: { label: 'flow', range: [.6, 1.6] },
   }),
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'tear' + (sd < 0 ? 'L' : 'R'),

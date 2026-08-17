@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>drawai — la orla</title>
+<title>drawai — the class photo</title>
 <style>
   :root {
     --ink: #1f1d1a; --paper: #f6f1e5; --paper2: #ece6d6; --line: #c4bba6;
@@ -76,7 +76,7 @@
     position: absolute; left: 0; right: 0; top: 43%; z-index: 4;
     text-align: center; pointer-events: none; display: none;
   }
-  #score .figura {
+  #score .hand {
     display: inline-block; font-size: 18px; letter-spacing: .18em;
     text-transform: uppercase; margin-bottom: 7px; padding: 2px 14px;
     background: var(--paper); border-radius: 3px; opacity: .9;
@@ -118,7 +118,7 @@
     100% { opacity: 0; transform: translate(-50%, -145%) scale(1); }
   }
 
-  /* the live figura readout, riding just above the button bar */
+  /* the live hand readout, riding just above the button bar */
   #preview {
     position: absolute; left: 0; right: 0; bottom: 58px; z-index: 3;
     text-align: center; pointer-events: none; display: none;
@@ -190,7 +190,7 @@
     #kit .obj canvas { width: 26px; height: 26px; }
     #kit .obj span { font-size: 9px; line-height: 1.25; overflow: hidden; }
     #score { top: 30%; }
-    #score .figura { font-size: 14px; letter-spacing: .14em; }
+    #score .hand { font-size: 14px; letter-spacing: .14em; }
     #score .sum { font-size: 22px; }
     #score .sum b, #score .sum i { min-width: 68px; padding: 4px 10px; }
     #score .total { font-size: 26px; }
@@ -208,11 +208,11 @@
   <div id="stage"></div>
 
   <div id="hud">
-    <h1>la orla</h1>
+    <h1>class photo</h1>
     <span id="round"></span>
     <span id="meter"><span class="bar"><i></i></span><span id="meterTxt"></span></span>
     <span class="sp"></span>
-    <a href="index.html">← menú</a>
+    <a href="index.html">← menu</a>
   </div>
 
   <div id="kit"></div>
@@ -221,8 +221,8 @@
 
   <div id="preview"></div>
   <div id="bar">
-    <span class="hint">toca a cinco niños</span>
-    <button id="go" disabled>hacer la orla</button>
+    <span class="hint">tap five children</span>
+    <button id="go" disabled>take the photo</button>
     <span class="picked" id="picked"></span>
   </div>
 

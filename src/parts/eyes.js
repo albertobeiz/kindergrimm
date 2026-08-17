@@ -59,7 +59,7 @@ function starPts(cx, cy, r, n = 5, inner = .44, rot = -Math.PI / 2) {
 }
 
 export const Eyes = {
-  id: 'eyes', label: 'ojos', order: 3, depth: 1,
+  id: 'eyes', label: 'eyes', order: 3, depth: 1,
   // open/closed + the four glances are the autonomic set; angry /
   // scared / cry are EXPRESSION states the animator swaps to behind a
   // blink. States are drawn lazily, so the extras cost nothing until
@@ -80,16 +80,16 @@ export const Eyes = {
     glint: rng.chance(.82),
   }),
   meta: () => ({
-    type: { label: 'tipo', pick: ALL },
-    type2: { label: 'tipo dcho', pick: ['none', ...ALL] },
-    scale: { label: 'tamaño', range: [.6, 2.4] },
-    scaleR: { label: 'tamaño dcho', range: [.5, 1.6] },
-    sx: { label: 'separación', range: [.28, .7] },
-    sink: { label: 'hundimiento', range: [.4, 1.4] },
-    fierce: { label: 'fiereza', range: [-.2, .8] },
-    gazeJit: { label: 'mirada', range: [-.45, .45] },
-    lashes: { label: 'pestañas', bool: true },
-    glint: { label: 'brillo', bool: true },
+    type: { label: 'type', pick: ALL },
+    type2: { label: 'right type', pick: ['none', ...ALL] },
+    scale: { label: 'size', range: [.6, 2.4] },
+    scaleR: { label: 'right size', range: [.5, 1.6] },
+    sx: { label: 'spacing', range: [.28, .7] },
+    sink: { label: 'sink', range: [.4, 1.4] },
+    fierce: { label: 'fierceness', range: [-.2, .8] },
+    gazeJit: { label: 'gaze', range: [-.45, .45] },
+    lashes: { label: 'lashes', bool: true },
+    glint: { label: 'glint', bool: true },
   }),
   bones: (P, F) => [-1, 1].map(sd => ({
     name: 'eye' + (sd < 0 ? 'L' : 'R'),
@@ -292,7 +292,7 @@ export const Eyes = {
 };
 
 export const Brows = {
-  id: 'brows', label: 'cejas', order: 4, depth: .9,
+  id: 'brows', label: 'brows', order: 4, depth: .9,
   // the brow IS the emotion: which end drops is the whole difference
   // between angry and sad. The animator swaps these behind a blink.
   states: ['idle', 'angry', 'sad', 'raised'],
@@ -306,10 +306,10 @@ export const Brows = {
     yF: rng.r(.1, .2),
   }),
   meta: () => ({
-    on: { label: 'visibles', bool: true },
-    a: { label: 'ángulo', range: [-.4, .8] },
-    thF: { label: 'grosor', range: [.012, .07] },
-    yF: { label: 'altura', range: [.04, .32] },
+    on: { label: 'visible', bool: true },
+    a: { label: 'angle', range: [-.4, .8] },
+    thF: { label: 'thickness', range: [.012, .07] },
+    yF: { label: 'height', range: [.04, .32] },
   }),
   skip: P => !P.on,
   bones: (P, F) => [-1, 1].map(sd => ({

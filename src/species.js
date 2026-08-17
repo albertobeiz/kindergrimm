@@ -23,7 +23,7 @@
 
 export const SPECIES = {
   human: {
-    label: 'humano',
+    label: 'human',
     // the default catalogue already IS the human doodle, so this
     // profile only holds it back from the beastly options
     cast: {
@@ -38,7 +38,7 @@ export const SPECIES = {
   },
 
   dog: {
-    label: 'perro',
+    label: 'dog',
     bases: { quad: 100 },
     cast: {
       // EARS FIRST: on a dog they are the biggest thing on the head.
@@ -63,7 +63,7 @@ export const SPECIES = {
   },
 
   cat: {
-    label: 'gato',
+    label: 'cat',
     bases: { quad: 100 },
     cast: {
       crest:  { style: { cat: 92, none: 8 }, len: [.8, 1.25], tone: { skin: 100 } },
@@ -85,7 +85,7 @@ export const SPECIES = {
   },
 
   nightmare: {
-    label: 'pesadilla',
+    label: 'nightmare',
     bases: { sit: 15, biped: 85 },
     cast: {
       // a shape cut out of the dark: the head is filled in, and the

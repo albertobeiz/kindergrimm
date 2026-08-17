@@ -3,7 +3,7 @@
 // slack); a quad folds its legs into the sphinx via the 'fold'
 // texture state and sinks onto the floor.
 export const Sleep = {
-  id: 'sleep', label: 'dormir',
+  id: 'sleep', label: 'sleep',
   auto: { sway: 0, gaze: 0, blink: 0, tail: 0, arms: 0, breath: 2.2 },
   face: 'sleeping',
   update(ctx) {

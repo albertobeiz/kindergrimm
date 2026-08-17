@@ -72,9 +72,9 @@ const genFor = (slot, chance) => (rng, C) => {
 };
 
 const metaFor = slot => () => ({
-  family: { label: 'objeto', pick: [NONE, ...familiesForSlot(slot).map(f => f.id)] },
-  rank: { label: 'rango', pick: ['sketch', 'inked', 'gilded', 'nightmare'] },
-  seed: { label: 'semilla', range: [0, 1e9], step: 1 },
+  family: { label: 'object', pick: [NONE, ...familiesForSlot(slot).map(f => f.id)] },
+  rank: { label: 'rank', pick: ['sketch', 'inked', 'gilded', 'nightmare'] },
+  seed: { label: 'seed', range: [0, 1e9], step: 1 },
 });
 
 // A hand-held slot. `sd` is which hand: +1 the main one, -1 the other.
@@ -125,8 +125,8 @@ function handSlot(id, label, sd, chance) {
   };
 }
 
-export const Held = handSlot('held', 'objeto', 1, .1);
-export const Offhand = handSlot('offhand', 'otra mano', -1, .05);
+export const Held = handSlot('held', 'object', 1, .1);
+export const Offhand = handSlot('offhand', 'off hand', -1, .05);
 
 // =================================================================
 // WORN — a hat or a crown, on top of the skull.
@@ -134,7 +134,7 @@ export const Offhand = handSlot('offhand', 'otra mano', -1, .05);
 // listed AFTER Crest) is what puts it in front of a pair of horns.
 // =================================================================
 export const Worn = {
-  id: 'worn', label: 'sombrero', order: 7, depth: .35,
+  id: 'worn', label: 'hat', order: 7, depth: .35,
   gen: genFor('worn', .1),
   meta: metaFor('worn'),
   skip: P => !paramsOf(P),

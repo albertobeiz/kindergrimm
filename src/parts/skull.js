@@ -5,7 +5,7 @@ import { circlePts, chaikin } from '../sketch.js';
 import { U } from '../part.js';
 
 export const Skull = {
-  id: 'skull', label: 'cráneo', order: 1, depth: 0,
+  id: 'skull', label: 'skull', order: 1, depth: 0,
   gen: (rng, C) => {
     // a doodle head is drawn front-on in one go — it barely turns
     const facing = rng.pick(['straight', 'straight', 'straight', 'straight', 'mild']);
@@ -46,28 +46,28 @@ export const Skull = {
     };
   },
   meta: () => ({
-    s: { label: 'escala', range: [.32, .66] },
-    wf: { label: 'ancho', range: [.48, 1.0] },
-    turn: { label: 'giro ¾', range: [-.9, .9] },
-    round: { label: 'redondez', range: [0, 1] },
-    shape: { label: 'forma', pick: ['round', 'square', 'tall', 'drop', 'pear', 'lump', 'wide', 'bumpy', 'wonky'] },
-    muzzle: { label: 'hocico (silueta)', range: [0, .6] },
-    muzzleY: { label: 'hocico altura', range: [.2, .9] },
-    fur: { label: 'peludo', bool: true },
-    shroud: { label: 'sombra (relleno)', bool: true },
-    jaw: { label: 'mandíbula', range: [.55, 1.2] },
-    chinW: { label: 'mentón', range: [.3, 1.3] },
-    skullY: { label: 'frente', range: [.7, 1.0] },
-    chinY: { label: 'barbilla', range: [.65, .95] },
-    press: { label: 'presión', range: [.7, 1.6] },
-    shade: { label: 'sombra', pick: ['none', 'hatch', 'scrib', 'cross', 'stipple', 'smudge'] },
-    hollows: { label: 'demacrado', bool: true },
-    construction: { label: 'construcción', bool: true },
-    darkSkin: { label: 'piel oscura', bool: true },
-    plain: { label: 'solo grafito', bool: true },
-    skinOn: { label: 'piel color', bool: true },
-    skinIdx: { label: 'tono piel', range: [0, 7], step: 1 },
-    skinScrib: { label: 'piel garabato', bool: true },
+    s: { label: 'scale', range: [.32, .66] },
+    wf: { label: 'width', range: [.48, 1.0] },
+    turn: { label: '¾ turn', range: [-.9, .9] },
+    round: { label: 'roundness', range: [0, 1] },
+    shape: { label: 'shape', pick: ['round', 'square', 'tall', 'drop', 'pear', 'lump', 'wide', 'bumpy', 'wonky'] },
+    muzzle: { label: 'snout (silhouette)', range: [0, .6] },
+    muzzleY: { label: 'snout height', range: [.2, .9] },
+    fur: { label: 'furry', bool: true },
+    shroud: { label: 'shroud (fill)', bool: true },
+    jaw: { label: 'jaw', range: [.55, 1.2] },
+    chinW: { label: 'chin width', range: [.3, 1.3] },
+    skullY: { label: 'brow', range: [.7, 1.0] },
+    chinY: { label: 'chin', range: [.65, .95] },
+    press: { label: 'pressure', range: [.7, 1.6] },
+    shade: { label: 'shading', pick: ['none', 'hatch', 'scrib', 'cross', 'stipple', 'smudge'] },
+    hollows: { label: 'gaunt', bool: true },
+    construction: { label: 'construction', bool: true },
+    darkSkin: { label: 'dark skin', bool: true },
+    plain: { label: 'graphite only', bool: true },
+    skinOn: { label: 'skin colour', bool: true },
+    skinIdx: { label: 'skin tone', range: [0, 7], step: 1 },
+    skinScrib: { label: 'scribbled skin', bool: true },
   }),
   bones: () => [{ name: 'skull', x: 0, y: 0 }],
   size: (P, F) => [(F.w * 2.9) / U, (F.s * 3.0) / U],
@@ -193,9 +193,9 @@ export const Skull = {
 };
 
 export const Ears = {
-  id: 'ears', label: 'orejas', order: 2, depth: .2,
+  id: 'ears', label: 'ears', order: 2, depth: .2,
   gen: rng => ({ rings: rng.chance(.3), nRings: rng.ri(1, 3) }),
-  meta: () => ({ rings: { label: 'pendientes', bool: true } }),
+  meta: () => ({ rings: { label: 'earrings', bool: true } }),
   // ears show only with hair that leaves them uncovered
   // An animal's ears are its CREST. Human side-ears on a head that
   // already has cat or floppy ears is the single loudest tell that a

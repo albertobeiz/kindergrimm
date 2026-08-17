@@ -5,7 +5,7 @@
 // job as adding a part: one file here, one line in POSES.
 //
 //   export const MyPose = {
-//     id: 'myPose', label: 'mi pose',
+//     id: 'myPose', label: 'my pose',
 //
 //     // multipliers on the autonomic life the animator always runs
 //     // (sway, breath, blink, gaze, arms, tail). Anything omitted

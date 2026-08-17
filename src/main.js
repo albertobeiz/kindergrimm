@@ -83,12 +83,12 @@ function rebuild() {
   });
 }
 
-// 'todos'/'todas' roll a new one every time the character is redrawn
-let mediaMode = 'todos', speciesMode = 'todas';
+// 'all' rolls a new one every time the character is redrawn
+let mediaMode = 'all', speciesMode = 'all';
 const rollMedia = () =>
-  mediaMode === 'todos' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : mediaMode;
+  mediaMode === 'all' ? MEDIA_IDS[(Math.random() * MEDIA_IDS.length) | 0] : mediaMode;
 const rollSpecies = () =>
-  speciesMode === 'todas' ? SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0] : speciesMode;
+  speciesMode === 'all' ? SPECIES_IDS[(Math.random() * SPECIES_IDS.length) | 0] : speciesMode;
 
 const app = {
   recipe: () => recipe,

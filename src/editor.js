@@ -21,12 +21,12 @@ export function initUI(app) {
     if (e.key === 'r' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))
       app.regen((Math.random() * 1e9) | 0);
   });
-  $('species').add(new Option('todas (al azar)', 'todas'));
+  $('species').add(new Option('all (random)', 'all'));
   for (const [id, sp] of Object.entries(SPECIES)) $('species').add(new Option(sp.label, id));
   // a species change re-casts every unlocked part: same seed, new animal
   $('species').onchange = () => app.setSpecies($('species').value);
 
-  $('media').add(new Option('todos (al azar)', 'todos'));
+  $('media').add(new Option('all (random)', 'all'));
   for (const m of Object.values(MEDIA)) $('media').add(new Option(m.label, m.id));
   $('media').onchange = () => { app.setMedia($('media').value); };
   $('color').onchange = () => { app.recipe().color = $('color').value; app.rebuild(); };
@@ -64,7 +64,7 @@ export function initUI(app) {
 
   $('recipe-load').onclick = () => {
     try { app.setRecipe(JSON.parse($('recipe-box').value)); }
-    catch (err) { alert('JSON inválido: ' + err.message); }
+    catch (err) { alert('invalid JSON: ' + err.message); }
   };
   $('recipe-copy').onclick = () => navigator.clipboard?.writeText($('recipe-box').value);
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -27,6 +27,8 @@
                        100% 78%, 78% 100%, 52% 44%, 26% 96%, 8% 40%, 0 82%);
   }
 
+  /* the two games first, then the three tools */
+  .games { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); margin-bottom: 10px; }
   .scenes { display: grid; gap: 10px; grid-template-columns: repeat(3, 1fr); }
   a.scene {
     position: relative; display: flex; flex-direction: column; gap: 5px;
@@ -42,9 +44,10 @@
     font-style: normal; font-size: 10px; opacity: .32;
   }
 
-  /* the game is not one of three tools — it is what the tools are for */
+  /* a game is not one of three tools — it is what the tools are for.
+     The two games get the SAME card: same size, same ink, same weight,
+     so the menu never says one of them is the real one. */
   a.game {
-    grid-column: 1 / -1; margin-bottom: 4px;
     background: #22242c; color: #e8e0cd; border-color: #22242c;
     padding: 20px 20px 21px;
   }
@@ -58,7 +61,7 @@
 
   @media (max-width: 620px) {
     body { padding: 24px 16px 36px; align-items: flex-start; }
-    .scenes { grid-template-columns: 1fr; }
+    .games, .scenes { grid-template-columns: 1fr; }
     h1 { font-size: 19px; letter-spacing: .22em; }
   }
 </style>
@@ -66,44 +69,46 @@
 <body>
   <main>
     <h1>kindergrimm</h1>
-    <div class="sub">personajes dibujados a mano por una máquina · y el juego que viven</div>
+    <div class="sub">characters drawn by hand, by a machine · and the games they live in</div>
     <div class="rule"></div>
 
-    <div class="scenes">
+    <div class="games">
       <a class="scene game" href="orla.html" data-k="1">
-        <b>la orla</b>
-        <span>la foto de clase, puntuada como una mano de póker. elige cinco
-              niños de ocho; los objetos de la pared hacen el resto.</span>
+        <b>class photo</b>
+        <span>the class photo, scored like a poker hand. pick five children
+              of ten; the objects on the wall do the rest.</span>
         <i>1</i>
       </a>
 
-      <a class="scene" href="game.html" data-k="5">
-        <b>el juego</b>
-        <span>una escuela infantil a oscuras. los niños no hacen nada solos:
-              diles a dónde ir y mantenlos dentro de la luz.</span>
-        <i>5</i>
-      </a>
-
-      <a class="scene" href="editor.html" data-k="2">
-        <b>editor</b>
-        <span>una cara y todos sus parámetros, con la receta en JSON.</span>
+      <a class="scene game" href="game.html" data-k="2">
+        <b>the dark floor</b>
+        <span>a baby school after dark. tap where the class walks — a child
+              only fights what it can see, and light is the only sight.</span>
         <i>2</i>
-      </a>
-
-      <a class="scene" href="crowd.html" data-k="3">
-        <b>multitud</b>
-        <span>35 personajes vivos a la vez — la variedad de un vistazo.</span>
-        <i>3</i>
-      </a>
-
-      <a class="scene" href="items.html" data-k="4">
-        <b>juguetería</b>
-        <span>cada familia de objeto × cada rango: la hoja de contactos.</span>
-        <i>4</i>
       </a>
     </div>
 
-    <footer>grafito sobre papel crema · <a href="https://github.com/albertobeiz/kindergrimm">código</a></footer>
+    <div class="scenes">
+      <a class="scene" href="editor.html" data-k="3">
+        <b>editor</b>
+        <span>one face and every parameter it has, with the recipe in JSON.</span>
+        <i>3</i>
+      </a>
+
+      <a class="scene" href="crowd.html" data-k="4">
+        <b>crowd</b>
+        <span>35 live characters at once — the variety at a glance.</span>
+        <i>4</i>
+      </a>
+
+      <a class="scene" href="items.html" data-k="5">
+        <b>toy shop</b>
+        <span>every object family × every rank: the contact sheet.</span>
+        <i>5</i>
+      </a>
+    </div>
+
+    <footer>graphite on cream paper · <a href="https://github.com/albertobeiz/kindergrimm">code</a></footer>
   </main>
 
   <script>

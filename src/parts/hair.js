@@ -25,7 +25,7 @@ const ALL_STYLES = STYLES.map(p => p[0]);
 const TONES = [['black', 28], ['hatch', 20], ['scribble', 16], ['stipple', 13], ['light', 23]];
 
 export const Hair = {
-  id: 'hair', label: 'pelo', order: 6,
+  id: 'hair', label: 'hair', order: 6,
   skip: P => P.style === 'bald',
   gen: (rng, C) => {
     const style = C.pick(rng, 'style', STYLES);
@@ -46,13 +46,13 @@ export const Hair = {
     };
   },
   meta: () => ({
-    style: { label: 'estilo', pick: ALL_STYLES },
-    tone: { label: 'tono', pick: TONES.map(p => p[0]) },
-    bang: { label: 'flequillo', pick: ['none', 'clumps', 'ragged'] },
-    colOn: { label: 'color', bool: true },
-    colIdx: { label: 'tinte', range: [0, 5], step: 1 },
-    flare: { label: 'vuelo', range: [.7, 1.4] },
-    fall: { label: 'caída', range: [.6, 1.1] },
+    style: { label: 'style', pick: ALL_STYLES },
+    tone: { label: 'tone', pick: TONES.map(p => p[0]) },
+    bang: { label: 'fringe', pick: ['none', 'clumps', 'ragged'] },
+    colOn: { label: 'colour', bool: true },
+    colIdx: { label: 'dye', range: [0, 5], step: 1 },
+    flare: { label: 'flare', range: [.7, 1.4] },
+    fall: { label: 'fall', range: [.6, 1.1] },
   }),
   bones: () => [
     { name: 'hairBack', tag: 'back', order: -2, depth: -.35, x: 0, y: 0 },

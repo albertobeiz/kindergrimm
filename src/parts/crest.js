@@ -49,7 +49,7 @@ function tapered(spine, w0, w1) {
 }
 
 export const Crest = {
-  id: 'crest', label: 'apéndices', order: 7, depth: .35,
+  id: 'crest', label: 'appendages', order: 7, depth: .35,
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', STYLES),
     tone: C.pick(rng, 'tone', [['bone', 40], ['dark', 32], ['ringed', 28]]),
@@ -63,13 +63,13 @@ export const Crest = {
     branches: rng.ri(2, 3),
   }),
   meta: () => ({
-    style: { label: 'estilo', pick: ALL },
+    style: { label: 'style', pick: ALL },
     tone: { label: 'material', pick: ['bone', 'dark', 'ringed', 'skin'] },
-    len: { label: 'largo', range: [.5, 2.4] },
-    curve: { label: 'curva', range: [-.9, 1.4] },
-    spread: { label: 'apertura', range: [.3, 1.0] },
-    tilt: { label: 'inclinación', range: [-.6, .9] },
-    earAsym: { label: 'asimetría', range: [-.4, .4] },
+    len: { label: 'length', range: [.5, 2.4] },
+    curve: { label: 'curve', range: [-.9, 1.4] },
+    spread: { label: 'spread', range: [.3, 1.0] },
+    tilt: { label: 'tilt', range: [-.6, .9] },
+    earAsym: { label: 'asymmetry', range: [-.4, .4] },
   }),
   skip: P => P.style === 'none',
   bones: (P, F) => {

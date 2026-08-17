@@ -6,7 +6,7 @@
 const ease = k => k * k * (3 - 2 * k);
 
 export const Attack = {
-  id: 'attack', label: 'atacar',
+  id: 'attack', label: 'attack',
   oneShot: true, dur: .9,
   auto: { sway: 0, gaze: 0, breath: 0, arms: 0 },
   update(ctx) {

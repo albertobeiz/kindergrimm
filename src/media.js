@@ -17,7 +17,7 @@ const dens = style => DENSITY[style] ?? .7;
 
 export const MEDIA = {
   graphite: {
-    id: 'graphite', label: 'grafito', underdraw: true,
+    id: 'graphite', label: 'graphite', underdraw: true,
     tone(s, pts, o = {}) {
       const style = o.style ?? 'hatch';
       s.paperFill(pts);
@@ -43,7 +43,7 @@ export const MEDIA = {
   },
 
   ink: {
-    id: 'ink', label: 'tinta', underdraw: true,
+    id: 'ink', label: 'ink', underdraw: true,
     tone(s, pts, o = {}) {
       const d = dens(o.style);
       s.paperFill(pts);
@@ -71,7 +71,7 @@ export const MEDIA = {
   },
 
   watercolor: {
-    id: 'watercolor', label: 'acuarela', underdraw: true,
+    id: 'watercolor', label: 'watercolour', underdraw: true,
     tone(s, pts, o = {}) {
       const d = dens(o.style);
       const col = o.col ?? [86, 92, 104];
@@ -85,7 +85,7 @@ export const MEDIA = {
   },
 
   oil: {
-    id: 'oil', label: 'óleo', underdraw: false,
+    id: 'oil', label: 'oil', underdraw: false,
     tone(s, pts, o = {}) {
       const d = dens(o.style);
       const col = o.col ?? s.colMix([70, 66, 62], .6 + d * .8);
@@ -96,7 +96,7 @@ export const MEDIA = {
   },
 
   chalk: {
-    id: 'chalk', label: 'carboncillo', underdraw: true,
+    id: 'chalk', label: 'charcoal', underdraw: true,
     tone(s, pts, o = {}) {
       const d = dens(o.style);
       s.chalkFill(pts, o.col ?? [52, 48, 44], { alpha: .28 + d * .5, density: .8 + d * .7 });
@@ -106,7 +106,7 @@ export const MEDIA = {
   },
 
   marker: {
-    id: 'marker', label: 'rotulador', underdraw: true,
+    id: 'marker', label: 'marker', underdraw: true,
     tone(s, pts, o = {}) {
       const d = dens(o.style);
       const col = o.col ?? [78, 74, 70];
