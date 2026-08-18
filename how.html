@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How a creature is drawn — drawai, the pencil-and-paper character generator</title>
+<meta name="description" content="How the drawn creatures in drawai are generated: a wobbling pencil stroke, a ring of points, a skull polygon, a shared layout, a registry of parts, species as loaded dice, the boil, expressions, poses and one seed. Eleven live steps, every drawing made by the real generator.">
+<meta name="author" content="Alberto Beiz">
+<meta name="theme-color" content="#f6f1e5">
+<link rel="canonical" href="https://kindergrimm.vercel.app/how.html">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="kindergrimm">
+<meta property="og:title" content="How a creature is drawn">
+<meta property="og:description" content="The pencil, the polygon, the skull, the rig — eleven live steps through a procedural character generator that draws in graphite instead of pixels.">
+<meta property="og:url" content="https://kindergrimm.vercel.app/how.html">
+<meta property="og:image" content="https://kindergrimm.vercel.app/assets/how-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="how a creature is drawn — a pencil stroke, a shape, a head and a finished creature, in a row">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How a creature is drawn">
+<meta name="twitter:description" content="A procedural character generator taken apart in eleven live steps: the stroke, the shape, the medium, the skull, the layout, the parts, the species, the boil, the face, the pose, the seed.">
+<meta name="twitter:image" content="https://kindergrimm.vercel.app/assets/how-og.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How a creature is drawn",
+  "description": "The eleven stages a procedural, hand-drawn character passes through in drawai, from a single pencil stroke to a posed, blinking creature rebuilt from one integer.",
+  "image": "https://kindergrimm.vercel.app/assets/how-og.png",
+  "author": { "@type": "Person", "name": "Alberto Beiz" },
+  "step": [
+    { "@type": "HowToStep", "position": 1, "name": "The pencil", "url": "https://kindergrimm.vercel.app/how.html#s1", "text": "A stroke is a filled ribbon, not a line: the spine is resampled and pushed sideways by three summed sines, the half width breathes, the ends overshoot, and thick strokes shed graphite crumbs." },
+    { "@type": "HowToStep", "position": 2, "name": "The shape", "url": "https://kindergrimm.vercel.app/how.html#s2", "text": "Every shape is a ring of sixteen points around a modulated ellipse, smoothed once, drawn by hand. A wobble parameter says how carefully it was drawn." },
+    { "@type": "HowToStep", "position": 3, "name": "The material", "url": "https://kindergrimm.vercel.app/how.html#s3", "text": "A medium answers three questions — tone, skin, edge — so one shape can be graphite, ink, watercolour, oil, charcoal or marker without a part knowing which." },
+    { "@type": "HowToStep", "position": 4, "name": "The head", "url": "https://kindergrimm.vercel.app/how.html#s4", "text": "The skull is a dense polygon slid most of the way onto a target radius function: round, square, tall, drop, pear, lump, wide, bumpy or wonky." },
+    { "@type": "HowToStep", "position": 5, "name": "The map", "url": "https://kindergrimm.vercel.app/how.html#s5", "text": "One layout pass measures the body and publishes every shared anchor — eye positions, nose and mouth height, shoulders, hips, grip and floor — so no two parts compute the same number twice." },
+    { "@type": "HowToStep", "position": 6, "name": "The parts", "url": "https://kindergrimm.vercel.app/how.html#s6", "text": "A part is one file exporting gen, bones, size and draw. The registry lists them in draw order, and adding a feature is one file plus one line." },
+    { "@type": "HowToStep", "position": 7, "name": "The species", "url": "https://kindergrimm.vercel.app/how.html#s7", "text": "A species is a table of loaded dice, not new drawings: weighted picks, ranges and probabilities that bias generation only." },
+    { "@type": "HowToStep", "position": 8, "name": "The boil", "url": "https://kindergrimm.vercel.app/how.html#s8", "text": "Every part is drawn several times with a different boil seed and swapped between at its own cadence, which is what makes a still drawing feel alive." },
+    { "@type": "HowToStep", "position": 9, "name": "The face", "url": "https://kindergrimm.vercel.app/how.html#s9", "text": "Expressions are pre-drawn texture states swapped while a blink hides the change, with continuous body language riding a crossfade." },
+    { "@type": "HowToStep", "position": 10, "name": "The pose", "url": "https://kindergrimm.vercel.app/how.html#s10", "text": "Poses write bone offsets scaled by a blend weight, so transitions are two poses mixing; walk and run share one gait phase." },
+    { "@type": "HowToStep", "position": 11, "name": "The seed", "url": "https://kindergrimm.vercel.app/how.html#s11", "text": "The recipe is the only state: one seed plus per-part parameters, so the same JSON rebuilds the same creature on any machine." }
+  ]
+}
+</script>
+<style>
+  :root {
+    --ink: #1f1d1a; --paper: #f6f1e5; --paper2: #ece6d6;
+    --line: rgba(31,29,26,.18); --dim: rgba(31,29,26,.5);
+    --accent: #a8483c;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 13px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: .01em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 880px; margin: 0 auto; padding: 48px 22px 90px; }
+
+  /* ---- header ---- */
+  header h1 { font-size: 26px; font-weight: normal; letter-spacing: .2em; }
+  header .sub { margin-top: 7px; color: var(--dim); letter-spacing: .05em; }
+  .rule {
+    height: 2px; margin: 18px 0 8px; background: var(--ink); opacity: .8;
+    clip-path: polygon(0 30%, 12% 0, 34% 55%, 61% 8%, 83% 62%, 100% 22%,
+                       100% 78%, 78% 100%, 52% 44%, 26% 96%, 8% 40%, 0 82%);
+  }
+  header nav { display: flex; gap: 14px; color: var(--dim); }
+  header nav a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+  header nav a:hover { border-bottom-color: var(--ink); }
+
+  /* ---- the rail of step numbers ---- */
+  #rail {
+    position: fixed; left: 24px; top: 50%; transform: translateY(-50%); z-index: 2;
+    display: flex; flex-direction: column; gap: 9px; font-size: 10px;
+  }
+  #rail a { color: var(--dim); text-decoration: none; opacity: .5; letter-spacing: .08em; }
+  #rail a.on { color: var(--ink); opacity: 1; font-weight: bold; }
+  #rail a:hover { opacity: 1; }
+  @media (max-width: 1180px) { #rail { display: none; } }
+
+  /* ---- a step ---- */
+  .step { padding-top: 58px; }
+  .step .hd { display: flex; align-items: baseline; gap: 12px; }
+  .step i { font-style: normal; font-size: 11px; color: var(--dim); letter-spacing: .12em; }
+  .step h2 { font-size: 17px; font-weight: normal; letter-spacing: .16em; }
+  .step p { margin: 9px 0 16px; max-width: 56ch; color: rgba(31,29,26,.78); }
+  .step p.mid { margin-top: 26px; }
+  .step p b { font-weight: normal; color: var(--ink); border-bottom: 1px solid var(--line); }
+
+  /* the technical note: the mechanism, for whoever wants it */
+  .step p.tech {
+    margin: 0 0 18px; max-width: none;
+    font-size: 12px; line-height: 1.75; color: rgba(31,29,26,.6);
+    border-left: 2px solid var(--line); padding-left: 14px;
+    columns: 2; column-gap: 30px;
+  }
+  .tech code {
+    color: var(--ink); font-size: 11.5px;
+    background: var(--paper2); padding: 0 4px; border-radius: 2px;
+  }
+  .tech em { font-style: normal; color: var(--accent); opacity: .85; }
+
+  .demo {
+    border: 1px solid var(--line); border-radius: 4px; background: var(--paper);
+    padding: 12px; overflow: hidden;
+  }
+  .demo.tight { padding: 0; }
+  canvas.cv { display: block; width: 100%; height: auto; }
+
+  /* grids of small drawings */
+  .grid { display: grid; gap: 10px; }
+  .g6 { grid-template-columns: repeat(3, 1fr); }
+  .g9 { grid-template-columns: repeat(3, 1fr); }
+  .g5 { grid-template-columns: repeat(5, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .cell { display: flex; flex-direction: column; gap: 4px; }
+  .cell .tag { font-size: 10px; color: var(--dim); letter-spacing: .1em; text-align: center; }
+  .cell.on .tag { color: var(--accent); }
+
+  /* controls */
+  .ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 11px; }
+  button, .chip {
+    font: inherit; font-size: 11px; letter-spacing: .07em;
+    color: var(--ink); background: var(--paper2);
+    border: 1px solid var(--line); border-radius: 3px;
+    padding: 5px 10px; cursor: pointer;
+  }
+  button:hover { border-color: var(--ink); }
+  button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .ctl label { font-size: 11px; color: var(--dim); letter-spacing: .07em; }
+  input[type=range] { accent-color: var(--ink); width: 190px; }
+
+  /* the part chips in step 06 */
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+  .chip { cursor: default; opacity: .35; padding: 3px 7px; }
+  .chip.on { opacity: 1; background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* a live demo: its own little renderer, a real rig inside it */
+  .live { height: 340px; position: relative; }
+  .live canvas { display: block; width: 100%; height: 100%; }
+
+  /* code */
+  pre.code {
+    margin-top: 12px; padding: 10px 12px; overflow-x: auto;
+    background: var(--paper2); border: 1px solid var(--line); border-radius: 3px;
+    font-size: 11.5px; line-height: 1.6; color: rgba(31,29,26,.85);
+  }
+  pre.code i { font-style: normal; color: var(--accent); opacity: .8; }
+  pre.code b { display: block; font-weight: normal; color: var(--dim); font-size: 10px; letter-spacing: .1em; margin-bottom: 5px; }
+  .json { white-space: pre-wrap; word-break: break-word; }
+
+  footer { margin-top: 64px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--dim); font-size: 11px; }
+  footer a { color: inherit; }
+
+  @media (max-width: 620px) {
+    .page { padding: 30px 15px 70px; }
+    header h1 { font-size: 20px; letter-spacing: .14em; }
+    .g6, .g9, .g5 { grid-template-columns: repeat(2, 1fr); }
+    .step p.tech { columns: 1; }
+    .g4 { grid-template-columns: repeat(2, 1fr); }
+    .live { height: 280px; }
+  }
+</style>
+</head>
+<body>
+<nav id="rail"></nav>
+
+<div class="page">
+<header>
+  <h1>how a creature is drawn</h1>
+  <div class="sub">eleven steps. every drawing on this page is made by the real generator, right now.</div>
+  <div class="rule"></div>
+  <nav><a href="index.html">← menu</a><a href="editor.html">editor</a><a href="crowd.html">crowd</a></nav>
+</header>
+
+<main>
+
+  <section class="step" id="s1" data-title="the pencil">
+    <div class="hd"><i>01</i><h2>the pencil</h2></div>
+    <p>A stroke is not a line. It is a <b>filled ribbon</b>: the spine wanders, the width breathes, the ends run past where they should stop. Built up one habit at a time —</p>
+    <p class="tech"><code>stroke()</code> never calls <code>ctx.stroke()</code>. It resamples the spine to even steps of <code>max(2.2, w·.9)</code> px, pushes every sample sideways along its own normal by three summed sines, builds a left and a right rail from a half width that breathes on two more, and fills the polygon between them at 62% ink. Then it litters: one to four crumbs per sample, thrown up to <code>±1.05</code> of the half width — <em>past the edge, not inside it</em> — and a paper-coloured square 45% of the time, biting back in. Everything random comes from <code>this.j</code>, a mulberry32 reseeded per boil frame, so the same numbers and the same seed give back the same stroke crumb for crumb.</p>
+    <div class="demo tight" id="d1"></div>
+    <div class="ctl" id="c1"></div>
+    <pre class="code"><b>src/sketch.js — at every sample along the spine</b>off  = amp * (.55·sin(t·f1·2 + p1) + .3·sin(t·f2 + p2) + .15·sin(t·f3 + p3))
+       f1 1.5–3.5 <i>slow drift</i>   f2 5–9 <i>waver</i>   f3 11–17 <i>tremor</i>
+px   = spine[i] + normal·off + jr(-.35, .35)      <i>← and grit on every sample</i>
+half = w/2 · taper(t) · (1 + .38·sin(t·7.3 + p4) + .14·sin(t·19 + p2)) · jr(.88, 1.14)</pre>
+
+    <p class="mid">Up close it is graphite, not paint. It sheds.</p>
+    <div class="demo tight" id="d1b"></div>
+    <pre class="code"><b>src/sketch.js — a thin stroke stays clean, a thick one crumbles</b>if (w >= 1.2) { ink crumbs at jr(.2,.55), scattered to ±1.05 of the half width,
+                and 45% of the time a PAPER-coloured square, bitten out of the edge }</pre>
+
+    <p class="mid">Three of them make everything. Every contour you will see below is the third.</p>
+    <div class="demo tight" id="d1c"></div>
+    <pre class="code"><b>src/sketch.js</b>s.sline(pts, w, alpha)   s.stroke(pts, w, o)   s.broken(pts, w, o)</pre>
+  </section>
+
+  <section class="step" id="s2" data-title="the shape">
+    <div class="hd"><i>02</i><h2>the shape</h2></div>
+    <p>There are no curves. Every shape is a ring of points. Wobble says how carefully it was drawn — eyes are drawn slowly, hair is scribbled.</p>
+    <p class="tech"><code>blobPts(cx, cy, rx, ry, rot, wob)</code> walks 16 points around an ellipse, multiplies each radius by <code>1 + (.17·sin 2θ + .1·sin 5θ)·wob</code>, rotates the whole ring and runs one Chaikin pass so the corners round off. Two traps live here. It picks a <em>random</em> rotation when you do not pass one, so anything that is not roughly circular will eventually stand on end and slash across the character. And <code>wob</code> is a statement about the hand, not a detail: an eye is drawn slowly at ~<code>.4</code>, a scribbled mass at <code>1</code>.</p>
+    <div class="demo tight" id="d2"></div>
+    <div class="ctl" id="c2"></div>
+    <pre class="code"><b>src/sketch.js</b>const pts = s.blobPts(x, y, rx, ry, rot, wobble)</pre>
+  </section>
+
+  <section class="step" id="s3" data-title="the material">
+    <div class="hd"><i>03</i><h2>the material</h2></div>
+    <p>One ring of points, six materials. A part never picks graphite or paint. It asks the medium for a <b>mass</b> and an <b>edge</b>, and the medium answers in its own vocabulary.</p>
+    <p class="tech">A medium answers three questions and nothing else: <code>tone(s, pts, o)</code> fills a mass, <code>skin(s, pts, col, o)</code> lays colour on a face, <code>edge(s, pts, w, o)</code> closes a shape. Underneath they reach for different techniques in <code>sketch.js</code> — graphite hatches and scribbles, ink dry-brushes, watercolour stacks translucent layers with a dark rim where the puddle dried, oil lays opaque daubs, charcoal smears, marker leaves streaks. A part that called <code>pencilFill</code> itself would stay graphite while the rest of the character turned to paint, which is the whole reason the indirection exists. The fourth answer is <code>underdraw</code>: whether pencil construction still shows through — true for graphite, ink, charcoal and marker, <em>false for oil</em>, which covers.</p>
+    <div class="demo"><div class="grid g6" id="d3"></div></div>
+    <pre class="code"><b>src/media.js — the whole contract</b>tone(s, pts, o)        a mass: hair, a horn, the dark inside a socket
+skin(s, pts, col, o)   colour laid over the face
+edge(s, pts, w, o)     the contour that closes a shape
+underdraw              does graphite hatching still read underneath?</pre>
+
+    <p class="mid">A part does get one opinion: how <b>dark</b> the mass should be. Not how to make it dark — that stays the medium's business.</p>
+    <div class="demo"><div class="grid g5" id="d3b"></div></div>
+    <div class="ctl" id="c3"></div>
+    <pre class="code"><b>src/media.js — five densities, one number each</b>const DENSITY = { black: 1, hatch: .72, scribble: .62, stipple: .5, light: .34 }
+F.media.tone(s, pts, { style: 'stipple' })   // the part asks for .5 …
+                                             // …the medium decides what .5 looks like</pre>
+  </section>
+
+  <section class="step" id="s4" data-title="the head">
+    <div class="hd"><i>04</i><h2>the head</h2></div>
+    <p>One head polygon, slid most of the way onto a target shape. The shape family is the creature's identity — and it is nine words in one list.</p>
+    <p class="tech"><code>headLayout()</code> lays down five keypoints per side plus a chin and a crown, smooths them twice with Chaikin, then slides every point <code>round</code> (.82–.97 of the way) onto a target radius function — <code>square</code> is a superellipse of exponent 5.5, <code>drop</code> pinches the crown and keeps the jowls, <code>pear</code> and <code>lump</code> swell one end. A ¾ turn swells the near side by 10% and collapses the far side by 28%. A snout is <em>not</em> a part: it is <code>skull.muzzle</code>, a lobe pushed out of this same silhouette, and the layout publishes where it landed so the nose and mouth sit on it without ever learning what a muzzle is.</p>
+    <div class="demo"><div class="grid g9" id="d4"></div></div>
+    <div class="ctl" id="c4"></div>
+    <pre class="code"><b>src/parts/skull.js</b>shape: C.pick(rng, 'shape', [['round', 20], ['square', 16], ['tall', 13],
+                           ['drop', 13], ['pear', 12], ['lump', 8], …])</pre>
+  </section>
+
+  <section class="step" id="s5" data-title="the map">
+    <div class="hd"><i>05</i><h2>the map</h2></div>
+    <p>Before anything is drawn, one file measures the body once and publishes every anchor. The mouth never has to find the chin. The hand never has to find the fist.</p>
+    <p class="tech"><code>buildLayout(recipe, Ps)</code> runs once per character and returns <code>F</code>: <code>F.s</code> the head scale in px, <code>F.w</code> the half width, <code>F.L.*</code> the face anchors, <code>F.B.*</code> the body block, <code>F.lwMain</code>/<code>F.lwThin</code> the two line weights, plus the medium and the colour casting. Its rngs are seeded apart from the boil, so the construction holds still while the ink is redrawn every frame. Two coordinate systems meet here: <code>draw()</code> works in character pixels with <em>y down</em> and the origin at the centre of the head, while <code>bones()</code> works in world units (<code>px / U</code>) with y up — hence the minus sign on every bone.</p>
+    <div class="demo tight" id="d5"></div>
+    <div class="ctl" id="c5"></div>
+    <pre class="code"><b>src/layout.js</b>F.L.eyeX(-1)   F.L.noseY   F.L.my   F.B.hipX   F.B.floorY</pre>
+  </section>
+
+  <section class="step" id="s6" data-title="the parts">
+    <div class="hd"><i>06</i><h2>the parts</h2></div>
+    <p>A part is one small file: roll your numbers, ask for a bone, draw. They are stacked in one ordered list — behind first, in front last. Watch it land.</p>
+    <p class="tech">A part exports <code>gen/bones/size/draw</code>, and optionally <code>states</code>, <code>skip</code>, <code>species</code>, <code>base</code>, <code>pivot</code>, <code>order</code>, <code>depth</code> and <code>region</code>. <code>gen(rng, C)</code> rolls plain JSON numbers — <code>C</code> is the casting helper, so a species can lean on any of them without the part knowing. <code>bones(P, F)</code> returns one entry per canvas, and two entries make a mirrored pair. <code>size(P, F)</code> is the canvas that has to cover the drawing, in world units. Every canvas becomes a texture on a plane hanging off a <code>THREE.Group</code>, which is the thing the animator moves. Adding a feature is <em>one file plus one line</em> in the registry — the editor, the recipe, reroll, lock and the crowd all read that list.</p>
+    <div class="demo tight" id="d6"></div>
+    <div class="chips" id="p6"></div>
+    <div class="ctl" id="c6"></div>
+    <pre class="code"><b>src/parts/index.js</b>gen(rng, C)      → the numbers that make this one different
+bones(P, F)      → where it hangs
+draw(s, P, st, F, bone)  → the drawing itself</pre>
+  </section>
+
+  <section class="step" id="s7" data-title="the species">
+    <div class="hd"><i>07</i><h2>the species</h2></div>
+    <p>A dog is not a new set of drawings. Same seed, same parts, same code — a species only loads the dice toward floppy ears, a snout and no hair.</p>
+    <p class="tech">One table per part id, and the value's TYPE is the instruction: an object is a weighted pick (options you leave out <em>cannot happen</em>), an array is a range, a bare number is a probability. It biases <code>gen()</code> and nothing else — once the params exist they are numbers, so a saved recipe rebuilds identically even if the profile changes or disappears. Three levers, cheapest first: <b>weights</b> (data only), a <b>skull param</b> like <code>muzzle</code> (one branch), or a <b>part of its own</b> via <code>species: ['nightmare']</code> (a new file). Wings qualified. A snout did not — so now anything can have one.</p>
+    <div class="demo"><div class="grid g4" id="d7"></div></div>
+    <div class="ctl" id="c7"></div>
+    <pre class="code"><b>src/species.js</b>dog: { cast: { crest: { style: { floppy: 84, bear: 10, none: 6 } },
+                skull: { muzzle: [.26, .44] }, extras: { spots: .55 } } }</pre>
+  </section>
+
+  <section class="step" id="s8" data-title="the boil">
+    <div class="hd"><i>08</i><h2>the boil</h2></div>
+    <p>Every part is drawn three times, same numbers, different wobble. Flipping between them is the whole illusion of life. Nothing moves; it is redrawn.</p>
+    <p class="tech"><code>makePart()</code> draws <code>BOIL_FRAMES</code> canvases per state, each seeded <code>s.boil(hash(seed, name, state, frame))</code>, and uploads them as <code>THREE.CanvasTexture</code>s on a single plane — so animating is a texture swap that costs nothing at runtime. Each part flips on its own clock (<code>fps .85–1.6</code>, offset on purpose) or the whole character would boil in unison and read as a video. The corollary is the rule that catches everyone: randomness inside <code>draw()</code> is re-rolled on every redraw, so a choice that must hold still — which style, how long, which side — belongs in <code>gen()</code>.</p>
+    <div class="demo"><div class="grid g4" id="d8"></div></div>
+    <pre class="code"><b>src/part.js</b>for (let f = 0; f &lt; BOIL_FRAMES; f++) { s.boil(hash(seed, name, f)); draw(s); }</pre>
+  </section>
+
+  <section class="step" id="s9" data-title="the face">
+    <div class="hd"><i>09</i><h2>the face</h2></div>
+    <p>Spare faces are drawn in advance and kept. An expression is a swap, landed while a blink has the eyes shut, so it reads as intent.</p>
+    <p class="tech">States are drawn <em>lazily</em>: only the resting one costs a canvas at build time, so a character can carry a full emotional repertoire and never pay for the faces nobody pulls. An expression is two things — a state per face part, and continuous body language written through the same offset API a pose uses. Because a texture swap is binary and would otherwise pop, the animator holds it until a blink has the eyes shut: the brows and the shiver ramp over ~0.5s, the eyes close, and the new face is already there when they open.</p>
+    <div class="demo tight live" id="d9"></div>
+    <div class="ctl" id="c9"></div>
+    <pre class="code"><b>src/expressions.js</b>angry: { states: { eyes: 'angry', brows: 'angry', mouth: 'angry' } }</pre>
+  </section>
+
+  <section class="step" id="s10" data-title="the pose">
+    <div class="hd"><i>10</i><h2>the pose</h2></div>
+    <p>The drawings never change here — the bones under them move. A pose writes offsets, scaled by its blend weight, so two poses simply mix and nothing snaps.</p>
+    <p class="tech">A pose writes offsets through a small ctx API — <code>root</code>, <code>head</code>, <code>body</code>, <code>bone</code>, <code>each</code>, <code>state</code> — and every write is multiplied by that pose's blend weight, so a transition is literally two poses summing (0.38s, or 0.13s for a one-shot like attack, which plays out and hands back). Walk and run share <em>one</em> gait phase, so a change of tempo never teleports a foot. Poses scale the autonomic layer rather than switching it off (<code>auto: { gaze: 0, breath: 2.2 }</code> for sleep), and every pose handles all three bases: biped, sit and quad.</p>
+    <div class="demo tight live" id="d10"></div>
+    <div class="ctl" id="c10"></div>
+    <pre class="code"><b>src/poses/gait.js</b>ctx.bone(e, { dy: -S * .04, rot: .3 })   // offsets, never absolutes</pre>
+  </section>
+
+  <section class="step" id="s11" data-title="the seed">
+    <div class="hd"><i>11</i><h2>the seed</h2></div>
+    <p>All of it comes back to one integer. The recipe is the only thing that is saved — same JSON in, same creature out, on any machine.</p>
+    <p class="tech">The recipe is the only state: <code>{ seed, species, base, media, color, parts: { id: { params, lock, rr } } }</code>. Each part's rng is seeded from <code>hashStr(seed:partId:rr)</code>, so bumping <code>rr</code> rerolls exactly one part and <code>lock</code> carries a part through a global regenerate untouched. Nothing touches a canvas until a character is actually built, so thousands of recipes can be rolled and scored in a loop — which is how the class-photo game's numbers were set instead of guessed.</p>
+    <div class="demo tight live" id="d11"></div>
+    <div class="ctl" id="c11"></div>
+    <pre class="code json" id="j11"><b>the whole character</b></pre>
+  </section>
+
+</main>
+
+<footer>graphite on cream paper · <a href="index.html">back to the menu</a> · <a href="https://github.com/albertobeiz/kindergrimm">code</a></footer>
+</div>
+
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+<script type="module" src="./src/how.js"></script>
+</body>
+</html>

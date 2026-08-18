@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>drawai — social card</title>
+<!--
+  The share card for how.html, drawn by the generator it advertises.
+  Regenerate it after a look change:
+
+    python3 serve.py &
+    chrome --headless=new --window-size=1200,630 \
+           --screenshot=assets/how-og.png http://localhost:8137/assets/og.html
+-->
+<style>
+  html, body { margin: 0; background: #f6f1e5; }
+  canvas { display: block; width: 1200px; height: 630px; }
+</style>
+</head>
+<body>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script>
+<script type="module">
+import { Sketch, PAPER, ACCENTC } from '../src/sketch.js';
+import { setRender } from '../src/part.js';
+import { MEDIA } from '../src/media.js';
+import { PARTS, newRecipe, ensureParams } from '../src/rig.js';
+import { buildLayout } from '../src/layout.js';
+
+setRender({ u: 128, frames: 1 });
+
+const W = 1200, H = 630;
+const s = new Sketch(W, H);
+s.boil(20250818);
+const c = s.ctx;
+c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+document.body.appendChild(s.canvas);
+
+const ink = a => `rgba(31,29,26,${a})`;
+const mono = px => `${px}px ui-monospace, "SF Mono", Menlo, monospace`;
+
+// ---- the words ----
+c.fillStyle = ink(.92);
+c.font = mono(58);
+c.letterSpacing = '9px';
+c.fillText('how a creature', 78, 148);
+c.fillText('is drawn', 78, 224);
+c.letterSpacing = '0px';
+c.font = mono(22);
+c.fillStyle = ink(.5);
+c.fillText('the pencil · the polygon · the skull · the rig', 80, 282);
+c.fillText('eleven live steps, every drawing made by the real generator', 80, 316);
+
+// a rule nobody ruled straight
+s.stroke([[78, 356], [430, 353], [700, 358], [1122, 354]], 5, { ghost: true, over: 9 });
+
+c.font = mono(19);
+c.fillStyle = ink(.34);
+c.textAlign = 'right';
+c.fillText('kindergrimm.vercel.app/how.html', 1122, 118);
+c.textAlign = 'left';
+
+// ---- the pipeline, drawn ----
+const recipe = newRecipe(8419213);
+recipe.species = 'human'; recipe.base = 'biped'; recipe.media = 'graphite';
+ensureParams(recipe);
+recipe.parts.skull.params.turn = 0;
+const Ps = Object.fromEntries(PARTS.map(d => [d.id, recipe.parts[d.id].params]));
+const F = buildLayout(recipe, Ps);
+
+const X = [235, 490, 745, 1000], Y = 468;
+const label = (x, t) => { c.font = mono(17); c.fillStyle = ink(.4); c.textAlign = 'center'; c.fillText(t, x, 588); c.textAlign = 'left'; };
+
+// 1 · a stroke
+s.stroke([[X[0] - 82, Y + 32], [X[0] - 14, Y + 6], [X[0] + 40, Y + 26], [X[0] + 82, Y + 2]], 13, { ghost: true, over: 11 });
+label(X[0], 'stroke');
+
+// 2 · a shape
+const blob = s.blobPts(X[1], Y + 14, 72, 60, .12, .5);
+MEDIA.graphite.tone(s, blob, { style: 'hatch', gap: 7 });
+MEDIA.graphite.edge(s, blob.concat([blob[0]]), 4, {});
+label(X[1], 'shape');
+
+// 3 · the head, from the real layout
+c.save();
+c.translate(X[2], Y + 18);
+c.scale(.86, .86);
+MEDIA.graphite.edge(s, F.L.facePoly.concat([F.L.facePoly[0]]), F.lwMain, {});
+c.restore();
+label(X[2], 'head');
+
+// 4 · the whole character, parts composed in draw order
+const pieces = [];
+for (const def of PARTS) {
+  if (def.species && !def.species.includes(recipe.species)) continue;
+  if (def.base && !def.base.includes(recipe.base)) continue;
+  const P = F.P[def.id];
+  if (def.skip?.(P, F)) continue;
+  for (const b of def.bones(P, F)) pieces.push({ def, P, b, order: b.order ?? def.order, i: pieces.length });
+}
+pieces.sort((a, b) => a.order - b.order || a.i - b.i);
+c.save();
+const k = .72;
+c.setTransform(k, 0, 0, k, X[3], Y - F.s * .55 * k);
+for (const e of pieces) e.def.draw(s, e.P, e.def.states?.[0] ?? 'idle', F, e.b);
+c.restore();
+label(X[3], 'creature');
+
+// the arrows between them
+c.strokeStyle = `rgba(${ACCENTC[0].join(',')},.55)`;
+c.lineWidth = 1.6;
+for (let i = 0; i < 3; i++) {
+  const a = X[i] + 100, b = X[i + 1] - 100;
+  c.beginPath(); c.moveTo(a, Y + 14); c.lineTo(b, Y + 14);
+  c.moveTo(b - 8, Y + 9); c.lineTo(b, Y + 14); c.lineTo(b - 8, Y + 19);
+  c.stroke();
+}
+document.title = 'ready';
+</script>
+</body>
+</html>

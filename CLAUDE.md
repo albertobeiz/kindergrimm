@@ -30,7 +30,14 @@ they are not the ones an older version of this file described — no
 beds, no toys, no play, and light no longer slows anything.
 `editor.html` is the face editor,
 `crowd.html` a 7×5 page of live characters, `items.html`
-the object contact sheet. `voxel.html` is the **voxel lab** — the same
+the object contact sheet. `how.html` is the **guide**: eleven steps
+from a pencil stroke to a posed creature, and every demo on it runs
+the real generator (`src/how.js` composes parts onto ONE Sketch
+canvas — legal because parts draw in character coordinates — and
+stands three real rigs in three small renderers), so the page cannot
+drift from the code it explains. Its share card is drawn by the
+generator too — `assets/og.html` is the generator, `assets/how-og.png`
+the output, and the command to regenerate it is in that file's head. `voxel.html` is the **voxel lab** — the same
 recipe idea built out of cubes instead of graphite, with its own hand,
 layout, parts and animator under `src/voxel/`; it shares nothing with
 the drawn generator but `rng.js`, and ARCHITECTURE.md §11 is its
