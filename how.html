@@ -19,6 +19,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="how a creature is drawn — a pencil stroke, a shape, a head and a finished creature, in a row">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@albertobeicas">
+<meta name="twitter:creator" content="@albertobeicas">
 <meta name="twitter:title" content="How a creature is drawn">
 <meta name="twitter:description" content="A procedural character generator taken apart in eleven live steps: the stroke, the shape, the medium, the skull, the layout, the parts, the species, the boil, the face, the pose, the seed.">
 <meta name="twitter:image" content="https://kindergrimm.vercel.app/assets/how-og.png">
@@ -31,7 +33,13 @@
   "name": "How a creature is drawn",
   "description": "The eleven stages a procedural, hand-drawn character passes through in drawai, from a single pencil stroke to a posed, blinking creature rebuilt from one integer.",
   "image": "https://kindergrimm.vercel.app/assets/how-og.png",
-  "author": { "@type": "Person", "name": "Alberto Beiz" },
+  "author": {
+    "@type": "Person",
+    "name": "Alberto Beiz",
+    "url": "https://kindergrimm.vercel.app/",
+    "sameAs": ["https://x.com/albertobeicas", "https://github.com/albertobeiz"]
+  },
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://kindergrimm.vercel.app/how.html" },
   "step": [
     { "@type": "HowToStep", "position": 1, "name": "The pencil", "url": "https://kindergrimm.vercel.app/how.html#s1", "text": "A stroke is a filled ribbon, not a line: the spine is resampled and pushed sideways by three summed sines, the half width breathes, the ends overshoot, and thick strokes shed graphite crumbs." },
     { "@type": "HowToStep", "position": 2, "name": "The shape", "url": "https://kindergrimm.vercel.app/how.html#s2", "text": "Every shape is a ring of sixteen points around a modulated ellipse, smoothed once, drawn by hand. A wobble parameter says how carefully it was drawn." },
