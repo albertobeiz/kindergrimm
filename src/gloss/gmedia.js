@@ -220,6 +220,19 @@ const FINISH = {
     clearcoat: .25, clearcoatRoughness: .5, envMapIntensity: .9,
   }),
 
+  // ACCESSORIES — a hat, a bow, a plaster. Soft plastic, and the one
+  // number that matters is that the SHEEN IS SELF-COLOURED. Worn on
+  // `rubber`, whose sheen is white at .5, a brick-red beanie under the
+  // overhead key washed out to pale pink and read as a bald head — the
+  // colour was right in the material and wrong on the screen. Exactly
+  // the mistake the hair block records, made a second time.
+  acc: c => new THREE.MeshPhysicalMaterial({
+    color: c, roughness: .55, metalness: 0,
+    clearcoat: .22, clearcoatRoughness: .4,
+    sheen: .15, sheenRoughness: .7, sheenColor: lift(c, .2),
+    envMapIntensity: .9,
+  }),
+
   // HAIR, and it is dead-matte VINYL. Two failures are recorded in this
   // block. A hard clearcoat came first — one travelling hotspot on a
   // shape whose whole job is many soft clumps: a plastic wig. Then a
@@ -298,6 +311,12 @@ const MAPS = {
 // with neither is the silent bug this check exists for.
 const NAMED_MATERIALS = new Set(
   Object.values(GSPECIES).map(s => s.material).filter(Boolean));
+
+// `hair` and `acc` are deliberately NOT in `MATERIALS`. They are not
+// finishes a TOY can be poured in — you cannot make a chrome toy out of
+// haircut — they are what two particular parts are always made of, named
+// per-spec via `spec.finish`. So they are exempt from the reachability
+// check below, which is about the finishes the shelf deals.
 
 for (const id of MATERIAL_IDS) {
   if (!FINISH[id]) throw new Error(`gmedia: material '${id}' has no FINISH recipe`);

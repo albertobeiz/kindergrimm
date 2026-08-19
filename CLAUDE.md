@@ -290,6 +290,23 @@ file look like a phantom `SyntaxError`.
   TOYS, and an anatomically-argued skull looked like it had wandered
   in off another shelf. A form that is right in isolation and wrong in
   the line-up is wrong.
+- Adding an **extra** — spectacles, a hat, a face mark — is a file in
+  `gparts/` like any part, but deal it RARE (the three sit at 88/86/82%
+  none): an accessory on every toy is the house style, not a character.
+  They take their colour from `ACC_COLORS` via `L.acc`, never the toy's
+  five — on a humanoid every palette colour is a skin tone and the
+  first beanie read as a bald head — and `pickAcc` scores on full RGB
+  distance, not luma, or a terracotta lands on peach skin. They wear
+  the `acc` finish, whose sheen is SELF-COLOURED: rubber's white sheen
+  washed a brick red to pale pink, the same error the hair records.
+- A hat either **hugs or perches**. A beanie sized to clear a big cut
+  is a bowl balanced on the head; sized to the skull it vanishes under
+  the hair. What really happens is that it FLATTENS the hair above its
+  rim and the cut spills out below — `hat.js` publishes `hatHug` and
+  `ghair.js` obeys it. Same edge as `eyes.js` publishing `eyeProud` so
+  spectacles clear a ball eye, and `ghair.js` publishing `hairOuter` so
+  a headband perches on the hair: the part that knows a fact states it,
+  and the layout hands it over.
 - Adding an eye style is one entry in `eyes.js`'s `STYLE` table — and
   ADD IT TO THE WEIGHTS TOO. A style in the table but not in the
   `wpick` list is unreachable and nothing will tell you; that has

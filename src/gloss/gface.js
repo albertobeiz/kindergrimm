@@ -174,12 +174,12 @@ export function createGlossFace(built, opts = {}) {
           m.translateX(gx * u * .07);
           m.translateY(gy * u * .04);
           m.scale.set(r.scale.x, r.scale.y * mouthSY, r.scale.z);
-        } else if (id.startsWith('hair')) {
-          // HAIR DOES NOT RIDE. Every other feature slides a little with
-          // the gaze because it is painted on a face that is turning.
-          // Hair is not on the face, it IS the head — the group's own
-          // spring already carries it, and a second offset on top slides
-          // the whole cut off the skull.
+        } else if (id.startsWith('hair') || id.startsWith('hat')) {
+          // HAIR AND HATS DO NOT RIDE. Every other feature slides a
+          // little with the gaze because it is painted on a face that
+          // is turning. These are not on the face — the group's own
+          // spring already carries them, and a second offset on top
+          // slides the cut off the skull and the hat off the head.
           continue;
         } else {
           m.translateX(gx * u * .09);          // nose, cheeks: they ride

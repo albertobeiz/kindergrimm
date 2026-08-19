@@ -111,6 +111,19 @@ const STYLE = {
 export const HAIR_STYLES = Object.keys(STYLE);
 export const isLongHair = id => (STYLE[id]?.side ?? 1) < -1;
 
+/**
+ * How far the hair's outer surface stands off the head, as an
+ * inflation factor. HATS need it: a beanie sized to a bare skull sinks
+ * into a big soft cut and comes out as a painted band. Same edge as
+ * `eyeReach` — the part publishes a fact about itself rather than the
+ * hat reading this style table.
+ */
+export function hairOuter(P) {
+  const st = STYLE[P.hair?.style];
+  if (!st) return 1;
+  return 1 + st.vol * (P.hair.vol ?? 1) + (st.pomp ?? 0) * (P.hair.pomp ?? 1) * .35;
+}
+
 // where the face arc holds and where it lets go, in radians off the
 // nose. Driven by the ANGLE, not by `cos(ang)`: a cosine starts closing
 // the moment it leaves the nose and the hair swallows the temples.
@@ -226,7 +239,7 @@ function makeFlow(st, H) {
  * hugging the head — no caps, no seams, no bare skin, and the fold at
  * the hem is the thick rounded rim of a molded piece.
  */
-function hairMass(st, pt, H, shape, F) {
+function hairMass(st, pt, H, shape, F, hug) {
   const vol = st.vol * H.vol;
   const lift = (st.pomp ?? 0) * H.pomp;
   const n = Math.max(8, Math.round(st.n * H.density));
@@ -291,7 +304,12 @@ function hairMass(st, pt, H, shape, F) {
       const y = lerp(hem, 1.0, smooth(t) * .85 + t * .15);
       const swell = .72 + .28 * Math.sin(Math.min(1, .15 + t) * Math.PI * .8);
       const wob = st.wave ? st.wave * H.wave * Math.sin(az * 3 + t * 9) : 0;
-      const p = pt(az, y, 1.012 + vol * swell * carve(az, y) + wob);
+      let infl = 1.012 + vol * swell * carve(az, y) + wob;
+      // UNDER A HAT the hair is flattened, above the hat's rim only —
+      // below it the cut spills out as usual, which is the read that
+      // says the hat is being WORN rather than balanced on top
+      if (hug && y > hug.rimY) infl = Math.min(infl, hug.k - .03);
+      const p = pt(az, y, infl);
       // THE POMPADOUR: a radial push cannot make an upswept fringe — it
       // just makes a fatter helmet — so this displaces the outer surface
       // UP and FORWARD over the front only, peaking between hairline and
@@ -498,7 +516,7 @@ export function buildHair(P, L) {
   const vol = st.vol * H.vol;
   const F = makeFlow(st, H);
 
-  const out = [{ id: 'hair', mesh: hairMass(st, pt, H, L.shape, F) }];
+  const out = [{ id: 'hair', mesh: hairMass(st, pt, H, L.shape, F, L.hatHug) }];
   out.push({ id: 'hairWisps', mesh: wispSet(st, pt, H, F, L.shape, 1 + vol) });
 
   if (st.tails === 2) {

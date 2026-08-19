@@ -1374,6 +1374,49 @@ its own finish, and `gface.js` leaves it alone: every other feature
 slides a little with the gaze because it is painted on a turning face,
 but hair IS the head, and a second offset slides the cut off the skull.
 
+### The extras — spectacles, hats, marks
+
+Three parts that are not what a toy IS but what it is WEARING, or what
+has HAPPENED to it: `specs.js`, `hat.js`, `mark.js`. All three are
+dealt rare (88/86/82% none), for the reason the brows already record —
+an accessory on every toy stops being character and becomes the house
+style.
+
+Each one needed a fact it could not know, and in every case the part
+that owns it PUBLISHES it and the layout hands it over. That is now
+three instances of the same edge (`eyeReach` was the first):
+
+| publisher | fact | who needs it |
+|---|---|---|
+| `eyes.js` | `eyeProud` — how far the eye's front stands off the skin | spectacles: an `orb` is a ball standing ¾ of its radius out, and a lens placed for a flat plate cuts through the eyeball |
+| `ghair.js` | `hairOuter` — the hair's outer radius | a hat that PERCHES (band, bow, flower, crown) |
+| `hat.js` | `hatHug` — the ceiling a pulled-on hat imposes, and where it starts | the hair, which flattens under it |
+
+**A hat either hugs or perches, and that split is the whole design.** A
+beanie sized to clear a big soft cut stands a whole hair's volume off
+the skull at every height, including down at the ears where there is
+no hair, and comes out as a bowl balanced on the head. Sized to the
+skull instead, it vanishes under the hair. Neither is what happens: a
+worn hat FLATTENS the hair above its rim and the cut spills out below
+— so `hatHug` publishes the ceiling and `ghair.js` obeys it. Two parts
+agreeing about one number is the layout's whole job.
+
+**Accessories have their own colour table** (`ACC_COLORS`), for exactly
+the reason hair does. A toy's five are what make a shelf one product
+line, so an extra drawn from them cannot be seen — and on a humanoid it
+is fatal, because every colour in the `skin` palette IS a skin tone.
+The first beanie came out as a bald head. `pickAcc` then guarantees
+clearance from BOTH the body and the hair, scored on **full RGB
+distance and not luma**: scored on lightness alone a terracotta beats a
+teal against peach skin, and then renders as another shade of face,
+because it is the same hue and the key light is warm.
+
+And they wear the `acc` finish rather than the toy's. Left to inherit
+it, a beanie on a humanoid is poured in `skin`. `acc`'s sheen is
+SELF-COLOURED — `rubber`'s white one washed a brick red out to pale
+pink under the overhead key, which is the same mistake the hair block
+already records, made a second time.
+
 ### The face is APPLIED, and that is what makes it animate
 
 Nothing is carved and nothing is welded: each eye, brow, nose, mouth

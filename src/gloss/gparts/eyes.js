@@ -110,6 +110,23 @@ export function eyeReach(P) { return extent(P, true); }
  *  uses it to keep an eye on the head and out of its partner. */
 export function eyeSpan(P) { return extent(P, false); }
 
+/**
+ * How far the eye's FRONT stands off the skin, in units of `L.eyeSize`.
+ *
+ * Spectacles need it and only this file can know it: an `orb` is a ball
+ * standing most of its own radius proud, so a lens placed for a flat
+ * plate cuts straight through the eyeball. Same edge as `eyeReach` —
+ * the eyes publish a fact about themselves rather than the other part
+ * reading their style table.
+ */
+export function eyeProud(P) {
+  const st = STYLE[P.eyes.style] ?? STYLE.oval;
+  // the ball sits centred .32 of its radius INTO the head, so its front
+  // crest is .68 of a radius out; the pupil adds a little on top
+  if (st.orb) return st.wf * .74;
+  return (P.eyes.proud ?? .2) + .12;      // plate front, plus its pupil
+}
+
 export const Eyes = {
   id: 'eyes', label: 'eyes', order: 1,
 

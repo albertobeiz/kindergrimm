@@ -23,13 +23,15 @@
 // to keep a mouth out from under one — so the eyes publish their reach
 // as a pure function of the recipe and this asks. It is the only edge
 // pointing this way, and it beats copying the style table in here.
-import { eyeReach, eyeSpan } from './gparts/eyes.js';
+import { eyeReach, eyeSpan, eyeProud } from './gparts/eyes.js';
+import { hairOuter } from './ghair.js';
+import { hatHug } from './gparts/hat.js';
 import { mouthReach, mouthSpan } from './gparts/mouth.js';
 // the ONE copy of each surface: the same functions/arrays the body is
 // BUILT from, so where a feature lands and where the skin is can
 // never disagree (see gshape.js and gskull.js)
 import { surfT, surfN } from './gshape.js';
-import { HAIR_BY_ID, INK, mix, luma } from './gpalette.js';
+import { HAIR_BY_ID, INK, mix, luma, pickAcc } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
 // feature starts wrapping onto the side of the head where the camera
@@ -261,6 +263,16 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     cy,                        // the body's centre, sitting on the floor
     s: B.r,                    // the one number every feature scales off
     eyeX, eyeY, mouthY, mouthFit,
+    // what the EXTRAS have to clear. Spectacles must sit in front of a
+    // ball eye, a hat on top of a big soft cut — and only the eyes and
+    // the hair can know how far out they reach.
+    eyeProud: eyeProud(P),
+    hairTop: hasHair ? hairOuter(P) : 1,
+    // a pulled-on hat squashes the hair above its rim — see `hatHug`
+    hatHug: hatHug(P),
+    // what the EXTRAS are made of: never the toy's own five, and
+    // guaranteed clear of both the skin and the hair
+    acc: pickAcc(P.hat?.accIx ?? 0, colors.body, hairHex),
     eyeR,                      // the unit the OTHER face parts size off
     eyeSize,                   // what the eyes themselves use
     // the midpoint by construction, so a nose can never collide with a

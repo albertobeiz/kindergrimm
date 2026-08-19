@@ -103,6 +103,54 @@ export const HAIR_IDS = HAIR_COLORS.map(c => c.id);
 export const HAIR_BY_ID = Object.fromEntries(HAIR_COLORS.map(c => [c.id, c]));
 export const HAIR_WEIGHTS = HAIR_COLORS.filter(c => c.w > 0).map(c => [c.id, c.w]);
 
+// ---------------------------------------------------------------
+// ACCESSORIES. Their own table, for exactly the reason hair has one: a
+// hat, a frame or a plaster has to be VISIBLE, and it cannot be if it
+// is drawn from the toy's own five. On a humanoid that is fatal —
+// every colour in the `skin` palette IS a skin tone, so the first
+// beanie came out as a bald head.
+//
+// These are the accessory colours a toy shelf actually uses: strong,
+// slightly dirty, and few. `pickAcc` then guarantees the one chosen
+// stands clear of BOTH the body and the hair, so a red hat never lands
+// on a red toy and a black one never lands on black hair.
+// ---------------------------------------------------------------
+// No terracotta and no tan. They were in, and against a skin body they
+// scored well on luma while being the same HUE — a brick beanie on a
+// peach head lit by a warm key came out as another shade of face. Luma
+// is not enough; see `pickAcc`.
+export const ACC_COLORS = [
+  '#2B2422', '#F0EAE0', '#C6483E', '#D8C049',
+  '#5E9E86', '#3F7FA6', '#6E4E8C', '#8A8E93', '#B8375C', '#3E5C4A',
+];
+
+/** the accessory colour furthest in luma from both the toy and its
+ *  hair, chosen deterministically from a rolled index so the same
+ *  recipe always gets the same one. */
+export function pickAcc(i, body, hair) {
+  // FULL RGB distance, not luma. Scored on lightness alone a terracotta
+  // beats a teal against peach skin — and then renders as another shade
+  // of face, because it is the same hue and the key light is warm.
+  // Distance in colour, not in brightness.
+  const rgb = hex => { const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const B = rgb(body), H = rgb(hair);
+  let best = ACC_COLORS[0], score = -1;
+  for (let k = 0; k < ACC_COLORS.length; k++) {
+    const c = ACC_COLORS[(k + i) % ACC_COLORS.length];
+    const C = rgb(c);
+    // the WORSE of its two clearances decides — an accessory has to
+    // stand off the skin and off the hair, not average well
+    const d = Math.min(dist(C, B), dist(C, H));
+    // the rolled index breaks ties, so a sheet still varies instead of
+    // every toy converging on the one safest colour
+    const sc = d + (k === 0 ? .05 : 0);
+    if (sc > score) { score = sc; best = c; }
+  }
+  return best;
+}
+
 /** a → b by t, in hex. For the brow, which is the hair's own colour
  *  pulled toward ink: a platinum brow at full strength disappears, and
  *  an ink one on blonde hair reads as somebody else's eyebrows. */

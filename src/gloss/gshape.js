@@ -53,6 +53,28 @@ function roundedRect(w, h, r) {
   return s;
 }
 
+/** a rounded rectangle with a rounded rectangle punched out of it —
+ *  square spectacles, and anything else that is a frame rather than a
+ *  filled shape. `ring` is its elliptical twin. */
+function rectRing(w, h, r, thick) {
+  const s = roundedRect(w, h, r);
+  const iw = w * (1 - thick), ih = h * (1 - thick);
+  const ir = Math.max(1e-4, Math.min(r * (1 - thick), iw, ih));
+  const hole = new THREE.Path();
+  // wound the OTHER way round from `roundedRect`: a hole has to run
+  // against its shape or three fills it in as solid
+  hole.moveTo(-iw + ir, -ih);
+  hole.absarc(-iw + ir, -ih + ir, ir, Math.PI * 1.5, Math.PI, true);
+  hole.lineTo(-iw, ih - ir);
+  hole.absarc(-iw + ir, ih - ir, ir, Math.PI, Math.PI / 2, true);
+  hole.lineTo(iw - ir, ih);
+  hole.absarc(iw - ir, ih - ir, ir, Math.PI / 2, 0, true);
+  hole.lineTo(iw, -ih + ir);
+  hole.absarc(iw - ir, -ih + ir, ir, 0, -Math.PI / 2, true);
+  s.holes.push(hole);
+  return s;
+}
+
 /** the four-point sparkle. The sides are pulled IN toward the centre —
  *  that concavity is the entire reason it reads as a star and not a
  *  diamond, and `pinch` is how deep the waist cuts. */
@@ -192,6 +214,7 @@ const CURVE = {
 const OUTLINE = {
   ellipse: s => ellipse(s.w, s.h),
   ring:    s => ring(s.w, s.h, s.thick ?? .36),
+  rring:   s => rectRing(s.w, s.h, s.r ?? s.h * .4, s.thick ?? .3),
   rect:    s => roundedRect(s.w, s.h, s.r ?? s.h * .92),
   sparkle: s => sparkle(s.w, s.h, s.pinch ?? .22),
   star:    s => star5(s.w, s.h),
@@ -283,9 +306,10 @@ export function surfN(x, y, z, rx, ry, rz, n) {
  * ball eye's lid, a cap that sits OVER another solid — which is why the
  * open rim is fine: whatever a dome caps is filling it from inside.
  */
-export function solidGeometry(rx, ry, rz, n = 2, dome = 0) {
+export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0) {
   const g = dome
-    ? new THREE.SphereGeometry(1, 72, 40, 0, Math.PI * 2, 0, Math.PI * dome)
+    ? new THREE.SphereGeometry(1, 72, 40, 0, Math.PI * 2,
+                               Math.PI * domeFrom, Math.PI * (dome - domeFrom))
     : new THREE.SphereGeometry(1, 72, 54);
   const pos = g.attributes.position, nor = g.attributes.normal;
   for (let i = 0; i < pos.count; i++) {

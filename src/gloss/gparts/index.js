@@ -13,6 +13,13 @@ import { Brows } from './brows.js';
 import { Nose } from './nose.js';
 import { Mouth } from './mouth.js';
 import { Blush } from './blush.js';
+// THE EXTRAS. Everything above is what a toy IS; these are what it is
+// WEARING or what has happened to it, and all three are dealt rare on
+// purpose — an accessory on every toy is not a character, it is the
+// house style.
+import { Specs } from './specs.js';
+import { Hat } from './hat.js';
+import { Mark } from './mark.js';
 
 // There WAS a `muzzle` part here — a second storey on the lower face
 // in patch, lump and snout. All three are gone. The flat patch read as
@@ -20,5 +27,6 @@ import { Blush } from './blush.js';
 // face out into a snout that fought the head's own silhouette. What
 // carries a species turned out to be the EARS and the eye patches, not
 // a second lump of geometry.
-export const GPARTS = [Body, Crest, Hair, Eyes, Brows, Nose, Mouth, Blush];
+export const GPARTS = [Body, Crest, Hair, Hat, Eyes, Brows, Specs, Nose, Mouth,
+                       Blush, Mark];
 export const GPART_BY_ID = Object.fromEntries(GPARTS.map(p => [p.id, p]));
