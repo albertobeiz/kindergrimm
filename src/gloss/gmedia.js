@@ -312,7 +312,8 @@ for (const [id] of MATERIAL_WEIGHTS) {
 
 export function makeMaterialFactory(env) {
   const cache = new Map();
-  return (finish, color, shell = false) => {
+  const decals = new Map();
+  const materialFor = (finish, color, shell = false) => {
     const id = shell ? finish : (FEATURE_OF[finish] ?? finish);
     const tiled = shell && MAPS[id] ? 1 : 0;
     const key = `${id}:${tiled}:${color}`;
@@ -323,6 +324,37 @@ export function makeMaterialFactory(env) {
     cache.set(key, mat);
     return mat;
   };
+
+  /**
+   * A PRINTED feature (see `gdecal.js`): the same clearcoat every other
+   * feature wears, over artwork instead of a flat colour.
+   *
+   * `alphaTest` + `alphaToCoverage`, never `transparent`. A transparent
+   * mesh is sorted rather than depth-tested, and three sheets stacked a
+   * hair apart on a curved face flicker through each other as the toy
+   * turns. As a CUTOUT the iris sits over its white by being nearer,
+   * which is a fact about geometry and cannot go wrong — and coverage
+   * hands the ragged edge to the same MSAA the rest of the scene uses.
+   *
+   * Keyed by the art spec, which is plain JSON and painted by a pure
+   * function, so a shelf of thirty toys in one style paints once.
+   */
+  materialFor.decal = (key, paint) => {
+    if (decals.has(key)) return decals.get(key);
+    const tex = new THREE.CanvasTexture(paint());
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    const mat = new THREE.MeshPhysicalMaterial({
+      map: tex, color: 0xffffff, roughness: .3, metalness: 0,
+      clearcoat: 1, clearcoatRoughness: .06, envMapIntensity: 1,
+      alphaTest: .5, alphaToCoverage: true, side: THREE.FrontSide,
+    });
+    mat.envMap = env;
+    decals.set(key, mat);
+    return mat;
+  };
+
+  return materialFor;
 }
 
 /**

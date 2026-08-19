@@ -267,6 +267,34 @@ export function plateGeometry(spec) {
   return g;
 }
 
+/**
+ * A PRINTED PLATE: the plane a decal is laid on (see `gdecal.js`).
+ *
+ * Same authoring rule as an extruded plate — the front crest sits at
+ * z = 0 and the body runs BACKWARD — except here "backward" is the
+ * BEND: the sheet curves away from the camera so it hugs the pour
+ * instead of standing off it as a card, which is what a flat one looks
+ * like on an eye set two thirds of the way out to the cheek.
+ *
+ * `bend` is the radius it curves on, and it is deliberately LARGER
+ * than the body's. Matched to the body the sheet's corners sink into
+ * the skin and fight it; undershooting the curve means the decal can
+ * only ever float further out, never dip in.
+ */
+export function decalGeometry(w, h, bend) {
+  const g = new THREE.PlaneGeometry(w * 2, h * 2, 24, 24);
+  if (bend > 0) {
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i);
+      pos.setZ(i, -(x * x + y * y) / (2 * bend));
+    }
+    pos.needsUpdate = true;
+    g.computeVertexNormals();
+  }
+  return g;
+}
+
 // ---- THE SURFACE, shared with the layout ------------------------------
 // A superellipsoid: |x/rx|ⁿ + |y/ry|ⁿ + |z/rz|ⁿ = 1.
 //

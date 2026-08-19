@@ -66,26 +66,48 @@ const norm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1;
 const STYLE = {
   bald: null,
 
-  crop:  { front: .42, side: .16, back: -.30, vol: .13, n: 14, jag: .07 },
-  pixie: { front: .30, side: -.06, back: -.52, vol: .18, n: 14, jag: .12 },
-  bowl:  { front: .06, side: -.26, back: -.58, vol: .20, n: 16, jag: .06 },
-  spiky: { front: .34, side: .04, back: -.42, vol: .19, n: 11, jag: .26 },
-  side:  { front: .10, side: -.18, back: -.56, vol: .20, n: 14, jag: .10, part: .30 },
-  curly: { front: .18, side: -.20, back: -.50, vol: .27, n: 12, jag: .10, wave: .05 },
+  // --- swept UP, off the forehead --------------------------------------
+  // The shape a bowl cut cannot make, and the whole sheet was bowl cuts
+  // without it: the hem sits HIGH on the forehead and `pomp` lifts the
+  // mass up and back above it, so the silhouette rises at the front
+  // instead of falling. This is a direction of styling, not a length.
+  quiff:  { front: .54, side: .10, back: -.40, vol: .17, n: 12, jag: .10, pomp: .34 },
+  swept:  { front: .46, side: -.04, back: -.50, vol: .18, n: 13, jag: .12,
+            pomp: .22, part: .30 },
+  crop:   { front: .48, side: .18, back: -.30, vol: .12, n: 14, jag: .06, pomp: .10 },
+  spiky:  { front: .40, side: .06, back: -.42, vol: .19, n: 11, jag: .26, pomp: .16 },
 
-  // the long ones. `open` holds the face arc further round before the
-  // length starts — falling from the cheekbone, a long cut closes into
-  // a hood with a little face at the bottom of it.
-  bob:   { front: .14, side: -.95, back: -1.15, vol: .19, n: 16, jag: .09, open: .34 },
-  wavy:  { front: .12, side: -1.25, back: -1.45, vol: .20, n: 16, jag: .12,
-           wave: .05, open: .34 },
-  long:  { front: .16, side: -1.90, back: -2.20, vol: .18, n: 16, jag: .10, open: .38 },
-  hime:  { front: .02, side: -2.05, back: -2.35, vol: .18, n: 18, jag: .04, open: .14 },
+  // --- short, with a fringe DOWN ---------------------------------------
+  // …but only `bowl` is blunt across the whole brow. The others break it
+  // up: `curtain` parts in the middle and shows forehead between two
+  // sides, `side` and `pixie` run it diagonally. A fringe that is always
+  // one flat line is always the same haircut.
+  bowl:   { front: .06, side: -.26, back: -.58, vol: .20, n: 16, jag: .05 },
+  pixie:  { front: .24, side: -.08, back: -.52, vol: .18, n: 14, jag: .18, part: .26 },
+  side:   { front: .12, side: -.18, back: -.56, vol: .20, n: 14, jag: .12, part: .36 },
+  curtain:{ front: .08, side: -.30, back: -.56, vol: .19, n: 14, jag: .10, curtain: .38 },
+  curly:  { front: .20, side: -.20, back: -.50, vol: .27, n: 12, jag: .12, wave: .05 },
 
-  // tied up: a short base plus a piece
-  pony:  { front: .14, side: -.06, back: -.46, vol: .17, n: 14, jag: .09, tails: 1 },
-  twin:  { front: .14, side: -.10, back: -.50, vol: .17, n: 14, jag: .09, tails: 2 },
-  buns:  { front: .12, side: -.14, back: -.50, vol: .17, n: 14, jag: .09, buns: 2 },
+  // --- MID: the media melena, which was missing entirely ---------------
+  // There was a hole between `bob` (at the jaw) and `long` (past the
+  // chest) and it is the commonest length there is.
+  bob:    { front: .14, side: -.95, back: -1.15, vol: .19, n: 16, jag: .09, open: .34 },
+  midi:   { front: .16, side: -1.35, back: -1.55, vol: .19, n: 16, jag: .10, open: .36 },
+  layers: { front: .22, side: -1.28, back: -1.48, vol: .22, n: 13, jag: .34, open: .36,
+            curtain: .24 },
+  wavy:   { front: .12, side: -1.50, back: -1.70, vol: .21, n: 16, jag: .14,
+            wave: .05, open: .34 },
+
+  // --- long -------------------------------------------------------------
+  long:   { front: .16, side: -1.95, back: -2.25, vol: .18, n: 16, jag: .10, open: .38 },
+  hime:   { front: .02, side: -2.10, back: -2.40, vol: .18, n: 18, jag: .04, open: .14 },
+
+  // --- tied up ----------------------------------------------------------
+  pony:   { front: .16, side: -.06, back: -.46, vol: .17, n: 14, jag: .09,
+            part: .22, tails: 1 },
+  twin:   { front: .14, side: -.10, back: -.50, vol: .17, n: 14, jag: .09, tails: 2 },
+  buns:   { front: .14, side: -.14, back: -.50, vol: .17, n: 14, jag: .09,
+            curtain: .22, buns: 2 },
 };
 
 export const HAIR_STYLES = Object.keys(STYLE);
@@ -117,7 +139,16 @@ function hemAt(st, ang, H) {
   const fw = 1 - smooth(clamp((a - hold) / (end - hold), 0, 1));
   const bw = smooth(clamp((a - bs) / (BACK_END - bs), 0, 1));
   let v = st.side + (st.front - st.side) * fw + (st.back - st.side) * bw;
+  // a PARTING runs the fringe diagonally: long over one brow, high at
+  // the opposite temple
   if (st.part) v += st.part * Math.sin(ang) * fw * H.part;
+  // a CURTAIN raises it in the middle and drops it at both temples, so
+  // the forehead shows between two falling sides. Squared cosine, so
+  // the lift is concentrated over the nose and gone by the temple.
+  if (st.curtain) {
+    const c = Math.max(0, Math.cos(ang * 1.5));
+    v += st.curtain * H.part * c * c * fw;
+  }
   return v;
 }
 
@@ -154,8 +185,9 @@ function pointer(shape) {
  * to the hem, hugging the head. No caps, no seams, no bare skin — and
  * the fold at the hem is the thick rounded rim of a molded piece.
  */
-function hairMass(st, pt, H) {
+function hairMass(st, pt, H, shape) {
   const vol = st.vol * H.vol;
+  const lift = (st.pomp ?? 0) * H.pomp;
   const n = Math.max(8, Math.round(st.n * H.density));
 
   // the clump boundaries, jittered so the carving never tiles into a
@@ -215,7 +247,19 @@ function hairMass(st, pt, H) {
       const y = lerp(hem, 1.0, smooth(t) * .85 + t * .15);
       const swell = .72 + .28 * Math.sin(Math.min(1, .15 + t) * Math.PI * .8);
       const wob = st.wave ? st.wave * H.wave * Math.sin(az * 3 + t * 9) : 0;
-      return pt(az, y, (1 + (vol * swell + wob)) * carve(az, t));
+      const p = pt(az, y, (1 + (vol * swell + wob)) * carve(az, t));
+      // THE POMPADOUR. A radial push cannot make an upswept fringe — it
+      // just makes a fatter helmet — so this displaces the outer surface
+      // UP and FORWARD instead, over the front of the head only. It
+      // peaks between the hairline and the crown and returns to zero at
+      // both, because the outer surface meets the inner one at the crown
+      // and a lift carried into that fold would tear the mass open.
+      if (lift) {
+        const fz = Math.max(0, Math.cos(az));
+        const w = Math.sin(t * Math.PI) * fz * fz;
+        return [p[0], p[1] + lift * shape.ry * w, p[2] + lift * shape.rz * .40 * w];
+      }
+      return p;
     });
   }
   // inner surface, crown → hem, hugging the head — and stopping a
@@ -325,7 +369,7 @@ export function buildHair(P, L) {
   const ry = L.shape.ry;
   const vol = st.vol * H.vol;
 
-  const out = [{ id: 'hair', mesh: hairMass(st, pt, H) }];
+  const out = [{ id: 'hair', mesh: hairMass(st, pt, H, L.shape) }];
 
   if (st.tails === 2) {
     for (const s of [-1, 1])

@@ -202,6 +202,16 @@ file look like a phantom `SyntaxError`.
   and the ORDERING is the read: fringe high, temples lower, nape
   lowest. Jitter the clump boundaries; the eye reads a repeat before
   it reads the hair.
+- But length alone is not STYLING: a blunt fringe ruled across the brow
+  is a bowl cut, and a table of lengths gives you fourteen of them. The
+  fringe's SHAPE is its own dimension — `part` (diagonal), `curtain`
+  (open in the middle, forehead showing) and `pomp` (swept up). `pomp`
+  needs geometry, not a hem number: a radial push is just a fatter
+  helmet, so it displaces the outer surface up and forward, peaking
+  between hairline and crown and returning to zero at both — carried
+  into the crown fold it tears the mass open.
+- Keep a **media melena** band. There was a hole between `bob` (jaw)
+  and `long` (chest) and it is the commonest length there is.
 - Hair is **dead-matte vinyl**: no clearcoat (a hotspot on soft clumps
   is a plastic wig) and only the faintest sheen — strong sheen is a rim
   lobe and lights every groove edge as a glassy streak. Matte comes

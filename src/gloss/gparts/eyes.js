@@ -13,8 +13,6 @@
 // back it has to be real geometry: depth in the rim and the ink sunk
 // into it, not a colour standing in for a shadow.
 
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-
 // outline + the numbers that outline reads.
 //   `shut`   already a closed lid, so the blink leaves it alone
 //   `sclera` a WHITE eye with a dark pupil laid on it — two plates,
@@ -58,34 +56,36 @@ const STYLE = {
   diamond:  { outline: 'sparkle', wf: .92, hf: 1.18, pinch: .5 },
   square:   { outline: 'rect', wf: .66, hf: .7, r: .28 },
 
-  // --- THE MANGA FAMILY: white almond, big pupil, glint, lash -------
-  // Four styles on one construction: a pointed LEAF outline (round
-  // reads soft, leaf reads drawn), an ink border, a white, a pupil,
-  // and a heavy upper LASH — the band that is the whole manga read.
-  // The catchlight is a HOLE in the pupil (see `glint` in gshape.js):
-  // the sclera's white shows through negative space, so it is moulded
-  // geometry, never a dot painted on top of the clearcoat.
+  // --- THE MANGA FAMILY: the one PRINTED eye ------------------------
+  // These three are decals, not plates — the only painted thing on the
+  // toy, and `gdecal.js` holds both the artwork and the argument for
+  // it. Short version: a manga eye is a tapered lash, a graded iris,
+  // striations and two catchlights, and every one of those is a width
+  // or a gradient. Built as extruded outlines they came out as
+  // goggles: an ink ring, a black bead and an arc floating over it.
   //
-  // `lash` is the upper lid's thickness as a fraction of the eye's
-  // height. It is NOT the rolled `lid` (a 40% chance on any eye): the
-  // lash IS this style, it comes down on the blink like a lid, and a
-  // style that wears one does not also roll the other.
-  manga:  { outline: 'leaf', wf: 1.0, hf: 1.22, sclera: true,
-            pupilF: .6, border: .3, lash: .34,
-            glints: [[-.28, .32, .22]] },
+  // A style names the BOX (`wf`/`hf`), how big the iris is in it
+  // (`pupilF`/`pupilHF`), how heavy the lash is (`lash`, a fraction of
+  // the box's height) and how far the outer corner lifts (`lift`) —
+  // that slant is what separates the three more than anything else.
+  // `simple` below stays MOULDED: a solid ink leaf has no line work in
+  // it, so it has nothing to gain from being printed.
+  //
+  // The lash is still its own mesh and still comes down on a blink,
+  // and a style that wears one does not also roll the rolled `lid`.
+  manga:  { decal: true, wf: 1.0, hf: 1.1, pupilF: .58, pupilHF: .74,
+            lash: .1, lift: .26, apex: .42 },
   // the eye that fills the face. The layout cuts a big eye back to
   // fit the head it is on, so this asks for everything and takes what
   // fits — and a pupil that fills the white has almost nowhere to
   // look, which is authentic: a chibi eye stares with the head.
-  chibi:  { outline: 'leaf', wf: 1.1, hf: 1.42, sclera: true,
-            pupilF: .84, pupilHF: .9, border: .3, lash: .3,
-            glints: [[-.26, .3, .24], [.36, -.3, .11]] },
+  chibi:  { decal: true, wf: 1.02, hf: 1.34, pupilF: .78, pupilHF: .8,
+            lash: .085, lift: .2, apex: .46 },
   // THE SHONEN EYE: a small pupil and a glint that eats a third of
   // it. Thickest border and heaviest lash in the catalogue — the
   // whole style is line work around a lot of white.
-  dbz:    { outline: 'leaf', wf: 1.02, hf: 1.14, sclera: true,
-            pupilF: .42, border: .34, lash: .4,
-            glints: [[-.2, .34, .4], [.44, -.38, .16]] },
+  dbz:    { decal: true, wf: 1.06, hf: .92, pupilF: .5, pupilHF: .84,
+            lash: .13, lift: .34, apex: .38 },
   // and the plainest manga eye: a solid ink leaf, no white, no lash.
   // The pointed ends are the whole difference from `angry`'s round
   // oval — at sheet scale a row of these reads as one drawn cast.
@@ -96,7 +96,7 @@ const STYLE = {
   // top half — the Rabbid / Muppet construction. The cap is centred on
   // the ball, so the blink is a rotation: it ROLLS forward over the
   // eyeball instead of sliding down a face (`lidRoll`, in gface.js).
-  // A SPHERE by decree — `tall` is ignored. An ellipsoid lid cannot
+  // A SPHERE by decree. An ellipsoid lid cannot
   // roll: turned 120° its short axis faces where the ball's long axis
   // is, and the pupil punches through the shell. Sphere on sphere can
   // never misalign, and the ball being a ball IS the style anyway.
@@ -122,8 +122,8 @@ export const EYE_STYLES = Object.keys(STYLE);
 // own width.
 function extent(P, alongY) {
   const st = STYLE[P.eyes.style] ?? STYLE.oval;
-  const hf = st.hf * (st.shut || st.orb ? 1 : P.eyes.tall);
-  const bt = st.sclera ? Math.min(st.wf, hf) * st.border : 0;
+  const hf = st.hf;
+  const bt = st.sclera && !st.decal ? Math.min(st.wf, hf) * st.border : 0;
   const a = (alongY ? hf : st.wf) + bt;      // the axis we want
   const b = (alongY ? st.wf : hf) + bt;      // and the one that rolls into it
   const rl = Math.abs(st.roll ?? 0);
@@ -193,7 +193,6 @@ export const Eyes = {
     // to a stamp in the middle of a big blank head. At .14 there were
     // several a sheet.
     size: C.range(rng, 'size', .142, .182),  // × body radius
-    tall: C.range(rng, 'tall', .9, 1.16),
     proud: rng.r(.1, .3),     // × eye size
   }),
 
@@ -203,7 +202,6 @@ export const Eyes = {
     x: { label: 'apart', range: [.1, .8] },
     y: { label: 'height', range: [-.4, .6] },
     size: { label: 'size', range: [.05, .26] },
-    tall: { label: 'stretch', range: [.6, 1.5] },
     proud: { label: 'relief', range: [0, .7] },
     pupilY: { label: 'pupil parks', range: [-1, 1] },
     lid: { label: 'eyelid', bool: true },
@@ -223,18 +221,60 @@ export const Eyes = {
       const shut = E.wink && side > 0;
       const st = shut ? STYLE.happy : STYLE[E.style];
       const a = L.onFace(side * L.eyeX, L.eyeY);
+      // AN EYE'S ASPECT IS THE STYLE'S, FULL STOP. There WAS a rolled
+      // `tall` that stretched the height on top of the style's own
+      // proportions, and it is gone: a round eye came out an egg, a
+      // slab came out a bar, and on the rectangles — whose corner
+      // radius is a fraction of the SHORTER half-extent — a bar rounded
+      // its ends into a capsule and stopped being the shape it named. A
+      // clamp on the stretch only bounded the damage. The size varies,
+      // the aspect does not, so `round` is round on every toy.
       const w = r * st.wf;
-      let h = r * st.hf * (st.shut ? 1 : E.tall);
-      // AN EYE HAS AN ASPECT. `tall` multiplies a style that already
-      // chose its own proportions, so a tall style at a tall roll came
-      // out a bar and a wide one came out a slot — and on the
-      // rectangles, whose corner radius is a fraction of the SHORTER
-      // half-extent, a bar also rounds its ends into a capsule and
-      // stops being the shape it named. Clamped here rather than by
-      // timid ranges, because the ranges are what the variety is.
-      // Bands are exempt: `sleepy` and `happy` are meant to be lines.
-      if (st.outline !== 'band') h = clamp(h, w * .55, w * 1.95);
+      const h = r * st.hf;
       const d = r * .34;
+
+      // THE PRINTED EYE takes its own road too: three sheets of art,
+      // no outlines. They share ONE box, so nothing can misalign, and
+      // they keep the same three ids the moulded eye uses — so
+      // `gface.js` blinks, glances and drops a lash here without ever
+      // learning that this one is painted.
+      if (st.decal) {
+        // A sheet curves on a radius LARGER than the head's, so it can
+        // only ever float off the skin and never dip into it. A cube's
+        // face is flat and wants almost none of it.
+        const bend = L.rz * (L.form === 'cube' ? 3.4 : 1.35);
+        const art = { flip: side < 0, lift: st.lift, apex: st.apex,
+                      ink: L.ink, sclera: L.sclera };
+        // a printed feature stands a little further out than a moulded
+        // one: it has no rim of its own to lift it off the pour
+        const proud = r * Math.max(E.proud, .16);
+        const ride = [w * .1, h * .08];
+
+        add({ type: 'decal', id, p: a.p, n: a.n, w, h, bend, proud,
+              art: { ...art, kind: 'mangaWhite', aspect: w / h },
+              travel: ride });
+
+        // THE IRIS, and it is the one thing on this toy that moves
+        // relative to the face. Its travel is cut back hard against a
+        // moulded pupil's: the white it has to stay inside is a
+        // slanted almond, not the rectangle its own box describes, so
+        // the corners of that box are already outside the eye.
+        const pw = w * st.pupilF, ph = h * (st.pupilHF ?? st.pupilF);
+        const roomY = h - ph;
+        const park = roomY * E.pupilY * .5;
+        add({ type: 'decal', id: id + 'Pupil', p: a.p, n: a.n,
+              w: pw, h: ph, bend, proud: proud + r * .012,
+              art: { ...art, kind: 'mangaIris', aspect: pw / ph,
+                     iris: L.warm, pupil: .42 },
+              offset: [0, park], anchorY: park,
+              travel: [(w - pw) * .4, roomY * (1 - Math.abs(E.pupilY)) * .4] });
+
+        add({ type: 'decal', id: id + 'Lid', p: a.p, n: a.n,
+              w, h, bend, proud: proud + r * .024,
+              art: { ...art, kind: 'mangaLash', aspect: w / h, lash: st.lash },
+              travel: ride, lidDrop: h * 1.15 });
+        continue;
+      }
 
       // THE BALL EYE takes its own road: three solids, no plates.
       if (st.orb) {

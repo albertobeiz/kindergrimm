@@ -31,6 +31,8 @@ export const Hair = {
     jag: C.range(rng, 'jag', .6, 1.5),
     wave: C.range(rng, 'wave', .7, 1.35),
     part: C.range(rng, 'part', .7, 1.3),
+    // how hard an upswept style lifts. Only the styles that ask.
+    pomp: C.range(rng, 'pomp', .75, 1.35),
     // ONE seed for every per-clump variation on the head. It has to be
     // a rolled parameter rather than live randomness: hair is rebuilt
     // on every boil frame, and anything re-rolled per frame shimmers.
@@ -62,6 +64,7 @@ export const Hair = {
     density: { label: 'clumps', range: [.6, 1.6] },
     width: { label: 'clump width', range: [.7, 1.4] },
     jag: { label: 'ragged tips', range: [0, 2] },
+    pomp: { label: 'sweep up', range: [0, 2] },
     seed: { label: 'shuffle', range: [0, 6.28] },
     tailY: { label: 'tied at', range: [.2, .8] },
     tailLen: { label: 'tail length', range: [.4, 2.4] },

@@ -119,9 +119,16 @@ export const GSPECIES = {
       // cuts and the tied-up ones are the ones you notice. `bald` stays
       // in at a few percent because a bald chibi is a real character
       // and the skull is good enough to show off.
-      hair:   { style: { bob: 13, pixie: 12, bowl: 11, long: 10, side: 9,
-                         crop: 8, wavy: 8, curly: 8, twin: 6, pony: 6,
-                         hime: 4, spiky: 3, buns: 3, bald: 4 } },
+      // Weighted so the SHELF has styling, not one haircut in fourteen
+      // lengths. The blunt bowl is deliberately small — it was most of
+      // the sheet, and a blunt fringe is the one shape that makes every
+      // head look like the same head. The upswept group and the media
+      // melena carry it instead, which is roughly how a room of people
+      // actually looks.
+      hair:   { style: { midi: 8, layers: 7, bob: 7, wavy: 5, long: 5, hime: 2,
+                         side: 8, pixie: 8, curtain: 7, quiff: 7, swept: 7,
+                         crop: 6, curly: 5, spiky: 4, bowl: 3,
+                         twin: 4, pony: 4, buns: 3, bald: 3 } },
       // THE WHOLE CATALOGUE ROLLS. The orb is the humanoid's signature
       // and keeps the biggest slice, but every other eye in the table
       // is reachable — a face this simple gets its variety from the

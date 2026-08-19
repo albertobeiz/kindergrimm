@@ -1285,7 +1285,30 @@ hem is the thick rounded rim every molded haircut has. Onto that:
 
 The hem — front/side/back, by azimuth — is still the whole haircut, and
 the ORDERING is still the read: fringe high, temples lower, nape
-lowest. Level all round is a cap sitting on the head; level from nose
+lowest.
+
+But three numbers only give a LENGTH, and length alone made every head
+the same haircut: a blunt fringe ruled straight across the brow, which
+is a bowl cut, nineteen times over. Styling needs the fringe's SHAPE as
+its own dimension, and there are three:
+
+| lever | what it does |
+|---|---|
+| `part` | runs the fringe diagonally — long over one brow, high at the opposite temple |
+| `curtain` | raises it over the nose and drops it at both temples, so the forehead shows between two falling sides |
+| `pomp` | sweeps it UP: the hem sits high on the forehead and the mass lifts above it |
+
+`pomp` is the one that needed geometry rather than a hem number. A
+radial push cannot make an upswept fringe — it just makes a fatter
+helmet — so it displaces the outer surface UP and FORWARD over the
+front of the head. It peaks between the hairline and the crown and
+returns to zero at both, because the outer surface meets the inner one
+at the crown and a lift carried into that fold would tear the mass
+open.
+
+The lengths needed a third band too. There was a hole between `bob` (at
+the jaw) and `long` (past the chest) — the media melena, which is the
+commonest length there is. `midi`, `layers` and `wavy` live there now. Level all round is a cap sitting on the head; level from nose
 to ear cuts the head on a straight line. Long cuts hold the face arc
 further round (`open`) or they close into a hood. Below the fall line
 the mass keeps the head's silhouette and simply descends, which is what

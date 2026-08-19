@@ -22,7 +22,9 @@
 // ---------------------------------------------------------------
 import * as THREE from 'three';
 import { makeRng, hashStr } from '../rng.js';
-import { plateGeometry, solidGeometry, skullGeometry, basisAt } from './gshape.js';
+import { plateGeometry, solidGeometry, skullGeometry, decalGeometry, basisAt } from './gshape.js';
+// the printed half of the hand — see gdecal.js for why one exists
+import { decalCanvas } from './gdecal.js';
 import { buildGlossLayout } from './glayout.js';
 import { GPARTS, GPART_BY_ID } from './gparts/index.js';
 import { PALETTES, PALETTE_BY_ID, PALETTE_DEAL_IDS, INK, SCLERA, MAW, tint, luma } from './gpalette.js';
@@ -151,6 +153,8 @@ export function buildGloss(recipe, { materialFor } = {}) {
       ? skullGeometry(spec.mesh ?? spec.skull)
       : spec.type === 'solid'
       ? solidGeometry(spec.rx, spec.ry, spec.rz, spec.exp ?? 2, spec.dome)
+      : spec.type === 'decal'
+      ? decalGeometry(spec.w, spec.h, spec.bend)
       : plateGeometry(spec);
     // The SHELL is the body and nothing else. Everything else is a
     // feature set into it, and takes whatever `gmedia.js` says a
@@ -161,7 +165,12 @@ export function buildGloss(recipe, { materialFor } = {}) {
     // it has to: a wool humanoid is a knitted head, not a knitted
     // haircut, and hair reading as the same pour as the face loses the
     // one edge that separates them at sheet scale.
-    const mesh = new THREE.Mesh(geo, materialFor(spec.finish ?? finish, spec.color, shell));
+    // A DECAL brings its own artwork instead of a colour. The spec is
+    // plain JSON by rule (gdecal.js), so it is also the cache key.
+    const mat = spec.type === 'decal'
+      ? materialFor.decal(JSON.stringify(spec.art), () => decalCanvas(spec.art))
+      : materialFor(spec.finish ?? finish, spec.color, shell);
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.name = spec.id;
 
     if (spec.pos) {
