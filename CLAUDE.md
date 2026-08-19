@@ -41,7 +41,24 @@ the output, and the command to regenerate it is in that file's head. `voxel.html
 recipe idea built out of cubes instead of graphite, with its own hand,
 layout, parts and animator under `src/voxel/`; it shares nothing with
 the drawn generator but `rng.js`, and ARCHITECTURE.md §11 is its
-contract. `voxelcrowd.html` is the voxel crowd: twenty of them on a
+contract. `gloss.html` is the **gloss lab** — a THIRD generator, the
+same recipe idea poured as glossy vinyl designer toys instead of
+graphite or cubes, with its own hand (`gshape.js`), studio, layout and
+parts under `src/gloss/`; it shares nothing with the other two but
+`rng.js`, and ARCHITECTURE.md §12 is its contract. It is all SOLID
+geometry — an SDF version was built and thrown away, because an eye is
+a thousandth of a body and resolving one meant resolving the whole
+grid at eye scale. Three bodies: a sphere and a cube (one
+superellipsoid with a squareness knob) and the humanoid's chibi
+**skull**, which is MODELED — a control cage put through
+Catmull-Clark subdivision in `gskull.js`, ported from the
+`chibi-skull` side project. Then a catalogue of faces, a colour from
+`gpalette.js` and one of the materials in `gmedia.js`. `glosscrowd.html` is its
+crowd, and it is the DRAWN crowd's page, not the voxel one: a flat 7×5
+grid straight on, toys hung on a wall close enough to catch their own
+shadows, and the animation entirely face — gaze, blink, expressions
+(see the end of §12).
+`voxelcrowd.html` is the voxel crowd: twenty of them on a
 midnight platform, the ONE scene in the project with real (moving,
 shadow-casting) lights, and characters that assemble voxel by voxel
 via `setDrawRange` — its rules are at the end of §11. `serve.py` sends `no-store` on purpose:
@@ -134,6 +151,127 @@ file look like a phantom `SyntaxError`.
   face is painted onto it. Same reason as the muzzle in the drawn rig:
   publish where the thing landed and the parts that sit on it never
   learn how it got there.
+- The gloss lab is a **parallel** generator too, not a port. Adding a
+  face part = one file in `src/gloss/gparts/` + one line in its
+  `index.js`; a VARIANT of one = one entry in that part's `STYLE`
+  table, and that is the cheap lever that should be the usual answer;
+  a palette = one entry in `gpalette.js`. Prefer a style entry to a
+  part, the same way a snout is a param and wings are a part.
+- In the gloss lab **frequency is art direction**, so a style table is
+  dealt with `rng.wpick`, never `rng.pick`. Brows are anecdotal (~12%
+  have one), noses are ~25%, and the plain eye shapes carry the line
+  so the odd ones stay odd. A uniform pick over eleven eye styles
+  gives a sheet that is a third hearts and stars.
+- Adding a gloss **species** = one entry of weights in
+  `src/gloss/gspecies.js` — the third copy of the casting idea, own
+  helper on purpose. A species loads the dice so the compound toys
+  arrive assembled (panda = bear ears + ink eye patches; pig = snout;
+  robot = cube + screen face; humanoid = the modeled chibi SKULL +
+  hair on the crown + skin, §12); it may bias the BODY form but never
+  the palette or material — a lavender panda is still a panda. The
+  ONE exception is the humanoid, which names both (`skin` palette,
+  `skin` material) because a chrome one is a different object, not the
+  same one in another finish. `wildcard`
+  is the free roll and stays the biggest slice: the casting exists to
+  assemble compounds, not to shrink the generator to eight characters.
+  Parts' gen() takes `(rng, C)` and asks `C.pick/range/chance`; the
+  species wins where it has an opinion, the part default elsewhere.
+- The gloss face lives in the **upper half**, and the mouth sits high —
+  just under the eyes, about where a nose would be — with the body
+  falling away empty below it. Slung low it reads as a smiley drawn on
+  a ball. And keep the proportion ranges WIDE: every body is the same
+  normalised sphere, so eye size, eye spacing and mouth size are the
+  only variety the shelf has. They were ±6% once and every toy came
+  out the same circle.
+- The **humanoid inverts that rule**, and it is the only thing that
+  does: *frente despejada, ojos a mitad de cara*. Its whole top half
+  is bare forehead and the face hangs off the midline. The numbers are
+  measured off the chibi reference sheet and are checked, not guessed
+  — the eye's CENTRE ~64% down the head, its TOP ~52% (i.e. right at
+  the midline), each eye ~25% of the head's width, eye centres ~50% of
+  the half-width out, the mouth ~77% down. Guessing put the face too
+  high and too small twice. Measure with `__probe` in the lab console
+  and average over ~30 seeds — one toy is not a proportion.
+- A humanoid's mouth is a **small line**, not a maw. Two reasons and
+  both matter: the reference mouth is a stroke a fraction of an eye
+  wide, and a big mouth also REACHES further, so the layout's
+  clear-the-eyes push drops it onto the chin.
+- A gloss face has **two storeys and a silhouette**, and that is what
+  separates a creature from an emoji: the MUZZLE (`muzzle.js` — patch,
+  lump or snout; the layout publishes `L.muzzle` and the nose and
+  mouth stand on its `proud`), the CREST (`crest.js` — ears and horns
+  on `L.top(t)`; the silhouette does the species work), and MAW mouths
+  (`mouth.js` — ink outline + dark `MAW` interior + teeth + tongue,
+  licensed to be half the face). A snout stands the nose part down: it
+  brought its own nostrils.
+- When a maw is taller than the room under the eyes, the layout pushes
+  the mouth down and then takes the remaining deficit off the mouth's
+  SIZE (`L.mouthFit`) — the chin can run out, and what gives is scale,
+  never overlap.
+- Where the face's rows sit is published by `glayout.js`
+  (`eyeX / eyeY / mouthY / noseY / eyeR`). A part must never reach into
+  another part's params to stay out of its way — `noseY` is the
+  midpoint of eyes and mouth by construction, so a nose cannot collide
+  with a mouth however either is dragged.
+- A gloss part hands back **specs**, never geometry: it names an
+  outline from `gshape.js` and passes numbers. It never touches
+  three.js and never builds a material — it takes colours off `L`
+  (`body / warm / ink`). That is what `F.media.*` is to a drawn part.
+- A feature may carry a **travel budget** (`spec.travel`, in its own
+  plane) saying how far it may slide when the toy looks somewhere. A
+  PUPIL gets most of its white and a white eye gets almost nothing, so
+  `gface.js` drives a moving pupil without knowing what shape any eye
+  is. Travel is scaled by the blink, or a pupil left out at the edge
+  gets squashed about the wrong centre and slides clear of its lid.
+- Every face feature is its own MESH, and that is the whole point: a
+  blink is `scale.y` and a glance is a translate, so the face animates
+  without a rebuild. `gface.js` owns every write to a feature mesh —
+  it restores rest and re-applies offsets each frame, so blink, gaze
+  and expression can never fight over one transform. Expressions are
+  OFFSETS scaled by blend weight, never absolute transforms, same rule
+  as the drawn poses.
+- The gloss face never learns the body's shape: it places through
+  `L.at(ax, ay)`, which returns a point and a normal. A new body only
+  has to provide that function and it inherits the whole face
+  catalogue. A superellipsoid's normal is the **gradient**, not the
+  direction from the centre — use the centre and a cube's features all
+  point at its corners instead of lying flat on its face.
+- A gloss **body form is one exponent**, not a second primitive:
+  `|x/rx|ⁿ + |y/ry|ⁿ + |z/rz|ⁿ = 1`, where n=2 is a ball and n≈4 a
+  rounded cube. `sphere` pins n at 2 so it stays exact; `cube` reads
+  the rolled `corner`. Both `gshape.solidGeometry` and `L.at` use the
+  same n, so they can never disagree about where the surface is.
+- **But a shape you can name the parts of wants a cage, not an
+  exponent.** The `head` form (the humanoid's chibi skull) is MODELED
+  in `gskull.js` — a control cage of `[y, halfWidth, halfDepth,
+  zOffset]` rings put through Catmull-Clark subdivision, ported from
+  the `chibi-skull` project. A chin-tuck knob was bolted onto the
+  superellipsoid first, in three shapes (linear = flowerpot,
+  quadratic = teardrop, smoothstep + jaw depth = still not a skull),
+  and a whole day went into it: one formula cannot say *full cheeks
+  here, chin this wide, face flat in front*. `L.at` raycasts the
+  SAME arrays the body is built from, so features land on the real
+  subdivided surface.
+- Use the skull presets **exactly**, with `wide`/`tall`/`deep` pinned
+  to 1. Every stretch of a sculpted cage walks it back toward an egg,
+  and that is what put a row of carrots on the shelf. Variety is
+  PICKING a different skull, never squashing one. There are four —
+  `bun`, `trapezoid`, `square`, `oval`; the study's fifth (`triangle`)
+  was removed for reading as a carrot with no neck under it.
+- Adding an eye style is one entry in `eyes.js`'s `STYLE` table — and
+  ADD IT TO THE WEIGHTS TOO. A style in the table but not in the
+  `wpick` list is unreachable and nothing will tell you; that has
+  already happened once.
+- Features are **proud, not cut in**: a plate's front sits at z = 0
+  and its body runs backward, so it can never float off the
+  silhouette.
+- **A shadow comes from geometry and the studio, never from a colour
+  picked to look like one.** An eye rim — the same outline a size
+  larger in a darkened body tone — was tried as a stand-in for the
+  reference's carved socket and removed: on pale palettes a darkened
+  body colour reads as a second COLOUR, not a darker one, and with no
+  concavity behind it there was no cue saying "recess" either. It read
+  as two stacked shapes. Want the carved look back? Model it.
 - Adding a **pose** = one file in `src/poses/` + one line in
   `src/poses/index.js`; handle all three bases (biped/sit/quad).
   Adding an **expression** = one entry in `src/expressions.js`,

@@ -1147,3 +1147,337 @@ Three things this page does that nothing else here may:
 
 The platform needed cell coordinates out to ±108, which is why `KOFF`
 in carve.js is 128 (range −128…127) rather than 64.
+
+## 12. The molded generator (`gloss.html`, `src/gloss/`)
+
+A THIRD generator, on the same idea and sharing no runtime with the
+other two (only `rng.js` crosses over, and it is arithmetic). A recipe
+goes in, parts are asked for their params, a layout measures once, and
+each part builds itself — except that what a part hands back here is
+neither strokes nor cells but a bag of SPECS, and what comes out is a
+glossy vinyl toy.
+
+```
+recipe ──► gen() ──► params ──► glayout.js ──► L (at(), radii, colours)
+                                    │
+     gparts/index.js ───────────────┴──► build(add, P, L) → specs
+                                             │
+                                    grig.js ─┴─► gshape.js ──► meshes
+                                                 gmedia.js ──► materials
+```
+
+**It is all solid geometry.** An earlier version built the body as a
+signed distance field and meshed it with surface nets, and that is
+gone. The reason is worth keeping: an eye is a thousandth of a body,
+so resolving one meant resolving the whole grid at eye scale — the
+sockets still came out faceted at 136 samples, a toy cost two seconds,
+and the fine detail was exactly what the sampling could not afford.
+Solids have no resolution to trade. A sphere is a sphere at any zoom
+and a toy costs a few milliseconds.
+
+### Coordinates
+
+World units, **y up**, **+z toward the viewer** (so the face is on the
++z side), origin at the **floor under the toy**. Same break from the
+drawn rig as the voxel lab, and for the same reason: a solid wants
+measuring from the ground it sits on.
+
+### The hand (`gshape.js`)
+
+`sketch.js` draws, `carve.js` carves, this one **cuts and stamps**. It
+makes exactly two things:
+
+- a **solid** — the body, the odd lump like a button nose, and the
+  ball eye's three pieces (a `dome` fraction cuts a solid into an open
+  cap, made for exactly one thing: that eye's lid);
+- a **plate** — every other face feature. An outline, extruded,
+  bevelled;
+- a **skull** — the humanoid's head, and the one body that is not a
+  formula. Built in `gskull.js`, packed here.
+
+The plate is the whole face system and it is one shape of thing on
+purpose. The bevel is the cartoon read: it is what catches the studio
+highlight around the edge of an eye, and it is why a feature looks
+moulded into the toy rather than printed on it.
+
+> **Authoring rule.** A plate's front crest sits at `z = 0` and its
+> body runs BACKWARD. Placed on the skin it is therefore flush, and
+> `proud` is the single number that lifts it out. Because the body
+> runs backward and the surface curves away underneath, a plate can
+> never float off the silhouette — which is exactly what a centred
+> solid did do.
+
+A mouth, a brow and a closed lid are the SAME object: a **band**, one
+stroke of constant width along a centreline. So `ribbon()` plus a
+table of curves (`line`, `arc`, `wave`, `zig`) gives that whole
+family, and adding a mouth shape is adding a *curve*, not a polygon.
+
+### The face never learns the body
+
+`L.at(ax, ay)` takes a face coordinate — across, up, both about −1…1 —
+and returns the point on the body and the normal there. On an
+ellipsoid that is arithmetic: nothing is sampled, marched or resolved.
+
+Every face part places itself through `at` and nothing else, so the
+second body shape (a star, a heart, a rock) inherits the entire face
+catalogue by providing one function. That is the muzzle lesson, third
+time.
+
+> An ellipsoid's normal is the **gradient**, not the direction from
+> the centre. Use the centre and every feature on a squashed body tips
+> off true.
+
+### The skull — when a formula is the wrong tool (`gskull.js`)
+
+Two bodies are one superellipsoid with a squareness knob. The third,
+the **humanoid's head**, is MODELED: a low-poly control cage — a stack
+of rings, each one line of `[y, halfWidth, halfDepth, zOffset]` — put
+through Catmull-Clark subdivision. It is the modeling workflow in
+code, solved in the `chibi-skull` side project and ported whole.
+
+The reason is worth keeping, because a day was spent the other way. A
+chin-tuck knob was bolted onto the superellipsoid — linear first (a
+flowerpot), then quadratic (a teardrop), then a smoothstep with a
+second knob for jaw depth — and none of it read as a skull. One
+implicit formula cannot say *full cheeks here, chin this wide, face
+flat in front, brow forward of the jaw*; it can only say how round the
+whole thing is. A cage says all of it in seven lines, and every line is
+a number you can drag.
+
+> **A shape you can name the parts of wants a cage, not an exponent.**
+> The knob family is right for a ball that is more or less square. The
+> moment the brief has anatomy in it — cheeks, chin, brow — the
+> formula is the wrong tool, and adding knobs makes it worse, not
+> closer.
+
+The layout's contract survives untouched: a body only has to provide
+`at(ax, ay)`, and the skull provides it by **raycasting its own mesh**
+from the centre. The mesh is star-shaped about the origin, so a ray
+hits exactly one front face, and the normal is interpolated from the
+smooth vertex normals at the hit — features land on the real
+subdivided surface, never on an approximation of it. The same arrays
+the layout cast against are handed to `skullGeometry`, so the surface
+the features sit on and the surface that is drawn are one object.
+
+There are **four presets** — `bun`, `trapezoid`, `square`, `oval` —
+used with their multipliers pinned to 1. That pin is load-bearing:
+every stretch of a sculpted cage walks it back toward an egg, which is
+what put a row of carrots on the shelf. Variety comes from PICKING a
+different skull, never from squashing one. A fifth, `triangle` (full
+cranium over a chin a quarter as wide), was removed: with no neck or
+shoulders under it nothing stops the taper, and the eye follows it to
+a point.
+
+### The face is APPLIED, and that is what makes it animate
+
+Nothing is carved and nothing is welded: each eye, brow, nose, mouth
+and cheek is its own mesh, returned from the rig as a `face` map. That
+map is the animation surface — a blink is `eyeL.scale.y`, a glance is
+a nudge in x, and neither costs a rebuild. `blinkScale(clock)` is the
+curve; feed it a PER-CHARACTER clock, because twenty toys blinking on
+the same frame reads as a glitch in the renderer rather than as twenty
+things being alive.
+
+The reference's carved-then-raised eye was tried here as a **rim** —
+the same outline a size larger, in a darkened body tone, sitting just
+under the feature — and removed. Against saturated vinyl a shade like
+that reads as shadow, but these palettes are pale and low-contrast, so
+it came out as a second COLOUR rather than a darker one; and with no
+concavity behind it, nothing said "recess" either. It read as two
+stacked shapes, because that is what it was.
+
+> **A shadow comes from geometry and the studio, never from a colour
+> picked to look like one.** If the carved socket is wanted back it has
+> to be modelled — depth in the rim and the ink sunk into it — not
+> implied by a tone.
+
+One eye is not a plate: the **orb** (the humanoid's, the Rabbid
+construction) is three solids — a white sphere sunk a third into the
+head, an ink bead sunk into the sphere so it can never float, and a
+body-colour dome cap centred exactly on the ball. The cap is why it is
+worth having: a blink is the cap ROLLING about the ball's centre
+(`lidRoll`), so a lid closes over a sphere with one rotation and no
+geometry. Three rules were paid for: the ball is a SPHERE by decree
+(an ellipsoid lid cannot roll — turned 120° its short axis faces the
+ball's long one and the pupil punches through the shell); the hinge is
+the WORLD x-axis, not the lid's own (a wide-set eye's basis tips ~30°
+off camera and a lid rolled about it closes sideways, leaving a rim of
+white); and the cap's rest axis is tipped BACK so at rest it reads as
+a heavy lid over the top third instead of swallowing the front where
+the pupil lives. The pupil's crown must stay inside the cap's shell —
+sunk .7 of its radius, shell at 1.16 of the ball — or every shut lid
+has a black dot punching through it.
+
+### The four levers
+
+| Lever | Answers | Where |
+|---|---|---|
+| **species** | *what creature is it* | `gspecies.js` — biases generation only |
+| **body** | *what shape is it* | sphere or cube; one exponent |
+| **palette + colour** | *what colour is it* | `gpalette.js` — twelve fives |
+| **material** | *what is it made of* | `gmedia.js` |
+
+Everything else — which eyes, which mouth, how far apart — is rolled
+per character from the seed, under whatever dice the species loaded.
+
+The SPECIES is the third copy of the casting idea, and on purpose the
+third copy of the code (only `rng.js` crosses generators). A profile
+is a table of loaded dice per part id — object → weighted pick where
+what you leave out cannot happen, array → range, number → probability
+— and the compound toys arrive assembled: a panda is bear ears AND ink
+eye patches AND a pale muzzle, rolled together instead of once a
+thousand sheets. The humanoid is the same idea with the crest swapped
+for HAIR (`tuft` / `mop` / `curl` — ink plates standing on the crown,
+where everyone else's ears go) and the eyes loaded toward the orb.
+
+A species may bias the body form; it must **never** touch the palette
+or the material — what a toy is made of is a separate question, and a
+lavender panda is still a panda. The humanoid is the one exception the
+rule was waiting for, and it may name both: it is poured in the `skin`
+palette (four tones pale to deep plus a rosy fifth the blush always
+scores as the warm one) and finished in the `skin` material (a broad
+warm sheen for the fake-subsurface rim, a weak rough clearcoat for the
+doll sheen). A chrome humanoid is not a humanoid in another finish, it
+is a different object. `skin` is kept out of both random deals and
+reachable only by name or by a pinned filter — which is why
+`gmedia.js`'s reachability check now counts *named by a species* as a
+second legitimate way for a material to reach a toy.
+
+Its face is deliberately **not** narrowed: the whole eye catalogue
+rolls, weighted with the orb in front. Casting three eye styles gave
+three characters wearing different colours, which is the failure the
+`wildcard` slice exists to prevent.
+
+What the species does pin is PROPORTION, and it is the one place in
+the lab where the numbers were measured rather than judged —
+*frente despejada, ojos a mitad de cara*:
+
+| what | target | why |
+|---|---|---|
+| eye centre, down the head | **0.64** | the face hangs off the midline |
+| eye **top**, down the head | **0.52** | the whole top half is forehead |
+| eye width ÷ head width | **0.25** | a quarter of the face, each |
+| eye centre ÷ half-width | **0.50** | wide-set, a full eye's gap |
+| mouth, down the head | **0.77** | small and close under the eyes |
+
+This inverts the lab's own upper-half rule, and that is correct: the
+rule is about a TOY, where a face slung low reads as a smiley drawn
+on a ball. A chibi head is not a ball with a face on it, it is a
+skull, and the cranium above the eyes is the thing that makes it
+read as one.
+
+Guessing put the face too high and too small twice. `__probe` in the
+lab console reports all five off the built meshes; average it over
+~30 seeds, because one toy is not a proportion. And the mouth is cast
+SMALL and as a line: the reference mouth is a stroke a fraction of an
+eye wide, and a big one also reaches further, so the layout's
+clear-the-eyes push drops it onto the chin. A species may bias the body form; it must never touch
+the palette or the material — what a toy is made of is a separate
+question, and a lavender panda is still a panda. `wildcard` (no
+opinions at all) stays the biggest slice of the deal: the casting
+exists to make compounds arrive whole, not to shrink the generator to
+a fixed cast of eight.
+
+`gpalette.js` holds twelve five-colour sets sampled from the reference
+sheet. A toy takes its body colour from one set and its warm bits
+(blush, an open mouth) from **another colour in the same set**, which
+is what stops a shelf of twenty looking like twenty unrelated toys.
+`INK` is deliberately outside every palette: one warm near-black does
+every eye, brow and mouth in the lab, and that single shared value is
+most of the family resemblance.
+
+The two materials have to differ in more than one number or the
+toggle does nothing you can see across a shelf. Glossy is a hard
+clearcoat over smooth plastic — one tight travelling highlight.
+Rubber has no coat and a broad rough lobe, so it returns a soft even
+glow with no hotspot, and leans harder on the environment to keep
+from going dead flat.
+
+### Adding things
+
+- a **face part** = one file in `src/gloss/gparts/` + one line in its
+  `index.js`. It never touches three.js: it names an outline from
+  `gshape.js`, places through `L.at`, and takes colours off `L`.
+- a **variant** of an existing part = one entry in that part's `STYLE`
+  table. This is the cheap lever and it should be the usual answer.
+- a **palette** = one entry in `gpalette.js`.
+- a **body** = a case in `body.js` and whatever `L.at` needs to
+  describe its surface.
+
+### The face life (`gface.js`)
+
+The autonomic half of `anim.js`, ported to a toy with no bones. The
+drawn rig's life is blink, gaze, sway and breath; only one of those
+needs a skeleton, so the rest come over intact — and gaze is the one
+that matters:
+
+> **Something catches the eye, gets looked at, and is let go.** The
+> EYES move first. Then the head WHIPS after them on a loose spring,
+> overshooting and settling rather than easing into place. That
+> overshoot is the whole difference between a cartoon head turning and
+> a camera panning, which is why the spring is deliberately
+> under-damped (high k, damping near 1). A third of the time the gaze
+> is followed by its opposite, so a page of them never reads as
+> everyone scanning the same room.
+
+Here the toy IS the head, so the spring drives the whole body, and the
+page decides where to add `life.head` — the lab puts it on the group,
+the sheet adds it to the cell position.
+
+Expressions are OFFSETS, never drawings. A gloss face cannot swap a
+mouth without rebuilding it, but it can raise a brow, narrow an eye
+and open a mouth, which turns out to be most of what an expression is.
+They blend by weight and a change pulls the next blink forward, so the
+face turns over behind shut lids — the same trick the drawn rig uses
+to hide a texture swap.
+
+`gface.js` owns EVERY write to a feature mesh. Each frame it puts the
+features back where the rig left them and re-applies the offsets, so
+blink, gaze and expression can never fight over the same transform and
+nothing accumulates drift.
+
+### The sheet (`glosscrowd.html`, `src/gloss/gcrowd.js`)
+
+The lab's opposite number, and the same page the other two generators
+already have — but built like the DRAWN crowd, not the voxel one: a
+flat grid seen straight on, seven across and five down, every toy the
+same size in its own cell.
+
+It was a floor shelf first, receding into depth, and that was the
+wrong page. Depth costs the two things a contact sheet is for — the
+back row is smaller than the front so you cannot compare them, and a
+toy that moves is moving away from you where it barely reads.
+
+- **a wall, not a floor.** The toys hang on a plane about half a unit
+  behind them, and that wall is what makes the light work: each toy
+  throws a short shadow onto it, so the sheet has depth without the
+  camera needing any. The key is nearly head-on, only a little up and
+  to the left — rake it harder and every shadow lands on the
+  neighbour instead of reading as depth.
+- **a real lens.** A long-ish 26° perspective, so the grid barely
+  converges but the toys out at the edges still turn a few degrees
+  toward you. An orthographic box was tried and reads as a printed
+  page rather than objects on a wall.
+- **the animation is all FACE.** There is no body-move director. A toy
+  hopping in its cell is a screensaver; the thing worth watching is
+  thirty-five faces looking around a room and reacting to it. The
+  vocabulary is entirely `gface.js`, and this page only decides who
+  feels what and when — exactly the job `crowd.js`'s director does for
+  poses, weighted toward idle so a face that does change is worth
+  catching.
+- **the count changes, never the scale.** A narrow window gets fewer
+  columns rather than seven columns of nothing, and the camera always
+  CONTAINS the grid: a contact sheet with a row cropped off is not a
+  contact sheet.
+
+The filter bar pins `body`, `palette` or `material` to one value or
+leaves it rolling. Hold two still and the third is the only thing
+varying, which is the only honest way to see whether a lever is doing
+work. There is deliberately no face-part filter — a sheet with the
+eyes pinned is not a product line, it is a spreadsheet. A pinned value
+is written into the recipe BEFORE `ensureGParams` fills it in; every
+field there uses `??=`, so it only ever rolls what it was not told.
+
+`__gcrowd` exposes `slots / stats / frame / pump / refill / filter`.
+Measure with `pump`, never by watching a hidden panel — a throttled
+tab reports build times an order of magnitude out.
