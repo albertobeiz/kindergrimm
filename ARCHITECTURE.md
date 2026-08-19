@@ -1268,6 +1268,83 @@ cranium over a chin a quarter as wide), was removed: with no neck or
 shoulders under it nothing stops the taper, and the eye follows it to
 a point.
 
+### The hair (`ghair.js`) — one curve is the whole haircut
+
+Hair is the humanoid's, and it is the fourth kind of thing this lab
+builds: not a plate and not a solid but a **lofted shell** over the
+skull, subdivided like the skull itself and built off the skull's own
+profile, so a cap can never disagree with the head under it.
+
+**The one idea.** A haircut is a single curve — the line where the
+hair stops. Run that line round the head and everything above it is
+hair, so the entire silhouette vocabulary is one function of azimuth
+(`hemAt`) fed by three numbers:
+
+```
+        front ────╮                  ang 0 is the face
+                  ╰── side ──╮       y: +1 crown, −1 chin,
+                             ╰── back    below −1 is off the head
+```
+
+A pixie and a bob are the same mesh with a different hem. There is no
+separate long-hair model: below the chin the profile freezes the
+head's radius and the loft just keeps going down, which is what
+falling hair does. Adding a cut is one row in `STYLE`.
+
+Four things about that curve were each paid for by a sheet that looked
+wrong:
+
+- **The back is far lower than the front.** Hair carries on down to
+  the nape. Level all the way round, the shell is a ring sitting on
+  top of the head and every short cut is an **acorn cap**.
+- **The sides sit below the front.** The temple is where hair comes
+  down past the brow; level from nose to ear cuts the head on a
+  straight line, which is the same acorn seen head-on.
+- **The hem is driven by the ANGLE, not by `cos(ang)`.** A cosine
+  starts closing the moment it leaves the nose, so the hair swallowed
+  the temples and half the cheeks. Held flat to ~55° and released by
+  ~89°, it reads as a cut fringe with a face under it.
+- **Long cuts hold the face arc further round** (`open`). Falling from
+  the cheekbone, a long cut closes into a **hood** with a little face
+  at the bottom of it.
+
+The shell is **thin at the cut and thick over the crown** — hair has
+no volume where it was cut and all of it up top. An even thickness is
+the acorn again, from the inside.
+
+Everything else is one more small piece. Tails, the ahoge and any lock
+are **tubes** (`strand`), framed by parallel transport so they do not
+spin where the path turns vertical; a bun is the body's own solid. A
+tail's stand-off is scaled by the HEAD, never by the hair's length —
+scaled by length, waist-length tails swung a head-radius clear on each
+side and the sheet shrank the face to half its neighbours' to fit the
+cell.
+
+**Colour is its own table** (`HAIR_COLORS`), never the body's palette:
+the five-colour set is what makes a shelf one product line, and hair
+is what tells two heads apart. Naturals carry it and the dyed half is
+the treat. Two things are then true of a pair rather than of either
+one, so the LAYOUT owns both:
+
+- the **brow** is the head's own hair pulled toward ink — ink brows
+  under blonde hair belong to a different face;
+- hair within a sixth of the skin in luma is **pushed off it**, hardest
+  when the clash is worst. Rolled from two independent tables, a third
+  of the sheet came out with a haircut you could only find by its
+  silhouette; the guard takes that to 4%. A tie goes darker. This is
+  not the painted-shadow rule being broken — nothing is standing in for
+  a shadow, these are two objects that must not be the same colour.
+
+Hair casts a shadow (`spec.cast`) where no other feature does: it is a
+real volume standing off the head, and hair that casts nothing reads
+as paint. It also names its own **finish** — glossier and harder than
+skin, because on a molded figure the hair is a separate, shinier
+piece, and because the two must read apart at sheet scale where the
+silhouette is all you get. And `gface.js` leaves it alone: every other
+feature slides a little with the gaze because it is painted on a
+turning face, but hair IS the head, and a second offset slides the cut
+off the skull.
+
 ### The face is APPLIED, and that is what makes it animate
 
 Nothing is carved and nothing is welded: each eye, brow, nose, mouth

@@ -7,6 +7,7 @@
 // places itself through `L.at`.
 import { Body } from './body.js';
 import { Crest } from './crest.js';
+import { Hair } from './hair.js';
 import { Eyes } from './eyes.js';
 import { Brows } from './brows.js';
 import { Nose } from './nose.js';
@@ -19,5 +20,5 @@ import { Blush } from './blush.js';
 // face out into a snout that fought the head's own silhouette. What
 // carries a species turned out to be the EARS and the eye patches, not
 // a second lump of geometry.
-export const GPARTS = [Body, Crest, Eyes, Brows, Nose, Mouth, Blush];
+export const GPARTS = [Body, Crest, Hair, Eyes, Brows, Nose, Mouth, Blush];
 export const GPART_BY_ID = Object.fromEntries(GPARTS.map(p => [p.id, p]));

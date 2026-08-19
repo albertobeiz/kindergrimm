@@ -196,6 +196,55 @@ export function skullSurface(preset, { scale = 1, width = 1, height = 1, depth =
   const p = { ...SKULL_DEFAULTS, ...base };
   p.width *= width; p.height *= height; p.depth *= depth;
 
+  // ---- the PROFILE: the cage, read continuously ------------------------
+  // The mesh is the skull; this is the same cage as a function, which is
+  // what HAIR is lofted from. It has to be the same numbers — a hair cap
+  // built off its own idea of where the head is would float or sink the
+  // moment a different preset rolled.
+  //
+  // `y` is CAGE HEIGHT: +1 the crown, −1 the chin, and BELOW −1 is off
+  // the head, where hair hangs. Down there the radii are frozen at the
+  // cheek (`FALL_FROM`) rather than the chin's, because hair falls from
+  // the widest part of the head and drops straight — taking the chin's
+  // radius would taper long hair to a point like a paintbrush.
+  const FALL_FROM = -.55;
+  const lv = p.levels;
+
+  function ringAt(y) {
+    const yy = Math.max(y, FALL_FROM);
+    let i = 0;
+    while (i < lv.length - 2 && lv[i + 1][0] < yy) i++;
+    const a = lv[i], b = lv[i + 1];
+    const t = Math.min(1, Math.max(0, (yy - a[0]) / ((b[0] - a[0]) || 1)));
+    return { hw: lerp(a[1], b[1], t), hd: lerp(a[2], b[2], t),
+             zOff: lerp(a[3], b[3], t) };
+  }
+
+  /**
+   * a point on (or off) the surface, by ANGLE rather than by cage grid.
+   * `ang` 0 is the front (+z), running to the toy's left. `infl` pushes
+   * out along the cross-section: 1 is the skin, 1.08 a hair cap over it,
+   * .97 buried inside.
+   *
+   * The rounded-square blend is `place()`'s, rewritten for an angle: take
+   * the point on the unit SQUARE at this angle and lerp it toward the
+   * unit circle by `round`. Any other blend and the hair would part
+   * company with the head on the squarer presets.
+   */
+  function pointAt(y, ang, infl = 1) {
+    const { hw, hd, zOff } = ringAt(y);
+    const cx = Math.sin(ang), cz = Math.cos(ang);
+    const m = Math.max(Math.abs(cx), Math.abs(cz)) || 1;
+    const sx = cx / m, sz = cz / m;                  // on the unit square
+    const h = Math.hypot(sx, sz) || 1;
+    const s = lerp(1, 1 / h, p.round);               // …lerped to the circle
+    const x = sx * s * hw * p.width * infl;
+    let z = sz * s * hd * p.depth * infl + zOff;
+    // the same flat face the skull has, or a fringe would bulge through it
+    z = Math.min(z, p.facePlane + p.faceTilt * y);
+    return [x * scale, y * p.height * scale, z * scale];
+  }
+
   const mesh = subdivideN(buildCage(p), p.subdiv);
   const { verts, faces } = mesh;
   for (const v of verts) { v[0] *= scale; v[1] *= scale; v[2] *= scale; }
@@ -277,6 +326,7 @@ export function skullSurface(preset, { scale = 1, width = 1, height = 1, depth =
     mesh,                       // { verts, faces } — hand this to skullGeometry
     minY, maxY, maxX, maxZ,
     pick,
+    profile: { pointAt, ringAt, height: p.height * scale },
     /** silhouette half-width at height y (mesh frame). */
     halfWidthAt(y) {
       const f = (y - minY) / (maxY - minY) * BINS - .5;

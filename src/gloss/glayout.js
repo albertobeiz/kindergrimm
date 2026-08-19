@@ -30,6 +30,7 @@ import { mouthReach, mouthSpan } from './gparts/mouth.js';
 // never disagree (see gshape.js and gskull.js)
 import { surfT, surfN } from './gshape.js';
 import { skullSurface } from './gskull.js';
+import { HAIR_BY_ID, INK, mix, luma } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
 // feature starts wrapping onto the side of the head where the camera
@@ -43,7 +44,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // Both branches define the same six things and nothing downstream
   // knows which branch ran: rx/ry/rz (extents), cy (centre height —
   // the floor is y = 0), topY (the crown), at/top/hwAt.
-  let rx, ry, rz, exp = 2, cy, topY, at, top, hwAt, skull = null;
+  let rx, ry, rz, exp = 2, cy, topY, at, top, hwAt, skull = null, profile = null;
 
   if (form === 'head') {
     // THE SKULL — modeled, not described. A control cage put through
@@ -56,6 +57,9 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     cy = -skull.minY;
     topY = cy + skull.maxY;
     rx = skull.maxX; ry = (skull.maxY - skull.minY) / 2; rz = skull.maxZ;
+    // the cage as a function — what HAIR is lofted from, so a cap can
+    // never disagree with the head it is sitting on
+    profile = skull.profile;
 
     const cast = (dx, dy, dz) =>
       // the jittered retry is for a ray grazing an edge exactly —
@@ -244,10 +248,42 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     return at(sgn * lo, ay);
   }
 
+  // HAIR'S COLOUR, resolved once. Two parts read it — the hair itself
+  // and the BROW, which has to be the same head's hair or the face
+  // reads as somebody else's eyebrows glued on. That is exactly the
+  // "anything two parts must agree on lives here" rule.
+  let hairHex = HAIR_BY_ID[P.hair?.color]?.hex ?? INK;
+  const hasHair = !!(P.hair && P.hair.style !== 'bald' && profile);
+
+  // HAIR HAS TO COME OFF THE HEAD IT IS ON. Skin and hair are rolled
+  // from two independent tables, so nothing stops caramel hair landing
+  // on caramel skin — and a third of the sheet came out with a haircut
+  // you could only find by its silhouette. Where the two are within a
+  // sixth of each other in luma, the hair is pushed the way it is
+  // already leaning, hardest when the clash is worst.
+  //
+  // A TIE GOES DARKER: hair darker than skin is the overwhelmingly
+  // common pairing, and it is the one that reads at sheet scale.
+  // This is not the painted-shadow rule being broken — nothing here is
+  // standing in for a shadow. It is two objects that must not be the
+  // same colour, which is the same job `luma` was written for.
+  if (hasHair) {
+    const NEED = .17;
+    const d = luma(hairHex) - luma(colors.body);
+    if (Math.abs(d) < NEED)
+      hairHex = mix(hairHex, d > .02 ? '#FFF6EC' : INK,
+                    .18 + .42 * (NEED - Math.abs(d)) / NEED);
+  }
+
   return {
     rx, ry, rz,
     form, exp,                 // the body's shape family, for the part
     skull: skull?.mesh,        // the skull's arrays, for the body part to stamp
+    profile,                   // …and as a function, for the hair
+    hair: hairHex,
+    // pulled toward ink: a platinum brow at full strength vanishes, and
+    // an ink brow under blonde hair belongs to a different face
+    browColor: hasHair ? mix(hairHex, INK, .38) : INK,
     H: topY, W: rx * 2,
     cy,                        // the body's centre, sitting on the floor
     s: B.r,                    // the one number every feature scales off

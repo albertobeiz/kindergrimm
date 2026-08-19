@@ -151,7 +151,11 @@ export function buildGloss(recipe, { materialFor } = {}) {
     // carries its surface normal as `n`, and the two silently collide
     // in the spec literal — an array reaches Math.pow and every vertex
     // goes NaN. It happened; the key is different so it cannot again.
-    const geo = spec.type === 'skull' ? skullGeometry(spec.skull)
+    // `mesh` is arrays built elsewhere and stamped here — the skull
+    // (gskull.js) and the hair (ghair.js). `skull` is the old name for
+    // it and still works.
+    const geo = spec.type === 'mesh' || spec.type === 'skull'
+      ? skullGeometry(spec.mesh ?? spec.skull)
       : spec.type === 'solid'
       ? solidGeometry(spec.rx, spec.ry, spec.rz, spec.exp ?? 2, spec.dome)
       : plateGeometry(spec);
@@ -160,7 +164,11 @@ export function buildGloss(recipe, { materialFor } = {}) {
     // feature may wear — nobody knits an eye, and a plate's UVs could
     // not carry a stitch even if somebody did.
     const shell = spec.id === 'body';
-    const mesh = new THREE.Mesh(geo, materialFor(finish, spec.color, shell));
+    // A spec may NAME its finish. Hair is the only thing that does, and
+    // it has to: a wool humanoid is a knitted head, not a knitted
+    // haircut, and hair reading as the same pour as the face loses the
+    // one edge that separates them at sheet scale.
+    const mesh = new THREE.Mesh(geo, materialFor(spec.finish ?? finish, spec.color, shell));
     mesh.name = spec.id;
 
     if (spec.pos) {
@@ -175,10 +183,12 @@ export function buildGloss(recipe, { materialFor } = {}) {
       if (spec.offset) { mesh.translateX(spec.offset[0]); mesh.translateY(spec.offset[1]); }
     }
 
-    // Only the body casts. A face feature lies flush against a body
-    // that is already casting, and the key's blur would smear its
-    // shadow back across the very face it is sitting on.
-    mesh.castShadow = spec.id === 'body';
+    // Only the body casts, and whatever ASKS to. A face feature lies
+    // flush against a body that is already casting, and the key's blur
+    // would smear its shadow back across the very face it sits on —
+    // but hair is a real volume standing off the head, and hair that
+    // casts nothing reads as paint.
+    mesh.castShadow = spec.id === 'body' || !!spec.cast;
     mesh.userData.shut = !!spec.shut;
     // how far this feature may slide when the toy looks somewhere, in
     // its own plane. A pupil gets most of its white; a white eye gets

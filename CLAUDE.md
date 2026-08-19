@@ -192,6 +192,27 @@ file look like a phantom `SyntaxError`.
   the half-width out, the mouth ~77% down. Guessing put the face too
   high and too small twice. Measure with `__probe` in the lab console
   and average over ~30 seeds — one toy is not a proportion.
+- **Hair is the humanoid's, and one curve is the whole haircut.**
+  `ghair.js` lofts a shell over the skull off the skull's own profile;
+  the hem — `front` / `side` / `back` in cage height — is the entire
+  silhouette, so adding a cut is one row in its `STYLE` table and a
+  pixie and a bob are the same mesh. Four things there were each paid
+  for by a bad sheet: the BACK must be far lower than the front (hair
+  goes to the nape, or every short cut is an acorn cap); the SIDES
+  must sit below the front (or the head is cut on a straight line —
+  the same acorn head-on); the hem blends by ANGLE, never `cos(ang)`
+  (a cosine eats the temples and cheeks); and long cuts hold the face
+  arc further round via `open`, or they close into a hood.
+- Hair is **thin at the cut, thick over the crown**. Even thickness is
+  the acorn from the inside. Tails and the ahoge are tubes (`strand`);
+  a tail's stand-off scales with the HEAD, never the hair's length —
+  scaled by length it doubled the toy's width and the sheet shrank the
+  face to half its neighbours' to fit the cell.
+- Hair colour is its own table in `gpalette.js`, never the body
+  palette, and the LAYOUT owns the two facts that are about the PAIR:
+  the brow is the hair pulled toward ink, and hair within a sixth of
+  the skin in luma gets pushed off it (a third of the sheet vanished
+  into its own face before that guard; now 4%).
 - A humanoid's mouth is a **small line**, not a maw. Two reasons and
   both matter: the reference mouth is a stroke a fraction of an eye
   wide, and a big mouth also REACHES further, so the layout's

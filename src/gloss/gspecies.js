@@ -112,11 +112,20 @@ export const GSPECIES = {
       // one. Weighted round-first for the same reason.
       body:   { wide: [1, 1], tall: [1, 1], deep: [1, 1],
                 skull: { bun: 32, trapezoid: 26, square: 24, oval: 18 } },
-      // hair does the silhouette work the ears do for everyone else —
-      // but FRENTE DESPEJADA: the reference foreheads are bare, so
-      // bald leads and the `mop`, which is the one style that covers
-      // the brow, is dealt behind the two that leave it open
-      crest:  { style: { none: 34, tuft: 26, mop: 22, curl: 18 }, size: [.6, .9] },
+      // NO CREST. Ears and horns are the other species' silhouette
+      // work; a humanoid's is its HAIR, which is a part of its own now
+      // (`hair.js`) and owns the whole crown. The three ink plates that
+      // stood in for hair here — tuft, mop, curl — were a placeholder
+      // and are not dealt to anybody any more.
+      crest:  { style: { none: 100 } },
+      // THE HAIRCUT, and it is most of the character. Weighted the way
+      // a room of people is: short and medium carry it, the very long
+      // cuts and the tied-up ones are the ones you notice. `bald` stays
+      // in at a few percent because a bald chibi is a real character
+      // and the skull is good enough to show off.
+      hair:   { style: { bob: 13, pixie: 12, bowl: 11, long: 10, side: 9,
+                         crop: 8, wavy: 8, curly: 8, twin: 6, pony: 6,
+                         hime: 4, spiky: 3, buns: 3, bald: 4 } },
       // THE WHOLE CATALOGUE ROLLS. The orb is the humanoid's signature
       // and keeps the biggest slice, but every other eye in the table
       // is reachable — a face this simple gets its variety from the

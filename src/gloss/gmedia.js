@@ -220,6 +220,17 @@ const FINISH = {
     clearcoat: .25, clearcoatRoughness: .5, envMapIntensity: .9,
   }),
 
+  // HAIR. Glossier and harder than skin, because on a molded figure the
+  // hair really is a separate, shinier piece — and because the head
+  // needs the two to read apart at sheet scale, where the silhouette is
+  // all you get. A tight-ish coat gives the banded highlight that says
+  // hair; going full `glossy` made it a plastic helmet.
+  hair: c => new THREE.MeshPhysicalMaterial({
+    color: c, roughness: .44, metalness: 0,
+    clearcoat: .6, clearcoatRoughness: .22, envMapIntensity: 1,
+    sheen: .3, sheenRoughness: .45, sheenColor: lift(c, .35),
+  }),
+
 };
 
 /**

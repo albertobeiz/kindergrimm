@@ -156,7 +156,12 @@ function buildSlot(s, recipe = null) {
     // row above — that headroom is the difference between a bunny
     // keeping its head and shrinking it to a pebble to hold its ears.
     (budget * 1.28) / B.h,
-    (CELL_W * TOY) / B.w,
+    // and SIDEWAYS the same bargain, for the same reason: twin tails
+    // and a pair of rabbit ears are both wider than the head they are
+    // on, and fitted hard they shrank the face to half its
+    // neighbours'. 1.2 × the toy's share is .89 of a cell, so the
+    // widest still leaves a lane between itself and the next one.
+    (CELL_W * TOY * 1.2) / B.w,
   );
   const holder = new THREE.Group();
   holder.position.set(s.x, s.y, 0);

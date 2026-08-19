@@ -17,12 +17,13 @@ const STYLE = {
   bunny: { outline: 'rect', wf: .42, hf: 1.2, r: 1, inner: .55, lean: .16, tall: true },
   horns: { outline: 'tri',  wf: .4, hf: .78,  inner: 0,  lean: .55, tone: 'warm' },
   stubs: { outline: 'ellipse', wf: .36, hf: .52, inner: 0, lean: .3, tone: 'warm' },
-  // --- HAIR: the humanoid's silhouette work. Ink, like the doodle's
-  // pen, and centred on the crown instead of paired at the sides.
-  tuft:  { hair: 'tuft' },                                  // three spikes, fanned
-  mop:   { hair: 'mop', outline: 'wobble', wf: 1.55, hf: .95 },  // a ragged cap
-  curl:  { hair: 'curl', outline: 'band', curve: 'spiral', wf: .5, hf: .09 }, // the baby curl
 };
+
+// Three hair styles lived here — `tuft`, `mop`, `curl`, ink plates
+// standing on the crown. They were a placeholder for a real haircut and
+// they are gone: hair is `hair.js` now, a lofted shell over the skull
+// with a hem, a colour table and a finish of its own. The crest is back
+// to what it is good at, which is ears and horns.
 
 export const CREST_STYLES = Object.keys(STYLE);
 
@@ -30,9 +31,8 @@ export const Crest = {
   id: 'crest', label: 'ears', order: 2,
 
   gen: (rng, C) => ({
-    style: C.pick(rng, 'style', [['none', 24], ['bear', 19], ['cat', 17], ['bunny', 13],
-                                 ['horns', 11], ['stubs', 9],
-                                 ['tuft', 3], ['mop', 2], ['curl', 2]]),
+    style: C.pick(rng, 'style', [['none', 26], ['bear', 20], ['cat', 18], ['bunny', 14],
+                                 ['horns', 12], ['stubs', 10]]),
     spread: C.range(rng, 'spread', .45, .78), // out along the crown, ±1 is the side
     size: C.range(rng, 'size', .7, .95),      // × the head's own radius
   }),
@@ -48,40 +48,6 @@ export const Crest = {
     const st = STYLE[C.style];
     if (!st) return;
     const u = Math.min(L.rx, L.ry) * .5 * C.size;
-
-    // HAIR stands on the crown, not out at the sides, so it takes its
-    // own road: ink plates centred on `L.top(0)`, bases buried the
-    // same way an ear's is so a lock can never hover.
-    if (st.hair) {
-      const d = u * .28;
-      if (st.hair === 'tuft') {
-        // three spikes fanned about the crown, the middle one tallest
-        for (const k of [-1, 0, 1]) {
-          const a = L.top(k * C.spread * .38);
-          const hh = u * (k === 0 ? .95 : .72), ww = u * .26;
-          add({ type: 'plate', id: `hair${k + 1}`, outline: 'tri', flip: true,
-                w: ww, h: hh, p: a.p, n: [a.n[0] * .45, a.n[1] * .45, 1],
-                roll: -k * .38, d, bevel: Math.min(d * .5, ww * .5),
-                offset: [0, hh * .5], color: L.ink });
-        }
-      } else if (st.hair === 'mop') {
-        // a ragged cap hugging the crown; nearly half of it is buried
-        const a = L.top(0), w = u * st.wf, h = u * st.hf;
-        add({ type: 'plate', id: 'hair', outline: 'wobble',
-              w, h, p: a.p, n: [0, .3, 1], d, bevel: d * .4,
-              offset: [0, h * .4], color: L.ink });
-      } else {
-        // the single baby curl: a spiral STROKE standing above the
-        // crown — a curve, not a new outline, same as the dizzy eye
-        const a = L.top(0), w = u * st.wf, h = u * st.hf;
-        add({ type: 'plate', id: 'hair', outline: 'band', curve: 'spiral',
-              w, h, tube: h,
-              p: a.p, n: [0, .35, 1], d: d * .6, bevel: d * .2,
-              offset: [0, w * .75], color: L.ink });
-      }
-      return;
-    }
-
     const w = u * st.wf, h = u * st.hf * (st.tall ? 1 : 1);
     const d = u * .3;
 

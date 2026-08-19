@@ -47,7 +47,9 @@ export const Brows = {
             w: r * st.wf, h: r * st.tf,
             p: a.p, n: a.n, roll: st.roll * side,
             d: r * .22, bevel: r * st.tf * .5,
-            proud: r * .1, color: L.ink });
+            // the head's own hair, pulled toward ink by the layout —
+            // ink brows under blonde hair read as somebody else's
+            proud: r * .1, color: L.browColor ?? L.ink });
     }
   },
 };

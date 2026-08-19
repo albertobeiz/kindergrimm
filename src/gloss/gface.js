@@ -174,6 +174,13 @@ export function createGlossFace(built, opts = {}) {
           m.translateX(gx * u * .07);
           m.translateY(gy * u * .04);
           m.scale.set(r.scale.x, r.scale.y * mouthSY, r.scale.z);
+        } else if (id.startsWith('hair')) {
+          // HAIR DOES NOT RIDE. Every other feature slides a little with
+          // the gaze because it is painted on a face that is turning.
+          // Hair is not on the face, it IS the head — the group's own
+          // spring already carries it, and a second offset on top slides
+          // the whole cut off the skull.
+          continue;
         } else {
           m.translateX(gx * u * .09);          // nose, cheeks: they ride
           m.translateY(gy * u * .07);

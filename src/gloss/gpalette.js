@@ -67,6 +67,52 @@ export const PALETTE_IDS = PALETTES.map(p => p.id);
 export const PALETTE_DEAL_IDS = PALETTE_IDS.filter(id => id !== 'skin');
 export const PALETTE_BY_ID = Object.fromEntries(PALETTES.map(p => [p.id, p]));
 
+// ---------------------------------------------------------------
+// HAIR. Its own table, and that is the point: hair is never the body's
+// colour. A toy's five-colour set is what makes a shelf look like one
+// product line; a HEAD's hair is what tells two of them apart, so it is
+// dealt from here instead, exactly as `INK` sits outside the palettes.
+//
+// Weighted, because frequency is art direction here too. The naturals
+// carry the line — a sheet where a third of the heads are mint is a
+// toy shelf again, not a cast of characters — and the dyed half is the
+// treat. `ink` leads: black hair is the commonest hair there is, and it
+// is the one value already doing every brow and eye in the lab.
+// ---------------------------------------------------------------
+export const HAIR_COLORS = [
+  { id: 'ink',      label: 'black',    hex: '#2B2422', w: 15 },
+  { id: 'espresso', label: 'espresso', hex: '#3B2820', w: 11 },
+  { id: 'chocolate',label: 'chocolate',hex: '#4E3527', w: 10 },
+  { id: 'chestnut', label: 'chestnut', hex: '#6B4430', w: 10 },
+  { id: 'caramel',  label: 'caramel',  hex: '#9A6C3E', w: 8 },
+  { id: 'honey',    label: 'honey',    hex: '#C0913F', w: 6 },
+  { id: 'blonde',   label: 'blonde',   hex: '#DFC072', w: 6 },
+  { id: 'platinum', label: 'platinum', hex: '#E4D8BC', w: 4 },
+  { id: 'ginger',   label: 'ginger',   hex: '#BC5A2C', w: 5 },
+  { id: 'ash',      label: 'ash',      hex: '#7E776C', w: 4 },
+  { id: 'silver',   label: 'silver',   hex: '#C3BFB6', w: 4 },
+  // the dyed half — a treat, never the rule
+  { id: 'rose',     label: 'rose',     hex: '#DE8397', w: 4 },
+  { id: 'lilac',    label: 'lilac',    hex: '#A08FC4', w: 4 },
+  { id: 'mint',     label: 'mint',     hex: '#84C1A6', w: 3 },
+  { id: 'sky',      label: 'sky',      hex: '#7BA2D2', w: 3 },
+  { id: 'plum',     label: 'plum',     hex: '#65456E', w: 3 },
+];
+
+export const HAIR_IDS = HAIR_COLORS.map(c => c.id);
+export const HAIR_BY_ID = Object.fromEntries(HAIR_COLORS.map(c => [c.id, c]));
+export const HAIR_WEIGHTS = HAIR_COLORS.filter(c => c.w > 0).map(c => [c.id, c.w]);
+
+/** a → b by t, in hex. For the brow, which is the hair's own colour
+ *  pulled toward ink: a platinum brow at full strength disappears, and
+ *  an ink one on blonde hair reads as somebody else's eyebrows. */
+export function mix(a, b, t) {
+  const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16);
+  const c = [16, 8, 0].map(s =>
+    Math.round(((A >> s) & 255) + (((B >> s) & 255) - ((A >> s) & 255)) * t));
+  return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
 /** how dark a colour reads, 0..1 — used to keep a feature off a body
  *  it would vanish against, never to invent a colour. */
 export function luma(hex) {
