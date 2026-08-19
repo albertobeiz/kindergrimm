@@ -315,14 +315,21 @@ file look like a phantom `SyntaxError`.
   Size the bridge off the lens centre's world x, not off a face
   coordinate — those are not the same unit and it came out floating.
 - There are **four bodies**: sphere and cube (the exponent), plus
-  `rock` and `slime` — the same ball with its surface BENT in `formK`,
-  radially, so `surfT` still finds it. Fixed harmonics for the rock, or
-  it boils. And a bent surface's normal is NOT the gradient (that
-  describes the ellipsoid it moved away from): use two finite-
-  difference tangents and CHECK the cross product's sign against the
-  outward ray rather than reasoning about it — guessed wrong, every
-  feature on a rock faced inward. Deal them weighted; uniform made the
-  bent pair 40% of a sheet.
+  `rock` and `slime`, which are PROFILED — a surface of revolution over
+  `formRad(form, az, v)`, the horizontal radius at normalised height.
+  A rock is flat on the bottom and domed on top (with fixed harmonics
+  for lumps, or it boils); a slime is a drop, wide round base to a soft
+  point. A radial displacement cannot make either and was tried: it
+  moves a ball's surface but keeps its topology of extents, so nothing
+  can sit flat and no peak can close early.
+- A profiled surface's normal is NOT the gradient (that describes the
+  ellipsoid the profile replaced): use two finite-difference tangents,
+  and CHECK the cross product's sign against the outward ray rather
+  than reasoning about it — guessed wrong, every feature on a rock
+  faced inward. `hwAt` must read the profile too, and the FACE follows
+  the width: the upper-half rule would put a slime's eyes on its spike,
+  so a form may bias the face down. Deal them weighted; uniform made
+  the profiled pair 40% of a sheet.
 - Adding an eye style is one entry in `eyes.js`'s `STYLE` table — and
   ADD IT TO THE WEIGHTS TOO. A style in the table but not in the
   `wpick` list is unreachable and nothing will tell you; that has

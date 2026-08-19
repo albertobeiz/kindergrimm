@@ -269,34 +269,50 @@ export function plateGeometry(spec) {
 // squareness knob.
 
 /**
- * A RADIAL DISPLACEMENT on top of the superellipsoid — the two body
- * forms an exponent cannot reach.
+ * THE PROFILED FORMS — a SILHOUETTE, not a displacement.
  *
- *   rock   lumpy and faceted. Three fixed harmonics of the DIRECTION,
- *          which is what makes it the same rock every rebuild: driven
- *          by anything rolled per frame it would boil, and a solid has
- *          no business shimmering (same rule as `wobble`).
- *   slime  a droplet — narrow domed crown swelling to a wide base, so
- *          it reads as something that settled rather than something
- *          that was moulded.
+ * `formRad(form, az, v)` gives the horizontal radius, as a fraction of
+ * `rx`/`rz`, at normalised height `v` (−1 the floor, +1 the top). The
+ * body is then a surface of revolution over it, and the sphere is the
+ * special case `sqrt(1 − v²)` — so a profile is a drop-in replacement
+ * and every face part lands on it unchanged.
  *
- * The exponent stays the shape family's; this only moves the surface
- * in and out along the ray, so `surfT` still finds it and the layout
- * still lands features on it.
+ *   rock   FLAT ON THE BOTTOM, domed on top. The lower profile holds
+ *          nearly full width to the last few percent and then turns a
+ *          rounded rim; the upper one is exactly a hemisphere. Plus a
+ *          little azimuthal lumping, from FIXED harmonics — rolled per
+ *          frame it would boil, and a solid has no business shimmering
+ *          (the same rule as `wobble`).
+ *   slime  A DROP. A wide round base swelling to its widest at the
+ *          waist and tapering to a soft POINT at the top, which is the
+ *          whole silhouette of the thing.
+ *
+ * This replaced a radial multiplier that could produce neither. Scaling
+ * a ball in and out along the ray moves its surface but keeps its
+ * TOPOLOGY of extents: the bottom stays as round as the top, so a rock
+ * could not sit flat, and the peak of a drop is a place where the
+ * horizontal radius reaches zero early — which is a fact about the
+ * profile and not something a radius scale can say.
  */
-export function formK(form, dx, dy, dz, amp = 1) {
-  if (form === 'rock')
-    return 1 + amp * (.09 * Math.sin(4.1 * dx + 1.3) * Math.cos(3.3 * dy + .7)
-                    + .07 * Math.sin(2.9 * dz + 2.1)
-                    + .05 * Math.cos(5.2 * dx * dz - .9));
-  if (form === 'slime')
-    // widening downward, and easing rather than coning: a straight
-    // taper reads as a party hat turned over
-    return 1 + amp * .30 * smoothK(-dy);
-  return 1;
+const pw = (a, b) => Math.pow(Math.max(0, a), b);
+
+export function formRad(form, az, v, amp = 1) {
+  if (form === 'rock') {
+    // flat foot, hemispherical dome
+    const rr = v < 0 ? pw(1 - pw(-v, 16), 1 / 2.2) : Math.sqrt(pw(1 - v * v, 1));
+    return rr * (1 + amp * (.085 * Math.sin(3 * az + 1.1) * Math.cos(2.4 * v + .5)
+                          + .055 * Math.sin(5 * az - .7)));
+  }
+  if (form === 'slime') {
+    // a round base under a tapering peak. The exponent above the waist
+    // is what makes the tip a POINT: at 1/2 it would be another dome.
+    return v < 0 ? pw(1 - pw(-v, 3.2), 1 / 2.2) : pw(1 - pw(v, 1.25), 1 / 1.25);
+  }
+  return null;                        // sphere and cube use `surfT`
 }
-const smoothK = u => { const t = Math.min(1, Math.max(0, (u + 1) * .5));
-                       return t * t * (3 - 2 * t); };
+
+/** is this form drawn from a profile rather than from the exponent? */
+export const isProfiled = form => form === 'rock' || form === 'slime';
 
 /** how far along direction (dx,dy,dz) the surface sits. */
 export function surfT(dx, dy, dz, rx, ry, rz, n) {
@@ -343,22 +359,33 @@ export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0,
                                Math.PI * domeFrom, Math.PI * (dome - domeFrom))
     : new THREE.SphereGeometry(1, 72, 54);
   const pos = g.attributes.position, nor = g.attributes.normal;
+  const profiled = isProfiled(form);
   for (let i = 0; i < pos.count; i++) {
     // a sphere vertex is already a unit direction
     const dx = pos.getX(i), dy = pos.getY(i), dz = pos.getZ(i);
-    const t = surfT(dx, dy, dz, rx, ry, rz, n) * formK(form, dx, dy, dz, amp);
+    if (profiled) {
+      // a surface of REVOLUTION over the profile: the sphere vertex
+      // gives the height and the azimuth, the profile gives the rest.
+      // At the poles the horizontal part is nothing and the profile is
+      // nothing with it, so the row collapses to the axis — which is
+      // the tip of a drop, for free.
+      const hl = Math.hypot(dx, dz) || 1;
+      const rr = formRad(form, Math.atan2(dx, dz), dy, amp);
+      pos.setXYZ(i, dx / hl * rr * rx, dy * ry, dz / hl * rr * rz);
+      continue;
+    }
+    const t = surfT(dx, dy, dz, rx, ry, rz, n);
     const x = dx * t, y = dy * t, z = dz * t;
     pos.setXYZ(i, x, y, z);
     const nn = surfN(x, y, z, rx, ry, rz, n);
     nor.setXYZ(i, nn[0], nn[1], nn[2]);
   }
   pos.needsUpdate = true; nor.needsUpdate = true;
-  // A DISPLACED surface's normal is no longer the implicit gradient —
-  // the gradient describes the ellipsoid the displacement moved away
-  // from. Averaging the triangles is right here and wrong on a plain
-  // cube (that is the whole reason `surfN` exists), so it is done only
-  // where the surface was actually bent.
-  if (form) g.computeVertexNormals();
+  // A PROFILED surface's normal is not the implicit gradient — the
+  // gradient describes the ellipsoid the profile replaced. Averaging
+  // the triangles is right here and wrong on a plain cube (that is the
+  // whole reason `surfN` exists), so it is done only for the profiles.
+  if (profiled) g.computeVertexNormals();
   g.computeBoundingSphere();
   return g;
 }

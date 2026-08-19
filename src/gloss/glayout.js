@@ -30,13 +30,14 @@ import { mouthReach, mouthSpan } from './gparts/mouth.js';
 // the ONE copy of each surface: the same functions/arrays the body is
 // BUILT from, so where a feature lands and where the skin is can
 // never disagree (see gshape.js and gskull.js)
-import { surfT, surfN, formK } from './gshape.js';
+import { surfT, surfN, formRad, isProfiled } from './gshape.js';
 import { HAIR_BY_ID, INK, mix, luma, pickAcc } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
 // feature starts wrapping onto the side of the head where the camera
 // cannot see it.
 const SPREAD = .92;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 export function buildGlossLayout(P, colors, form = 'sphere') {
   const B = P.body;
@@ -66,13 +67,20 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // `rock` and `slime` keep the ball's exponent and bend the SURFACE
   // instead — see `formK`. A cube is the only form that reads `corner`.
   const exp = form === 'cube' ? B.corner : 2;
-  const bent = form === 'rock' || form === 'slime';
+  const bent = isProfiled(form);
   const amp = B.lump ?? 1;
   const cy = ry, topY = ry * 2;
 
-  /** a direction → the point on the body. */
+  /** a direction → the point on the body. A profiled form reads its
+   *  silhouette off `formRad`; the ball and the block push the
+   *  direction out to the implicit surface. */
   const surf = d => {
-    const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp) * formK(form, d[0], d[1], d[2], amp);
+    if (bent) {
+      const hl = Math.hypot(d[0], d[2]) || 1;
+      const rr = formRad(form, Math.atan2(d[0], d[2]), d[1], amp);
+      return [d[0] / hl * rr * rx, d[1] * ry, d[2] / hl * rr * rz];
+    }
+    const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp);
     return [d[0] * t, d[1] * t, d[2] * t];
   };
   const dirAt = (u, v) => { const cv = Math.cos(v);
@@ -111,20 +119,38 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   }
   function top(t) {
     const d = [Math.sin(t), Math.cos(t), 0];
-    const s2 = surfT(d[0], d[1], 0, rx, ry, rz, exp) * formK(form, d[0], d[1], 0, amp);
-    const x = d[0] * s2, y = d[1] * s2;
-    return { p: [x, y + cy, 0], n: surfN(x, y, 0, rx, ry, rz, exp) };
+    const q = surf(d);
+    if (!bent) return { p: [q[0], q[1] + cy, q[2]], n: surfN(q[0], q[1], q[2], rx, ry, rz, exp) };
+    // the same finite-difference tangents `at` uses, in the crown's
+    // own plane — the implicit gradient is the wrong surface's here
+    const e = .012;
+    const a = surf([Math.sin(t + e), Math.cos(t + e), 0]);
+    const b = surf([Math.sin(t - e), Math.cos(t - e), 0]);
+    let n = [a[0] - b[0], a[1] - b[1], 0];
+    const l = Math.hypot(n[0], n[1]) || 1;
+    n = [n[1] / l, -n[0] / l, 0];             // the in-plane perpendicular
+    if (n[0] * q[0] + n[1] * q[1] < 0) { n[0] = -n[0]; n[1] = -n[1]; }
+    return { p: [q[0], q[1] + cy, q[2]], n };
   }
-  // a bent form is never NARROWER than the ball it came from at the
-  // face, so the ball's own half-width stays the conservative guard
-  const hwAt = () => rx;
+  // THE REAL HALF-WIDTH at a height. On a ball this is just `rx`, but a
+  // profiled form is narrow where its profile is narrow — the peak of a
+  // drop is most of its height — and a feature guarded against `rx`
+  // there sails straight off the silhouette.
+  const hwAt = bent
+    ? yy => rx * formRad(form, 0, clamp((yy - cy) / ry, -1, 1), 0)
+    : () => rx;
 
   // WHERE THE FACE'S ROWS SIT, published once. Brows must clear the
   // eyes, a nose must land between the eyes and the mouth, cheeks sit
   // outboard of both — all of that is agreement BETWEEN parts, so it
   // belongs here rather than in each part reaching into another's
   // params.
-  const eyeX = P.eyes.x, eyeY = P.eyes.y;
+  // THE FACE FOLLOWS THE WIDTH. On a drop the upper half is the peak,
+  // and the lab's own upper-half rule would put the eyes on a spike —
+  // so a form may pull the face down toward the part of itself that is
+  // actually wide enough to carry one.
+  const faceBias = form === 'slime' ? -.34 : 0;
+  const eyeX = P.eyes.x, eyeY = P.eyes.y + faceBias;
   const eyeR = B.r * P.eyes.size;
   // a cube's face is FLAT, so its eyes have room a sphere's curvature
   // never gives them. Only the eyes grow — the nose, mouth and cheeks
@@ -180,7 +206,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
                                                         // a maw is EYES tall
                  - eyeR * .1;                           // and air between them
 
-  let mouthY = P.mouth.y;
+  let mouthY = P.mouth.y + faceBias;
   let mouthFit = 1;
   if (surfY(mouthY) > clearY) {
     let lo = -1.05, hi = mouthY;                        // lo: as low as a mouth may go

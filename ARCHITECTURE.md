@@ -1568,26 +1568,46 @@ from going dead flat.
 - a **variant** of an existing part = one entry in that part's `STYLE`
   table. This is the cheap lever and it should be the usual answer.
 - a **palette** = one entry in `gpalette.js`.
-- a **body** = a case in `formK` and one entry in `BODY_WEIGHTS`.
-  There are four: `sphere` and `cube` are the superellipsoid with its
-  squareness knob, and `rock` and `slime` are that same ball with its
-  surface BENT — fixed harmonics of the direction for one (fixed, so
-  it is the same rock every rebuild; rolled per frame it would boil),
-  a downward swell for the other. The bend is radial, so `surfT` still
-  finds the surface and the whole face catalogue still lands on it.
+- a **body** = a case in `formRad` and one entry in `BODY_WEIGHTS`.
+  There are four. `sphere` and `cube` are the superellipsoid with its
+  squareness knob; `rock` and `slime` are **profiled** — a surface of
+  revolution over a SILHOUETTE, `formRad(form, az, v)` giving the
+  horizontal radius at normalised height v. The sphere is the special
+  case `sqrt(1 − v²)`, so a profile is a drop-in replacement and the
+  whole face catalogue lands on it unchanged.
 
-  > A BENT surface's normal is NOT the implicit gradient — the gradient
-  > describes the ellipsoid the displacement moved away from, so a
-  > feature on a rock's lump would tilt as if the lump were not there.
-  > Two finite-difference tangents give the real one. Their cross
-  > product's SIGN follows the parametrisation, which is not worth
-  > reasoning about: it was guessed wrong and every feature on a rock
-  > faced into it. Check it against the outward ray instead.
+  > **A radial displacement cannot make either of them,** which is what
+  > they were built as first. Scaling a ball in and out along the ray
+  > moves its surface but keeps its topology of extents: the bottom
+  > stays as round as the top, so a rock cannot sit FLAT, and the peak
+  > of a drop is a place where the horizontal radius reaches zero early
+  > — a fact about the profile, not something a radius scale can say.
+
+  `rock` is flat on the bottom (the lower profile holds nearly full
+  width to the last few percent, then turns a rounded rim) and domed on
+  top, plus a little azimuthal lumping from FIXED harmonics — rolled
+  per frame it would boil. `slime` is a drop: a wide round base
+  swelling to the waist and tapering to a soft point.
+
+  > A PROFILED surface's normal is not the implicit gradient — the
+  > gradient describes the ellipsoid the profile replaced, so a feature
+  > on a rock's lump would tilt as if the lump were not there. Two
+  > finite-difference tangents give the real one. Their cross product's
+  > SIGN follows the parametrisation, which is not worth reasoning
+  > about: it was guessed wrong and every feature on a rock faced into
+  > it. Check it against the outward ray instead.
+
+  Two more things a profile changes. `hwAt` must read it — the peak of
+  a drop is most of its height, and a feature guarded against `rx` up
+  there sails off the silhouette. And the FACE follows the width: the
+  lab's upper-half rule would put a slime's eyes on its spike, so a
+  form may bias the face down toward the part of itself wide enough to
+  carry one.
 
   Dealt weighted, never uniformly: the ball and the block carry the
-  shelf and the two bent forms are treats. Dealt evenly they were 40%
-  of a sheet, and a rock is a strong enough silhouette that four in a
-  row stop being a surprise.
+  shelf and the two profiles are treats. Dealt evenly they were 40% of
+  a sheet, and a rock is a strong enough silhouette that four in a row
+  stop being a surprise.
 
 ### The face life (`gface.js`)
 
