@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>drawai — the photo, social card</title>
+<!--
+  The share card for photo.html, and a sibling of og.html next door:
+  the words in the page's own hand up top, and under the rule the
+  thing itself — a strip of a real shot, made by the scene it
+  advertises, so the card cannot promise a photo the generator does
+  not take.
+
+  Two ways to give it that strip, and the fast one is the usual one:
+
+  1. A SHOT YOU PICKED. Open /photo, reshoot until you like the class,
+     press S, and hand the saved PNG over as ?plate= (it can live
+     anywhere — serve the folder it is in):
+
+       python3 serve.py 8140 &
+       python3 serve.py 8141 ~/Downloads &
+       chrome --headless=new --hide-scrollbars --window-size=1200,630 \
+              --virtual-time-budget=8000 --screenshot=assets/photo-og.png \
+       'http://localhost:8140/assets/photo-og.html?plate=http://localhost:8141/photo-440569354.png'
+
+  2. NO PLATE — the page boots src/photo.js and shoots itself, which
+     is what keeps this file honest when nobody has a PNG to hand.
+     Headless Chrome has no GPU, so it needs software GL, and this
+     page is the one with an SSAO stack: budget minutes, not seconds.
+     Without the swiftshader flags the strip comes out blank — that is
+     how the old menu thumbnail was made.
+
+       chrome --headless=new --hide-scrollbars \
+              --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader \
+              --window-size=1200,630 --virtual-time-budget=90000 \
+              --screenshot=assets/photo-og.png \
+              'http://localhost:8140/assets/photo-og.html?seed=440569354'
+
+  The menu thumbnail is the same plate, cropped 3:2 like every other
+  card in assets/thumbs:
+
+       sips -c 1724 2586 shot.png --out /tmp/c.png
+       sips -z 320 480 -s format jpeg -s formatOptions 84 /tmp/c.png \
+            --out assets/thumbs/photo.jpg
+-->
+<style>
+  :root { --ink: #1f1d1a; --paper: #f6f1e5; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; background: var(--paper); }
+  body { display: flex; flex-direction: column; color: var(--ink);
+         font: 22px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
+
+  #words { position: relative; padding: 60px 78px 0; }
+  #words .url { position: absolute; top: 68px; right: 78px; font-size: 19px; opacity: .34; }
+  h1 { font-size: 50px; font-weight: normal; letter-spacing: 8px; line-height: 1.24; }
+  #words p { margin-top: 22px; font-size: 21px; opacity: .5; }
+
+  /* the rule nobody ruled straight — the menu's, and the how card's */
+  .rule {
+    height: 4px; margin: 24px 78px 0;
+    background: var(--ink); opacity: .8;
+    clip-path: polygon(0 30%, 12% 0, 34% 55%, 61% 8%, 83% 62%, 100% 22%,
+                       100% 78%, 78% 100%, 52% 44%, 26% 96%, 8% 40%, 0 82%);
+  }
+
+  /* the shot itself, full bleed to the bottom edge */
+  #strip { position: relative; flex: 1; overflow: hidden; margin-top: 18px; }
+  #strip img, #strip #stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* the class sits low in the frame: hold the heads, drop the floor */
+  #strip img { object-fit: cover; object-position: 50% 74%; display: block; }
+  #strip canvas { display: block; }
+</style>
+</head>
+<body>
+  <div id="words">
+    <div class="url">kindergrimm.vercel.app/photo</div>
+    <h1>one seed,<br>one class portrait</h1>
+    <p>a giant, its class, the weather and the garden — lit like a toy shelf</p>
+  </div>
+  <div class="rule"></div>
+  <div id="strip"></div>
+
+  <script type="importmap">{ "imports": {
+    "three": "../vendor/three.module.js",
+    "three/examples/jsm/postprocessing/Pass.js": "../vendor/postprocessing/Pass.js",
+    "postprocessing": "../vendor/pp-stub.js"
+  } }</script>
+  <script type="module">
+    const q = new URLSearchParams(location.search);
+    const strip = document.getElementById('strip');
+    const plate = q.get('plate');
+
+    if (plate) {
+      const img = new Image();
+      img.src = plate;
+      strip.appendChild(img);
+      await img.decode();
+    } else {
+      // the scene shoots its own card. #stage is what src/photo.js
+      // looks for, and the HUD it cannot find it does without
+      const stage = document.createElement('div');
+      stage.id = 'stage';
+      strip.appendChild(stage);
+      await import('../src/photo.js');
+      const seed = q.get('seed');
+      if (seed) window.__photo.reshoot(+seed);
+      // and then let the page's OWN loop develop the cast — do not
+      // pump it from here: every frame is a full SSAO pass, and on
+      // software GL that is seconds each. The time budget buys them.
+    }
+    document.body.dataset.ready = '1';
+  </script>
+</body>
+</html>
