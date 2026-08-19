@@ -31,14 +31,7 @@ import { gcastingFor, pickGBody, GSPECIES, GSPECIES_WEIGHTS } from './gspecies.j
 
 export { GPARTS, GPART_BY_ID };
 
-export const BODY_IDS = ['sphere', 'cube', 'head'];
-
-// What an UN-OPINIONATED species may be poured as. The head form is
-// not in it: it is the humanoid's skull, dealt only where a species
-// asks for it — a third of the wildcard shelf in chibi heads read as
-// a different product line, not variety. The editor and the filters
-// still list all of BODY_IDS, so it can always be pinned by hand.
-const DEALT_BODIES = ['sphere', 'cube'];
+export const BODY_IDS = ['sphere', 'cube'];
 
 export function newGRecipe(seed = (Math.random() * 1e9) | 0) {
   return { seed, species: null, body: null, palette: null, colorIx: null,
@@ -73,7 +66,7 @@ export function ensureGParams(recipe) {
   // the species FIRST: it loads the dice for everything after it —
   // the body form it prefers, and every part's own rolls
   recipe.species ??= wpick(rng, GSPECIES_WEIGHTS);
-  recipe.body ??= pickGBody(recipe.species, rng, DEALT_BODIES);
+  recipe.body ??= pickGBody(recipe.species, rng, BODY_IDS);
   // A species may NAME a palette and a material, and exactly one does.
   // The standing rule is that it must not — what a toy is made of is a
   // separate lever, and a lavender panda is still a panda. The

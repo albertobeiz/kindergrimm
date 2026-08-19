@@ -48,12 +48,9 @@ parts under `src/gloss/`; it shares nothing with the other two but
 `rng.js`, and ARCHITECTURE.md §12 is its contract. It is all SOLID
 geometry — an SDF version was built and thrown away, because an eye is
 a thousandth of a body and resolving one meant resolving the whole
-grid at eye scale. Three bodies: a sphere and a cube (one
-superellipsoid with a squareness knob) and the humanoid's chibi
-**skull**, which is MODELED — a control cage put through
-Catmull-Clark subdivision in `gskull.js`, ported from the
-`chibi-skull` side project. Then a catalogue of faces, a colour from
-`gpalette.js` and one of the materials in `gmedia.js`. `glosscrowd.html` is its
+grid at eye scale. Two bodies — a sphere and a cube, which are
+one superellipsoid with a squareness knob — then a catalogue of faces,
+a colour from `gpalette.js` and one of the materials in `gmedia.js`. `glosscrowd.html` is its
 crowd, and it is the DRAWN crowd's page, not the voxel one: a flat 7×5
 grid straight on, toys hung on a wall close enough to catch their own
 shadows, and the animation entirely face — gaze, blink, expressions
@@ -192,19 +189,25 @@ file look like a phantom `SyntaxError`.
   the half-width out, the mouth ~77% down. Guessing put the face too
   high and too small twice. Measure with `__probe` in the lab console
   and average over ~30 seeds — one toy is not a proportion.
-- **Hair is the humanoid's, and one curve is the whole haircut.**
-  `ghair.js` lofts a shell over the skull off the skull's own profile;
-  the hem — `front` / `side` / `back` in cage height — is the entire
-  silhouette, so adding a cut is one row in its `STYLE` table and a
-  pixie and a bob are the same mesh. Four things there were each paid
-  for by a bad sheet: the BACK must be far lower than the front (hair
-  goes to the nape, or every short cut is an acorn cap); the SIDES
-  must sit below the front (or the head is cut on a straight line —
-  the same acorn head-on); the hem blends by ANGLE, never `cos(ang)`
-  (a cosine eats the temples and cheeks); and long cuts hold the face
-  arc further round via `open`, or they close into a hood.
-- Hair is **thin at the cut, thick over the crown**. Even thickness is
-  the acorn from the inside. Tails and the ahoge are tubes (`strand`);
+- **Hair is the humanoid's, and it GROWS from the crown.** `ghair.js`
+  parametrises by (azimuth, height), which converges at the top pole on
+  its own — that convergence is the whorl, and a head of hair is a fan
+  of ~16 tapered CLUMPS radiating from it, over a thin scalp that stops
+  a gap between two of them being a window onto the face. One smooth
+  shell was tried and it is a helmet: what makes hair hair is many
+  overlapping pieces with thickness, each ending in its own point.
+- The hem — where a clump ends, by azimuth — is still the whole
+  haircut, and the ORDERING is the read: fringe high, temples lower,
+  nape lowest. Level all round is a cap sitting on the head; level from
+  nose to ear cuts the head on a straight line. Both were acorns.
+- Clumps: layer them one way ONLY (sinking half of them drops them
+  under the scalp and the rest read as melon slices); never make them
+  identical (same width at same spacing is a lampshade); and floor the
+  width so the narrowest still overlaps its slice, or gaps show skin.
+- Hair is **rubber, not lacquer** — matte with sheen for the rim. A
+  clearcoat puts one hotspot on a shape whose job is many soft clumps.
+  Do NOT get matte by dimming `envMapIntensity`: that just makes every
+  colour darker than its swatch. Tails and the ahoge are tubes;
   a tail's stand-off scales with the HEAD, never the hair's length —
   scaled by length it doubled the toy's width and the sheet shrank the
   face to half its neighbours' to fit the cell.
@@ -262,23 +265,14 @@ file look like a phantom `SyntaxError`.
   rounded cube. `sphere` pins n at 2 so it stays exact; `cube` reads
   the rolled `corner`. Both `gshape.solidGeometry` and `L.at` use the
   same n, so they can never disagree about where the surface is.
-- **But a shape you can name the parts of wants a cage, not an
-  exponent.** The `head` form (the humanoid's chibi skull) is MODELED
-  in `gskull.js` — a control cage of `[y, halfWidth, halfDepth,
-  zOffset]` rings put through Catmull-Clark subdivision, ported from
-  the `chibi-skull` project. A chin-tuck knob was bolted onto the
-  superellipsoid first, in three shapes (linear = flowerpot,
-  quadratic = teardrop, smoothstep + jaw depth = still not a skull),
-  and a whole day went into it: one formula cannot say *full cheeks
-  here, chin this wide, face flat in front*. `L.at` raycasts the
-  SAME arrays the body is built from, so features land on the real
-  subdivided surface.
-- Use the skull presets **exactly**, with `wide`/`tall`/`deep` pinned
-  to 1. Every stretch of a sculpted cage walks it back toward an egg,
-  and that is what put a row of carrots on the shelf. Variety is
-  PICKING a different skull, never squashing one. There are four —
-  `bun`, `trapezoid`, `square`, `oval`; the study's fifth (`triangle`)
-  was removed for reading as a carrot with no neck under it.
+- A modeled chibi **skull** was a third body form for a while
+  (`gskull.js`, a subdivided control cage) and is gone. Keep the
+  lesson — *a shape you can name the parts of wants a cage, not an
+  exponent*, since a chin-tuck knob on the superellipsoid failed in
+  three different shapes — but keep the verdict too: this lab makes
+  TOYS, and an anatomically-argued skull looked like it had wandered
+  in off another shelf. A form that is right in isolation and wrong in
+  the line-up is wrong.
 - Adding an eye style is one entry in `eyes.js`'s `STYLE` table — and
   ADD IT TO THE WEIGHTS TOO. A style in the table but not in the
   `wpick` list is unreachable and nothing will tell you; that has

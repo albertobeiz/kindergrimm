@@ -18,12 +18,23 @@ export const Hair = {
     style: C.pick(rng, 'style', [['bald', 100]]),
     // hair has its own colour table, never the body's palette
     color: C.pick(rng, 'color', HAIR_WEIGHTS),
-    // how far the cap stands off the skull, × the style's own volume.
-    // WIDE, because thin-and-flat against thick-and-soft is most of the
-    // difference between two heads with the same cut.
-    vol: C.range(rng, 'vol', .72, 1.5),
+    // how far the clumps stand off the head. WIDE, because flat-and-
+    // sleek against big-and-soft is most of the difference between two
+    // heads wearing the same cut.
+    vol: C.range(rng, 'vol', .7, 1.5),
+    // how many clumps: fewer and chunkier, or more and finer
+    density: C.range(rng, 'density', .8, 1.25),
+    // how far each clump wraps past its own slice — the overlap
+    width: C.range(rng, 'width', .9, 1.15),
+    // how unequal the tips are. This is what stops a hem reading as a
+    // line somebody ruled across the head.
+    jag: C.range(rng, 'jag', .6, 1.5),
     wave: C.range(rng, 'wave', .7, 1.35),
     part: C.range(rng, 'part', .7, 1.3),
+    // ONE seed for every per-clump variation on the head. It has to be
+    // a rolled parameter rather than live randomness: hair is rebuilt
+    // on every boil frame, and anything re-rolled per frame shimmers.
+    seed: rng.r(0, 6.283),
     // the tied-up styles
     // Just BEHIND the ear — about a right angle off the nose. Tied
     // further round than that the tail hangs behind the head and the
@@ -48,6 +59,10 @@ export const Hair = {
     vol: { label: 'volume', range: [.5, 2] },
     wave: { label: 'wave', range: [0, 2] },
     part: { label: 'parting', range: [0, 2] },
+    density: { label: 'clumps', range: [.6, 1.6] },
+    width: { label: 'clump width', range: [.7, 1.4] },
+    jag: { label: 'ragged tips', range: [0, 2] },
+    seed: { label: 'shuffle', range: [0, 6.28] },
     tailY: { label: 'tied at', range: [.2, .8] },
     tailLen: { label: 'tail length', range: [.4, 2.4] },
     tailAng: { label: 'tails apart', range: [1.2, 2.6] },

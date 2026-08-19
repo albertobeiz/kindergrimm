@@ -1,10 +1,6 @@
-// THE BODY. A sphere or a cube — one superellipsoid with a squareness
-// knob — or the humanoid's SKULL: a modeled control cage put through
-// subdivision (gskull.js), of which this part rolls the PRESET. The
-// face catalogue never knows which: features place through `L.at`,
-// which is the only thing a new form has to provide.
-import { SKULL_IDS } from '../gskull.js';
-
+// THE BODY. A sphere or a cube, which are one superellipsoid with a
+// squareness knob. The face catalogue never knows which: features
+// place through `L.at`, the only thing a form has to provide.
 export const Body = {
   id: 'body', label: 'body', order: 0,
 
@@ -28,10 +24,6 @@ export const Body = {
     // whole modeled cage (gskull.js), so the pick IS the silhouette.
     // The neutral egg and the bun carry the shelf; the pointier and
     // squarer skulls are the exceptions.
-    // Round-first. `oval` is the long one and it is the treat, not the
-    // rule — the pointier `triangle` was removed outright (gskull.js).
-    skull: C.pick(rng, 'skull', [['bun', 32], ['trapezoid', 26], ['square', 24],
-                                 ['oval', 18]]),
   }),
 
   meta: () => ({
@@ -40,17 +32,9 @@ export const Body = {
     tall: { label: 'height', range: [.7, 1.4] },
     deep: { label: 'depth', range: [.7, 1.2] },
     corner: { label: 'squareness', range: [2, 8] },
-    skull: { label: 'skull', pick: SKULL_IDS },
   }),
 
   build(add, P, L) {
-    // the skull arrives as the SAME arrays the layout raycast the
-    // features against — one surface, shared, never rebuilt
-    if (L.skull) {
-      add({ type: 'skull', id: 'body', skull: L.skull,
-            pos: [0, L.cy, 0], color: L.body });
-      return;
-    }
     add({ type: 'solid', id: 'body',
           rx: L.rx, ry: L.ry, rz: L.rz, exp: L.exp, pos: [0, L.cy, 0],
           color: L.body });

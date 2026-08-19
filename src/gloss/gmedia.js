@@ -220,15 +220,26 @@ const FINISH = {
     clearcoat: .25, clearcoatRoughness: .5, envMapIntensity: .9,
   }),
 
-  // HAIR. Glossier and harder than skin, because on a molded figure the
-  // hair really is a separate, shinier piece — and because the head
-  // needs the two to read apart at sheet scale, where the silhouette is
-  // all you get. A tight-ish coat gives the banded highlight that says
-  // hair; going full `glossy` made it a plastic helmet.
+  // HAIR, and it is RUBBER rather than lacquer. It was a hard clearcoat
+  // first, on the theory that a molded figure's hair is a separate,
+  // shinier piece — and it came out a plastic wig, because a tight coat
+  // puts one travelling hotspot on a shape whose whole job is to read as
+  // many soft overlapping clumps. The reference figures are matte vinyl:
+  // a broad, soft falloff, no hotspot, and the form carried by the
+  // shading across it instead of by a highlight sitting on top.
+  //
+  // The SHEEN is what stops that going dead flat — a retroreflective
+  // lobe lights the rim, so each clump keeps an edge against the one
+  // behind it, which is the one thing this shape cannot afford to lose.
   hair: c => new THREE.MeshPhysicalMaterial({
-    color: c, roughness: .44, metalness: 0,
-    clearcoat: .6, clearcoatRoughness: .22, envMapIntensity: 1,
-    sheen: .3, sheenRoughness: .45, sheenColor: lift(c, .35),
+    color: c, roughness: .88, metalness: 0,
+    clearcoat: 0,
+    sheen: .7, sheenRoughness: .62, sheenColor: lift(c, .3),
+    // NOT dimmed to get the matte look. A rough lobe with no coat is
+    // already reading only the room's average, so turning the room
+    // down as well just makes every colour darker than the swatch it
+    // came from — rose came out maroon. Matte is the ROUGHNESS's job.
+    envMapIntensity: .9,
   }),
 
 };

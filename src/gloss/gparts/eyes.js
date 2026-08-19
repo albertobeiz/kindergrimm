@@ -13,6 +13,8 @@
 // back it has to be real geometry: depth in the rim and the ink sunk
 // into it, not a colour standing in for a shadow.
 
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
 // outline + the numbers that outline reads.
 //   `shut`   already a closed lid, so the blink leaves it alone
 //   `sclera` a WHITE eye with a dark pupil laid on it — two plates,
@@ -49,7 +51,7 @@ const STYLE = {
   // does. Rectangular pupil to match, and because the white is so tall
   // the pupil has a long way to travel in it — this is the most
   // expressive gaze in the catalogue.
-  slab:     { outline: 'rect', wf: .84, hf: 1.85, r: .3, sclera: true, border: .24,
+  slab:     { outline: 'rect', wf: .88, hf: 1.40, r: .3, sclera: true, border: .24,
               pupilF: .68, pupilHF: .44, pupilOutline: 'rect', pupilR: .3 },
   // a straight-sided diamond: the sparkle's own family, walked out to
   // pinch .5 where the quadratic control lands on the chord
@@ -157,8 +159,8 @@ export const Eyes = {
     // on the face sizes off this, so a low roll shrinks the whole face
     // to a stamp in the middle of a big blank head. At .14 there were
     // several a sheet.
-    size: C.range(rng, 'size', .15, .205),   // × body radius
-    tall: C.range(rng, 'tall', .85, 1.3),
+    size: C.range(rng, 'size', .142, .182),  // × body radius
+    tall: C.range(rng, 'tall', .9, 1.16),
     proud: rng.r(.1, .3),     // × eye size
   }),
 
@@ -167,8 +169,8 @@ export const Eyes = {
     wink: { label: 'wink', bool: true },
     x: { label: 'apart', range: [.1, .8] },
     y: { label: 'height', range: [-.4, .6] },
-    size: { label: 'size', range: [.05, .3] },
-    tall: { label: 'stretch', range: [.6, 1.8] },
+    size: { label: 'size', range: [.05, .26] },
+    tall: { label: 'stretch', range: [.6, 1.5] },
     proud: { label: 'relief', range: [0, .7] },
     pupilY: { label: 'pupil parks', range: [-1, 1] },
     lid: { label: 'eyelid', bool: true },
@@ -188,7 +190,17 @@ export const Eyes = {
       const shut = E.wink && side > 0;
       const st = shut ? STYLE.happy : STYLE[E.style];
       const a = L.onFace(side * L.eyeX, L.eyeY);
-      const w = r * st.wf, h = r * st.hf * (st.shut ? 1 : E.tall);
+      const w = r * st.wf;
+      let h = r * st.hf * (st.shut ? 1 : E.tall);
+      // AN EYE HAS AN ASPECT. `tall` multiplies a style that already
+      // chose its own proportions, so a tall style at a tall roll came
+      // out a bar and a wide one came out a slot — and on the
+      // rectangles, whose corner radius is a fraction of the SHORTER
+      // half-extent, a bar also rounds its ends into a capsule and
+      // stops being the shape it named. Clamped here rather than by
+      // timid ranges, because the ranges are what the variety is.
+      // Bands are exempt: `sleepy` and `happy` are meant to be lines.
+      if (st.outline !== 'band') h = clamp(h, w * .55, w * 1.95);
       const d = r * .34;
 
       // THE BALL EYE takes its own road: three solids, no plates.

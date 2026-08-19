@@ -96,22 +96,18 @@ export const GSPECIES = {
 
   humanoid: {
     label: 'humanoid',
-    // ALWAYS the head form: a humanoid is its skull, and a spherical
-    // one was just a toy with hair on.
-    body: { head: 100 },
+    // A humanoid is a TOY like the rest of the shelf — a ball or a
+    // block with a face and a haircut. It had a modeled skull for a
+    // while and the skull was the wrong object.
+    body: { sphere: 62, cube: 38 },
     // the one species that names its own palette and material — see
     // the note in `ensureGParams`. A humanoid is made of SKIN.
     palette: 'skin',
     material: 'skin',
     cast: {
-      // THE PRESETS ARE THE SHAPE, used exactly as the chibi-skull
-      // study left them — the multipliers are pinned to 1, because
-      // every one of them stretches a sculpted head back toward an
-      // egg, which is what put carrots on the shelf. Variety here
-      // comes from PICKING a different skull, never from squashing
-      // one. Weighted round-first for the same reason.
-      body:   { wide: [1, 1], tall: [1, 1], deep: [1, 1],
-                skull: { bun: 32, trapezoid: 26, square: 24, oval: 18 } },
+      // near-square and softly cornered: the head is the stage the
+      // face and the hair are set on, so it stays out of the way
+      body:   { wide: [1, 1.12], tall: [.92, 1], corner: [2.6, 3.6] },
       // NO CREST. Ears and horns are the other species' silhouette
       // work; a humanoid's is its HAIR, which is a part of its own now
       // (`hair.js`) and owns the whole crown. The three ink plates that
@@ -150,7 +146,7 @@ export const GSPECIES = {
                          sleepy: 5, happy: 5, box: 3, round: 3, square: 3,
                          sparkle: 2, diamond: 2, cross: 2, crescent: 1, star: 1,
                          heart: 1, ring: 1, flower: 1, angry: 1, wobble: 1, spiral: 1 },
-                size: [.2, .25], x: [.6, .72], y: [-.42, -.28], lid: .3 },
+                size: [.15, .185], x: [.58, .70], y: [-.38, -.24], lid: .3 },
       // a face with a real nose more often than the toys get one
       nose:   { style: { none: 62, button: 14, dot: 12, cat: 4, heart: 4, beak: 2, snout: 2 },
                 warm: .6 },

@@ -1227,123 +1227,96 @@ time.
 > the centre. Use the centre and every feature on a squashed body tips
 > off true.
 
-### The skull — when a formula is the wrong tool (`gskull.js`)
+### The skull that was here, and why it went
 
-Two bodies are one superellipsoid with a squareness knob. The third,
-the **humanoid's head**, is MODELED: a low-poly control cage — a stack
-of rings, each one line of `[y, halfWidth, halfDepth, zOffset]` — put
-through Catmull-Clark subdivision. It is the modeling workflow in
-code, solved in the `chibi-skull` side project and ported whole.
+For a while the humanoid had a third body form: `head`, a modeled chibi
+skull — a control cage of rings put through Catmull-Clark subdivision,
+ported from the `chibi-skull` study, with `L.at` raycasting the real
+subdivided surface. It worked, and it is gone.
 
-The reason is worth keeping, because a day was spent the other way. A
-chin-tuck knob was bolted onto the superellipsoid — linear first (a
-flowerpot), then quadratic (a teardrop), then a smoothstep with a
-second knob for jaw depth — and none of it read as a skull. One
+Two things are worth keeping from it. The first is why it existed: a
+chin-tuck knob was bolted onto the superellipsoid first, in three
+shapes (linear = flowerpot, quadratic = teardrop, smoothstep with a
+jaw-depth knob = still not a skull), and none of it read, because one
 implicit formula cannot say *full cheeks here, chin this wide, face
-flat in front, brow forward of the jaw*; it can only say how round the
-whole thing is. A cage says all of it in seven lines, and every line is
-a number you can drag.
+flat in front*. **A shape you can name the parts of wants a cage, not
+an exponent.** That is true and still worth knowing.
 
-> **A shape you can name the parts of wants a cage, not an exponent.**
-> The knob family is right for a ball that is more or less square. The
-> moment the brief has anatomy in it — cheeks, chin, brow — the
-> formula is the wrong tool, and adding knobs makes it worse, not
-> closer.
+The second is why it left anyway: this lab makes TOYS. A sphere or a
+cube with a face on it is one; an anatomically-argued skull is a
+different product, and it sat on the shelf looking like it had wandered
+in. Everything the skull was carrying — the hair, the face catalogue,
+the proportions — turned out to sit on a ball perfectly well. A form
+that is right in isolation and wrong on the shelf is wrong.
 
-The layout's contract survives untouched: a body only has to provide
-`at(ax, ay)`, and the skull provides it by **raycasting its own mesh**
-from the centre. The mesh is star-shaped about the origin, so a ray
-hits exactly one front face, and the normal is interpolated from the
-smooth vertex normals at the hit — features land on the real
-subdivided surface, never on an approximation of it. The same arrays
-the layout cast against are handed to `skullGeometry`, so the surface
-the features sit on and the surface that is drawn are one object.
+### The hair (`ghair.js`) — it grows from the crown
 
-There are **four presets** — `bun`, `trapezoid`, `square`, `oval` —
-used with their multipliers pinned to 1. That pin is load-bearing:
-every stretch of a sculpted cage walks it back toward an egg, which is
-what put a row of carrots on the shelf. Variety comes from PICKING a
-different skull, never from squashing one. A fifth, `triangle` (full
-cranium over a chin a quarter as wide), was removed: with no neck or
-shoulders under it nothing stops the taper, and the eye follows it to
-a point.
+Hair is the humanoid's, and the fourth kind of thing the lab builds:
+not a plate and not a solid but a fan of grown CLUMPS.
 
-### The hair (`ghair.js`) — one curve is the whole haircut
+**It grows from the crown, and that is not a metaphor.** Hair is
+parametrised by (azimuth, height) on the body, and that parametrisation
+converges at the top pole by itself — every clump is a sliver up there
+and only opens out as it descends. So a head of hair is a fan of clumps
+radiating from one point on top, which is what a head of hair is. The
+convergence point is the whorl; nothing had to be built to put it
+there.
 
-Hair is the humanoid's, and it is the fourth kind of thing this lab
-builds: not a plate and not a solid but a **lofted shell** over the
-skull, subdivided like the skull itself and built off the skull's own
-profile, so a cap can never disagree with the head under it.
+An earlier version lofted one smooth shell and called it done. It was a
+helmet. What separates hair from a swim cap is that it is MANY
+overlapping pieces, each with thickness, each ending in its own point
+at its own height — so the silhouette is broken, the surface has
+grooves in it, and light finds edges to catch. The build is therefore:
 
-**The one idea.** A haircut is a single curve — the line where the
-hair stops. Run that line round the head and everything above it is
-hair, so the entire silhouette vocabulary is one function of azimuth
-(`hemAt`) fed by three numbers:
+- a **scalp**, thin and hugging, never the silhouette — without it the
+  sliver between two clumps is a window onto the face, which reads as a
+  bald patch. It reaches BELOW the nominal hem for exactly that reason.
+- ~16 **clumps**, tapered tiles at alternating depths, each running
+  from the crown to its own tip. They are built in (azimuth, height),
+  so every sample across a clump's width asks the body where its
+  surface is and the clump lies on a round head like a tile instead of
+  hovering off it like a card.
+- **pieces**: tails, buns and the ahoge, as tubes and balls.
 
-```
-        front ────╮                  ang 0 is the face
-                  ╰── side ──╮       y: +1 crown, −1 chin,
-                             ╰── back    below −1 is off the head
-```
+The hem — where each clump ENDS as a function of azimuth — is still the
+whole haircut, and still three numbers. A pixie and a bob differ only
+there. **The ordering is the read**: fringe high, temples lower, nape
+lowest. Level all round and the hair is a cap sitting on the head;
+level from nose to ear and the head is cut on a straight line. Both of
+those were acorns on a sheet before they were rules here.
 
-A pixie and a bob are the same mesh with a different hem. There is no
-separate long-hair model: below the chin the profile freezes the
-head's radius and the loft just keeps going down, which is what
-falling hair does. Adding a cut is one row in `STYLE`.
+Three things about the clumps were each paid for by a bad render:
 
-Four things about that curve were each paid for by a sheet that looked
-wrong:
+- **layers go one way only.** Sinking every other clump as well as
+  raising it dropped half of them under the scalp, and what was left
+  read as melon slices with grooves cut between them.
+- **they must not be identical.** Same width at same spacing tiles into
+  a lampshade — the eye reads the repeat before it reads the hair. Each
+  one is nudged off its slice and varies in width.
+- **the narrowest must still overlap its own slice.** Varying width
+  without a floor opens gaps, and a gap shows skin.
 
-- **The back is far lower than the front.** Hair carries on down to
-  the nape. Level all the way round, the shell is a ring sitting on
-  top of the head and every short cut is an **acorn cap**.
-- **The sides sit below the front.** The temple is where hair comes
-  down past the brow; level from nose to ear cuts the head on a
-  straight line, which is the same acorn seen head-on.
-- **The hem is driven by the ANGLE, not by `cos(ang)`.** A cosine
-  starts closing the moment it leaves the nose, so the hair swallowed
-  the temples and half the cheeks. Held flat to ~55° and released by
-  ~89°, it reads as a cut fringe with a face under it.
-- **Long cuts hold the face arc further round** (`open`). Falling from
-  the cheekbone, a long cut closes into a **hood** with a little face
-  at the bottom of it.
-
-The shell is **thin at the cut and thick over the crown** — hair has
-no volume where it was cut and all of it up top. An even thickness is
-the acorn again, from the inside.
-
-Everything else is one more small piece. Tails, the ahoge and any lock
-are **tubes** (`strand`), framed by parallel transport so they do not
-spin where the path turns vertical; a bun is the body's own solid. A
-tail's stand-off is scaled by the HEAD, never by the hair's length —
-scaled by length, waist-length tails swung a head-radius clear on each
-side and the sheet shrank the face to half its neighbours' to fit the
-cell.
+Hair is **rubber, not lacquer**. It had a hard clearcoat first, on the
+theory that a molded figure's hair is a separate shinier piece, and it
+came out a plastic wig: a tight coat puts one travelling hotspot on a
+shape whose whole job is to read as many soft overlapping clumps. It is
+matte now, with sheen for the rim so each clump keeps an edge against
+the one behind it. Note the near-miss there — do NOT get the matte look
+by dimming `envMapIntensity`, which just makes every colour darker than
+the swatch it came from; matte is the roughness's job.
 
 **Colour is its own table** (`HAIR_COLORS`), never the body's palette:
-the five-colour set is what makes a shelf one product line, and hair
-is what tells two heads apart. Naturals carry it and the dyed half is
-the treat. Two things are then true of a pair rather than of either
-one, so the LAYOUT owns both:
+the five-colour set is what makes a shelf one product line, and hair is
+what tells two heads apart. Two facts belong to the PAIR rather than to
+either colour, so the LAYOUT owns both: the brow is the head's own hair
+pulled toward ink, and hair within a sixth of the skin in luma is
+pushed off it — rolled independently, a third of the sheet had a
+haircut you could only find by its silhouette, and that is 4% now.
 
-- the **brow** is the head's own hair pulled toward ink — ink brows
-  under blonde hair belong to a different face;
-- hair within a sixth of the skin in luma is **pushed off it**, hardest
-  when the clash is worst. Rolled from two independent tables, a third
-  of the sheet came out with a haircut you could only find by its
-  silhouette; the guard takes that to 4%. A tie goes darker. This is
-  not the painted-shadow rule being broken — nothing is standing in for
-  a shadow, these are two objects that must not be the same colour.
-
-Hair casts a shadow (`spec.cast`) where no other feature does: it is a
-real volume standing off the head, and hair that casts nothing reads
-as paint. It also names its own **finish** — glossier and harder than
-skin, because on a molded figure the hair is a separate, shinier
-piece, and because the two must read apart at sheet scale where the
-silhouette is all you get. And `gface.js` leaves it alone: every other
-feature slides a little with the gaze because it is painted on a
-turning face, but hair IS the head, and a second offset slides the cut
-off the skull.
+Hair casts a shadow (`spec.cast`) where no other feature does, names
+its own finish, and `gface.js` leaves it alone: every other feature
+slides a little with the gaze because it is painted on a turning face,
+but hair IS the head, and a second offset slides the cut off the skull.
 
 ### The face is APPLIED, and that is what makes it animate
 

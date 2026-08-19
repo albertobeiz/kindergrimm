@@ -29,7 +29,6 @@ import { mouthReach, mouthSpan } from './gparts/mouth.js';
 // BUILT from, so where a feature lands and where the skin is can
 // never disagree (see gshape.js and gskull.js)
 import { surfT, surfN } from './gshape.js';
-import { skullSurface } from './gskull.js';
 import { HAIR_BY_ID, INK, mix, luma } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
@@ -44,74 +43,47 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // Both branches define the same six things and nothing downstream
   // knows which branch ran: rx/ry/rz (extents), cy (centre height —
   // the floor is y = 0), topY (the crown), at/top/hwAt.
-  let rx, ry, rz, exp = 2, cy, topY, at, top, hwAt, skull = null, profile = null;
+  const rx = B.r * B.wide;
+  // NEVER THINNER THAN SQUARE. Guaranteed here and not just in the
+  // part's ranges, because a species can cast its own `tall` and
+  // outvote them — that has already happened twice with sizes. One
+  // clamp in the layout and no profile can make a narrow head.
+  const ry = B.r * Math.min(B.tall, B.wide);
+  const rz = B.r * B.deep;
+  // The FORM is one exponent, not a second body of code: n = 2 is a
+  // ball, and squaring it off is turning that number up. A sphere is
+  // pinned at 2 so it stays exact; only a cube reads the roll.
+  //
+  // There WAS a third form here — `head`, a modeled chibi skull from a
+  // subdivided control cage. It is gone, and so is `gskull.js`. It was
+  // a good skull and it was the wrong object: this lab makes TOYS, and
+  // a sphere or a cube with a face on it is one. Everything the skull
+  // was carrying — the hair, the proportions, the face catalogue — sits
+  // on these two perfectly well, and one exponent is a knob you can
+  // scrub where a cage is a thing you have to sculpt.
+  const exp = form === 'cube' ? B.corner : 2;
+  const cy = ry, topY = ry * 2;
 
-  if (form === 'head') {
-    // THE SKULL — modeled, not described. A control cage put through
-    // Catmull-Clark subdivision (gskull.js); `at` raycasts the same
-    // mesh the body will be built from, so features sit on the real
-    // subdivided surface, never on an approximation of it.
-    skull = skullSurface(B.skull, {
-      scale: B.r, width: B.wide, height: B.tall, depth: B.deep,
-    });
-    cy = -skull.minY;
-    topY = cy + skull.maxY;
-    rx = skull.maxX; ry = (skull.maxY - skull.minY) / 2; rz = skull.maxZ;
-    // the cage as a function — what HAIR is lofted from, so a cap can
-    // never disagree with the head it is sitting on
-    profile = skull.profile;
-
-    const cast = (dx, dy, dz) =>
-      // the jittered retry is for a ray grazing an edge exactly —
-      // rare, but a null here would take the whole build down
-      skull.pick(dx, dy, dz) ?? skull.pick(dx + 1e-4, dy + 1e-4, dz);
-    at = (ax, ay) => {
-      const u = ax * SPREAD, v = ay * SPREAD;
-      const cv = Math.cos(v);
-      const h = cast(Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv);
-      return { p: [h.p[0], h.p[1] + cy, h.p[2]], n: h.n };
-    };
-    top = t => {
-      const h = cast(Math.sin(t), Math.cos(t), 0);
-      return { p: [h.p[0], h.p[1] + cy, h.p[2]], n: h.n };
-    };
-    hwAt = yy => skull.halfWidthAt(yy - cy);
-  } else {
-    rx = B.r * B.wide;
-    // NEVER THINNER THAN SQUARE. Guaranteed here and not just in the
-    // part's ranges, because a species can cast its own `tall` and
-    // outvote them — that has already happened twice with sizes. One
-    // clamp in the layout and no profile can make a narrow head.
-    ry = B.r * Math.min(B.tall, B.wide);
-    rz = B.r * B.deep;
-    // The FORM is one exponent, not a second body of code: n = 2 is a
-    // ball, and squaring it off is turning that number up. A sphere
-    // is pinned at 2 so it stays exact; only a cube reads the roll.
-    exp = form === 'cube' ? B.corner : 2;
-    cy = ry;
-    topY = ry * 2;
-
-    at = (ax, ay) => {
-      const u = ax * SPREAD, v = ay * SPREAD;
-      const cv = Math.cos(v);
-      // a direction, then pushed out to wherever the surface actually
-      // is; the normal is the GRADIENT of the implicit surface, never
-      // the direction from the centre — get this wrong and every
-      // feature on a squashed body tips, and on a cube they would all
-      // point at the corners instead of lying flat on the face
-      const d = [Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv];
-      const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp);
-      const x = d[0] * t, y = d[1] * t, z = d[2] * t;
-      return { p: [x, y + cy, z], n: surfN(x, y, z, rx, ry, rz, exp) };
-    };
-    top = t => {
-      const d = [Math.sin(t), Math.cos(t), 0];
-      const s = surfT(d[0], d[1], 0, rx, ry, rz, exp);
-      const x = d[0] * s, y = d[1] * s;
-      return { p: [x, y + cy, 0], n: surfN(x, y, 0, rx, ry, rz, exp) };
-    };
-    hwAt = () => rx;
+  function at(ax, ay) {
+    const u = ax * SPREAD, v = ay * SPREAD;
+    const cv = Math.cos(v);
+    // a direction, then pushed out to wherever the surface actually
+    // is; the normal is the GRADIENT of the implicit surface, never
+    // the direction from the centre — get this wrong and every
+    // feature on a squashed body tips, and on a cube they would all
+    // point at the corners instead of lying flat on the face
+    const d = [Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv];
+    const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp);
+    const x = d[0] * t, y = d[1] * t, z = d[2] * t;
+    return { p: [x, y + cy, z], n: surfN(x, y, z, rx, ry, rz, exp) };
   }
+  function top(t) {
+    const d = [Math.sin(t), Math.cos(t), 0];
+    const s2 = surfT(d[0], d[1], 0, rx, ry, rz, exp);
+    const x = d[0] * s2, y = d[1] * s2;
+    return { p: [x, y + cy, 0], n: surfN(x, y, 0, rx, ry, rz, exp) };
+  }
+  const hwAt = () => rx;
 
   // WHERE THE FACE'S ROWS SIT, published once. Brows must clear the
   // eyes, a nose must land between the eyes and the mouth, cheeks sit
@@ -253,7 +225,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // reads as somebody else's eyebrows glued on. That is exactly the
   // "anything two parts must agree on lives here" rule.
   let hairHex = HAIR_BY_ID[P.hair?.color]?.hex ?? INK;
-  const hasHair = !!(P.hair && P.hair.style !== 'bald' && profile);
+  const hasHair = !!(P.hair && P.hair.style !== 'bald');
 
   // HAIR HAS TO COME OFF THE HEAD IT IS ON. Skin and hair are rolled
   // from two independent tables, so nothing stops caramel hair landing
@@ -278,8 +250,9 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   return {
     rx, ry, rz,
     form, exp,                 // the body's shape family, for the part
-    skull: skull?.mesh,        // the skull's arrays, for the body part to stamp
-    profile,                   // …and as a function, for the hair
+    // the body as raw numbers — the only thing HAIR needs in order to
+    // grow on it, and the reason one hair generator covers both forms
+    shape: { rx, ry, rz, exp, cy },
     hair: hairHex,
     // pulled toward ink: a platinum brow at full strength vanishes, and
     // an ink brow under blonde hair belongs to a different face
