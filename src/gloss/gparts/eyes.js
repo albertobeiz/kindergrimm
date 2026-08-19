@@ -57,6 +57,39 @@ const STYLE = {
   // pinch .5 where the quadratic control lands on the chord
   diamond:  { outline: 'sparkle', wf: .92, hf: 1.18, pinch: .5 },
   square:   { outline: 'rect', wf: .66, hf: .7, r: .28 },
+
+  // --- THE MANGA FAMILY: white almond, big pupil, glint, lash -------
+  // Four styles on one construction: a pointed LEAF outline (round
+  // reads soft, leaf reads drawn), an ink border, a white, a pupil,
+  // and a heavy upper LASH — the band that is the whole manga read.
+  // The catchlight is a HOLE in the pupil (see `glint` in gshape.js):
+  // the sclera's white shows through negative space, so it is moulded
+  // geometry, never a dot painted on top of the clearcoat.
+  //
+  // `lash` is the upper lid's thickness as a fraction of the eye's
+  // height. It is NOT the rolled `lid` (a 40% chance on any eye): the
+  // lash IS this style, it comes down on the blink like a lid, and a
+  // style that wears one does not also roll the other.
+  manga:  { outline: 'leaf', wf: 1.0, hf: 1.22, sclera: true,
+            pupilF: .6, border: .3, lash: .34,
+            glints: [[-.28, .32, .22]] },
+  // the eye that fills the face. The layout cuts a big eye back to
+  // fit the head it is on, so this asks for everything and takes what
+  // fits — and a pupil that fills the white has almost nowhere to
+  // look, which is authentic: a chibi eye stares with the head.
+  chibi:  { outline: 'leaf', wf: 1.1, hf: 1.42, sclera: true,
+            pupilF: .84, pupilHF: .9, border: .3, lash: .3,
+            glints: [[-.26, .3, .24], [.36, -.3, .11]] },
+  // THE SHONEN EYE: a small pupil and a glint that eats a third of
+  // it. Thickest border and heaviest lash in the catalogue — the
+  // whole style is line work around a lot of white.
+  dbz:    { outline: 'leaf', wf: 1.02, hf: 1.14, sclera: true,
+            pupilF: .42, border: .34, lash: .4,
+            glints: [[-.2, .34, .4], [.44, -.38, .16]] },
+  // and the plainest manga eye: a solid ink leaf, no white, no lash.
+  // The pointed ends are the whole difference from `angry`'s round
+  // oval — at sheet scale a row of these reads as one drawn cast.
+  simple: { outline: 'leaf', wf: .84, hf: 1.1 },
   // --- the BALL eye: the one eye that is a solid, not a plate ---
   // A white sphere standing proud of the head, an ink bead sunk into
   // its front, and a hemisphere CAP in the body colour lying over the
@@ -123,9 +156,9 @@ export const Eyes = {
     // beads, white-and-pupil eyes and lidded ones — sparkles are OUR
     // habit, not his, and they drop to a treat
     style: C.pick(rng, 'style', [['pupil', 17], ['bead', 15], ['slab', 9], ['box', 8],
-                      ['googly', 8], ['oval', 8], ['sleepy', 6], ['happy', 6],
-                      ['cross', 5], ['round', 4], ['sparkle', 3], ['orb', 3],
-                      ['square', 2],
+                      ['googly', 8], ['manga', 7], ['simple', 5], ['oval', 8], ['sleepy', 6], ['happy', 6],
+                      ['chibi', 3], ['cross', 5], ['round', 4], ['sparkle', 3], ['orb', 3],
+                      ['square', 2], ['dbz', 3],
                       ['diamond', 2], ['crescent', 1], ['star', 1], ['ring', 1],
                       ['heart', 1], ['flower', 1], ['angry', 1], ['spiral', 1],
                       ['wobble', 1]]),
@@ -311,11 +344,17 @@ export const Eyes = {
         // not get to travel further up and slide out of its own eye.
         const roomY = h - ph;
         const park = roomY * E.pupilY;
+        // The bevel cannot be thicker than the smallest glint hole is
+        // wide, or the extrusion's bevel closes the hole at the face
+        // — the punched-out catchlight is the finest thing on this
+        // toy, and it gets to set the roundness.
+        const gmin = st.glints ? Math.min(...st.glints.map(g => g[2])) * pw : Infinity;
         add({ type: 'plate', id: id + 'Pupil',
-              outline: st.pupilOutline ?? 'ellipse',
+              outline: st.glints ? 'glint' : st.pupilOutline ?? 'ellipse',
+              g: st.glints,
               r: st.pupilR == null ? undefined : Math.min(pw, ph) * st.pupilR,
               p: a.p, n: a.n,
-              w: pw, h: ph, d: d * .55, bevel: d * .26,
+              w: pw, h: ph, d: d * .55, bevel: Math.min(d * .26, gmin * .8),
               proud: proud + d * .3, color: L.ink,
               offset: [0, park], anchorY: park,
               travel: [(w - pw) * .74, roomY * (1 - Math.abs(E.pupilY)) * .85] });
@@ -324,13 +363,24 @@ export const Eyes = {
         // it slides down as the toy blinks. It is the clearest thing
         // the separate-mesh face buys — a lid closing over a pupil
         // costs one translate and no geometry at all.
-        if (E.lid) {
+        // A MANGA style wears its LASH instead: the same band, built
+        // in and thicker, and the two never stack — the lash IS the
+        // lid, and a style that has one does not roll the other.
+        if (E.lid && !st.lash) {
           add({ type: 'plate', id: id + 'Lid', outline: 'band',
                 curve: 'arc', sag: -h * .34, tube: h * .3, h: h * .3,
                 p: a.p, n: a.n, w: w * 1.04,
                 d: d * .9, bevel: d * .3,
                 proud: proud + d * .42, color: L.ink,
                 offset: [0, h * .82], travel: ride, lidDrop: h * 1.05 });
+        }
+        if (st.lash) {
+          add({ type: 'plate', id: id + 'Lid', outline: 'band',
+                curve: 'arc', sag: -h * .34, tube: h * st.lash, h: h * st.lash,
+                p: a.p, n: a.n, w: w * 1.06,
+                d: d * .9, bevel: d * .3,
+                proud: proud + d * .42, color: L.ink,
+                offset: [0, h * .78], travel: ride, lidDrop: h * 1.08 });
         }
       }
 

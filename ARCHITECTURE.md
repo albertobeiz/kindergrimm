@@ -1249,61 +1249,66 @@ in. Everything the skull was carrying — the hair, the face catalogue,
 the proportions — turned out to sit on a ball perfectly well. A form
 that is right in isolation and wrong on the shelf is wrong.
 
-### The hair (`ghair.js`) — it grows from the crown
+### The hair (`ghair.js`) — one molded mass, carved
 
-Hair is the humanoid's, and the fourth kind of thing the lab builds:
-not a plate and not a solid but a fan of grown CLUMPS.
+Hair is the humanoid's, and the fourth kind of thing the lab builds.
+Getting its NOUN right took three attempts, and the sequence is the
+lesson:
 
-**It grows from the crown, and that is not a metaphor.** Hair is
-parametrised by (azimuth, height) on the body, and that parametrisation
-converges at the top pole by itself — every clump is a sliver up there
-and only opens out as it descends. So a head of hair is a fan of clumps
-radiating from one point on top, which is what a head of hair is. The
-convergence point is the whorl; nothing had to be built to put it
-there.
+1. **One smooth shell** — a helmet. Nothing broke the surface, nothing
+   caught the light: a swim cap.
+2. **Separate tiled clumps** — gaps opened onto bare skin, every tile
+   rim caught the studio as a glassy streak, and a head of loose tiles
+   has no VOLUME: it hugs the skull it was meant to stand off.
+3. **One thick closed mass with the clumps CARVED into it** — which is
+   what the reference figures actually are: a single piece of molded
+   vinyl, fat off the head, with grooves run from the crown and a hem
+   that drops to a point under each clump.
 
-An earlier version lofted one smooth shell and called it done. It was a
-helmet. What separates hair from a swim cap is that it is MANY
-overlapping pieces, each with thickness, each ending in its own point
-at its own height — so the silhouette is broken, the surface has
-grooves in it, and light finds edges to catch. The build is therefore:
+The build is one closed shell with torus topology: the outer surface
+climbs hem → crown, folds over, and the inner surface comes back down
+hugging the head — no caps, no seams, no bare skin, and the fold at the
+hem is the thick rounded rim every molded haircut has. Onto that:
 
-- a **scalp**, thin and hugging, never the silhouette — without it the
-  sliver between two clumps is a window onto the face, which reads as a
-  bald patch. It reaches BELOW the nominal hem for exactly that reason.
-- ~16 **clumps**, tapered tiles at alternating depths, each running
-  from the crown to its own tip. They are built in (azimuth, height),
-  so every sample across a clump's width asks the body where its
-  surface is and the clump lies on a round head like a tile instead of
-  hovering off it like a card.
-- **pieces**: tails, buns and the ahoge, as tubes and balls.
+- **grooves**: narrow notches in the outer radius at each clump
+  boundary. They converge at the crown because everything is
+  parametrised by (azimuth, height) and that converges at the pole by
+  itself — the whorl comes free. They FADE toward the crown, though:
+  their physical width goes to nothing up there, and at full depth the
+  whorl turns into a star of spikes.
+- **scallop**: the hem drops to a tip under each clump's middle,
+  sine-powered so the tip is a point and the shoulders are round, each
+  clump's depth jittered. An even hem reads as a cut line; a scalloped
+  one reads as hair ENDING.
+- boundaries are JITTERED off even spacing — the eye reads a repeat
+  before it reads the hair.
 
-The hem — where each clump ENDS as a function of azimuth — is still the
-whole haircut, and still three numbers. A pixie and a bob differ only
-there. **The ordering is the read**: fringe high, temples lower, nape
-lowest. Level all round and the hair is a cap sitting on the head;
-level from nose to ear and the head is cut on a straight line. Both of
-those were acorns on a sheet before they were rules here.
+The hem — front/side/back, by azimuth — is still the whole haircut, and
+the ORDERING is still the read: fringe high, temples lower, nape
+lowest. Level all round is a cap sitting on the head; level from nose
+to ear cuts the head on a straight line. Long cuts hold the face arc
+further round (`open`) or they close into a hood. Below the fall line
+the mass keeps the head's silhouette and simply descends, which is what
+falling hair does. All per-clump variation comes off ONE rolled seed —
+hair is rebuilt every boil frame, and anything re-rolled per frame
+shimmers.
 
-Three things about the clumps were each paid for by a bad render:
+Hair is **dead-matte vinyl**, and the material block records two
+failures of its own: a hard clearcoat (one travelling hotspot on a
+shape whose whole job is many soft clumps — a plastic wig) and then a
+strong whitened sheen (sheen is a rim lobe, so on a grooved surface it
+lit every groove edge as a glassy streak — cellophane). The reference
+hair is the flattest thing on the toy: the grooves read by occlusion
+and the studio gradient, not by any highlight. Matte comes from
+ROUGHNESS, never from dimming `envMapIntensity` — that just makes every
+colour darker than its swatch.
 
-- **layers go one way only.** Sinking every other clump as well as
-  raising it dropped half of them under the scalp, and what was left
-  read as melon slices with grooves cut between them.
-- **they must not be identical.** Same width at same spacing tiles into
-  a lampshade — the eye reads the repeat before it reads the hair. Each
-  one is nudged off its slice and varies in width.
-- **the narrowest must still overlap its own slice.** Varying width
-  without a floor opens gaps, and a gap shows skin.
-
-Hair is **rubber, not lacquer**. It had a hard clearcoat first, on the
-theory that a molded figure's hair is a separate shinier piece, and it
-came out a plastic wig: a tight coat puts one travelling hotspot on a
-shape whose whole job is to read as many soft overlapping clumps. It is
-matte now, with sheen for the rim so each clump keeps an edge against
-the one behind it. Note the near-miss there — do NOT get the matte look
-by dimming `envMapIntensity`, which just makes every colour darker than
-the swatch it came from; matte is the roughness's job.
+Tails, buns and the ahoge are separate pieces — tubes framed by
+parallel transport (a fixed up-vector spins where the path turns
+vertical and pinches the tube into an hourglass), and a bun is the
+body's own solid. A tail's stand-off scales with the HEAD, never the
+hair's length. One generator covers the sphere and the cube, because
+both are the same superellipsoid and `surfT` carries the exponent.
 
 **Colour is its own table** (`HAIR_COLORS`), never the body's palette:
 the five-colour set is what makes a shelf one product line, and hair is

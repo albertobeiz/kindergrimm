@@ -220,26 +220,22 @@ const FINISH = {
     clearcoat: .25, clearcoatRoughness: .5, envMapIntensity: .9,
   }),
 
-  // HAIR, and it is RUBBER rather than lacquer. It was a hard clearcoat
-  // first, on the theory that a molded figure's hair is a separate,
-  // shinier piece — and it came out a plastic wig, because a tight coat
-  // puts one travelling hotspot on a shape whose whole job is to read as
-  // many soft overlapping clumps. The reference figures are matte vinyl:
-  // a broad, soft falloff, no hotspot, and the form carried by the
-  // shading across it instead of by a highlight sitting on top.
-  //
-  // The SHEEN is what stops that going dead flat — a retroreflective
-  // lobe lights the rim, so each clump keeps an edge against the one
-  // behind it, which is the one thing this shape cannot afford to lose.
+  // HAIR, and it is dead-matte VINYL. Two failures are recorded in this
+  // block. A hard clearcoat came first — one travelling hotspot on a
+  // shape whose whole job is many soft clumps: a plastic wig. Then a
+  // strong whitened sheen — and sheen is a rim lobe, so on a grooved
+  // surface it lit every groove edge as a glassy STREAK, which read as
+  // cellophane. The reference figures have neither: their hair is the
+  // flattest thing on the toy, and the grooves read by OCCLUSION and
+  // the soft studio gradient, not by any highlight. So: rough, no
+  // coat, the faintest self-coloured sheen so the silhouette does not
+  // go dead, and matte from ROUGHNESS — never from dimming the
+  // environment, which just makes every colour darker than its swatch.
   hair: c => new THREE.MeshPhysicalMaterial({
-    color: c, roughness: .88, metalness: 0,
+    color: c, roughness: .97, metalness: 0,
     clearcoat: 0,
-    sheen: .7, sheenRoughness: .62, sheenColor: lift(c, .3),
-    // NOT dimmed to get the matte look. A rough lobe with no coat is
-    // already reading only the room's average, so turning the room
-    // down as well just makes every colour darker than the swatch it
-    // came from — rose came out maroon. Matte is the ROUGHNESS's job.
-    envMapIntensity: .9,
+    sheen: .12, sheenRoughness: .8, sheenColor: lift(c, .12),
+    envMapIntensity: .85,
   }),
 
 };

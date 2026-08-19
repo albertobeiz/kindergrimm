@@ -189,25 +189,24 @@ file look like a phantom `SyntaxError`.
   the half-width out, the mouth ~77% down. Guessing put the face too
   high and too small twice. Measure with `__probe` in the lab console
   and average over ~30 seeds — one toy is not a proportion.
-- **Hair is the humanoid's, and it GROWS from the crown.** `ghair.js`
-  parametrises by (azimuth, height), which converges at the top pole on
-  its own — that convergence is the whorl, and a head of hair is a fan
-  of ~16 tapered CLUMPS radiating from it, over a thin scalp that stops
-  a gap between two of them being a window onto the face. One smooth
-  shell was tried and it is a helmet: what makes hair hair is many
-  overlapping pieces with thickness, each ending in its own point.
-- The hem — where a clump ends, by azimuth — is still the whole
-  haircut, and the ORDERING is the read: fringe high, temples lower,
-  nape lowest. Level all round is a cap sitting on the head; level from
-  nose to ear cuts the head on a straight line. Both were acorns.
-- Clumps: layer them one way ONLY (sinking half of them drops them
-  under the scalp and the rest read as melon slices); never make them
-  identical (same width at same spacing is a lampshade); and floor the
-  width so the narrowest still overlaps its slice, or gaps show skin.
-- Hair is **rubber, not lacquer** — matte with sheen for the rim. A
-  clearcoat puts one hotspot on a shape whose job is many soft clumps.
-  Do NOT get matte by dimming `envMapIntensity`: that just makes every
-  colour darker than its swatch. Tails and the ahoge are tubes;
+- **Hair is ONE MOLDED MASS with the clumps carved in** — a closed
+  thick shell (torus topology: outer surface up, inner surface back
+  down hugging the head; the fold is the molded rim), with GROOVES
+  notched at clump boundaries and a hem that SCALLOPS to a point under
+  each clump. Three attempts live behind that sentence: a smooth shell
+  is a helmet, and separate tiles gap onto skin, catch the light as
+  streaks, and have no volume. It still grows from the crown — the
+  (azimuth, height) parametrisation converges at the pole, so the
+  grooves meet in a whorl for free (fade them near it, or it spikes).
+- The hem — front/side/back, by azimuth — is still the whole haircut,
+  and the ORDERING is the read: fringe high, temples lower, nape
+  lowest. Jitter the clump boundaries; the eye reads a repeat before
+  it reads the hair.
+- Hair is **dead-matte vinyl**: no clearcoat (a hotspot on soft clumps
+  is a plastic wig) and only the faintest sheen — strong sheen is a rim
+  lobe and lights every groove edge as a glassy streak. Matte comes
+  from roughness, never from dimming `envMapIntensity`, which just
+  darkens every colour off its swatch. Tails and the ahoge are tubes;
   a tail's stand-off scales with the HEAD, never the hair's length —
   scaled by length it doubled the toy's width and the sheet shrank the
   face to half its neighbours' to fit the cell.

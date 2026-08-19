@@ -134,6 +134,9 @@ export const GSPECIES = {
       // you leave out cannot happen — so "all of them, orb first" has
       // to be written out rather than implied.
       //
+      // THE MANGA FAMILY has a slice here and nowhere else among the
+      // cast: this is the anime head, the one face where a leaf and a
+      // lash sit naturally, so the whole family lives in its deal.
       // THE PROPORTIONS ARE THE SPECIES, measured off the chibi
       // reference sheet and checked against the build (`__probe` in
       // the lab): the eye's CENTRE lands ~63% down the head and its
@@ -142,10 +145,12 @@ export const GSPECIES = {
       // the eyes hang off the midline. Each eye is ~26% of the head's
       // width. Guessing these put the face too high and too small
       // twice; the numbers came off the sheet in the end.
-      eyes:   { style: { orb: 26, pupil: 14, bead: 8, googly: 8, slab: 6, oval: 5,
+      eyes:   { style: { orb: 22, pupil: 12, manga: 9, bead: 7, googly: 7,
+                         slab: 6, oval: 5, simple: 5,
                          sleepy: 5, happy: 5, box: 3, round: 3, square: 3,
-                         sparkle: 2, diamond: 2, cross: 2, crescent: 1, star: 1,
-                         heart: 1, ring: 1, flower: 1, angry: 1, wobble: 1, spiral: 1 },
+                         chibi: 3, sparkle: 2, diamond: 2, cross: 2, dbz: 2,
+                         crescent: 1, star: 1, heart: 1, ring: 1,
+                         flower: 1, angry: 1, wobble: 1, spiral: 1 },
                 size: [.15, .185], x: [.58, .70], y: [-.38, -.24], lid: .3 },
       // a face with a real nose more often than the toys get one
       nose:   { style: { none: 62, button: 14, dot: 12, cat: 4, heart: 4, beak: 2, snout: 2 },

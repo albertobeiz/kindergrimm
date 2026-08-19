@@ -136,6 +136,41 @@ function crescent(w, h, bite) {
   return s;
 }
 
+/** an almond: two arcs meeting at pointed ends. THE manga eye
+ *  silhouette — a round eye reads soft, a leaf reads drawn, and the
+ *  points are where the lash and the border find their grip. The
+ *  control sits at twice the half-height so the arcs actually reach
+ *  ±h (a quadratic lands at half its control) with a horizontal
+ *  tangent at each point. */
+function leaf(w, h) {
+  const s = new THREE.Shape();
+  s.moveTo(-w, 0);
+  s.quadraticCurveTo(0, h * 2, w, 0);
+  s.quadraticCurveTo(0, -h * 2, -w, 0);
+  return s;
+}
+
+/** THE MANGA PUPIL: an ellipse with catchlights punched OUT of it.
+ *  The glint is a HOLE — the white of the sclera showing through
+ *  negative space — not a dot painted on top. Painted gloss was
+ *  thrown away once already in this lab: the clearcoat owns it, and
+ *  a flat dot on top reads as a second, immobile highlight. A hole is
+ *  geometry, it is how a moulded figure would make the glint, and it
+ *  reads whatever the studio light is doing.
+ *  `g` is [fx, fy, f] triples: hole centre at (fx·w, fy·h) — w/h are
+ *  the PUPIL's own half-extents, so the fractions are relative to it
+ *  — and a hole of radius f·w, kept ROUND in world units on purpose:
+ *  a tall pupil must not squash its glint into a streak. */
+function glint(w, h, g) {
+  const s = ellipse(w, h);
+  for (const [fx, fy, f] of g) {
+    const hole = new THREE.Path();
+    hole.absellipse(fx * w, fy * h, f * w, f * w, 0, Math.PI * 2, true, 0);
+    s.holes.push(hole);
+  }
+  return s;
+}
+
 function triangle(w, h, flip) {
   const s = new THREE.Shape();
   const d = flip ? -1 : 1;
@@ -201,6 +236,8 @@ const OUTLINE = {
   flower:  s => flower(s.w, s.h, s.petals ?? 5, s.amp ?? .3),
   wobble:  s => wobble(s.w, s.h),
   crescent: s => crescent(s.w, s.h, s.bite ?? .55),
+  leaf:    s => leaf(s.w, s.h),
+  glint:   s => glint(s.w, s.h, s.g),
   band:    s => ribbon(CURVE[s.curve ?? 'arc'](s.w, s.sag ?? 0), s.tube ?? s.h),
 };
 
