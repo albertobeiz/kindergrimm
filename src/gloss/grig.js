@@ -157,8 +157,7 @@ export function buildGloss(recipe, { materialFor } = {}) {
     const geo = spec.type === 'mesh' || spec.type === 'skull'
       ? skullGeometry(spec.mesh ?? spec.skull)
       : spec.type === 'solid'
-      ? solidGeometry(spec.rx, spec.ry, spec.rz, spec.exp ?? 2, spec.dome, spec.domeFrom,
-                      spec.form, spec.amp)
+      ? solidGeometry(spec.rx, spec.ry, spec.rz, spec.exp ?? 2, spec.dome, spec.domeFrom)
       : plateGeometry(spec);
     // The SHELL is the body and nothing else. Everything else is a
     // feature set into it, and takes whatever `gmedia.js` says a

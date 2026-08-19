@@ -268,51 +268,15 @@ export function plateGeometry(spec) {
 // in gskull.js — and this family stays what it is: a ball with a
 // squareness knob.
 
-/**
- * THE PROFILED FORMS — a SILHOUETTE, not a displacement.
- *
- * `formRad(form, az, v)` gives the horizontal radius, as a fraction of
- * `rx`/`rz`, at normalised height `v` (−1 the floor, +1 the top). The
- * body is then a surface of revolution over it, and the sphere is the
- * special case `sqrt(1 − v²)` — so a profile is a drop-in replacement
- * and every face part lands on it unchanged.
- *
- *   rock   FLAT ON THE BOTTOM, domed on top. The lower profile holds
- *          nearly full width to the last few percent and then turns a
- *          rounded rim; the upper one is exactly a hemisphere. Plus a
- *          little azimuthal lumping, from FIXED harmonics — rolled per
- *          frame it would boil, and a solid has no business shimmering
- *          (the same rule as `wobble`).
- *   slime  A DROP. A wide round base swelling to its widest at the
- *          waist and tapering to a soft POINT at the top, which is the
- *          whole silhouette of the thing.
- *
- * This replaced a radial multiplier that could produce neither. Scaling
- * a ball in and out along the ray moves its surface but keeps its
- * TOPOLOGY of extents: the bottom stays as round as the top, so a rock
- * could not sit flat, and the peak of a drop is a place where the
- * horizontal radius reaches zero early — which is a fact about the
- * profile and not something a radius scale can say.
- */
-const pw = (a, b) => Math.pow(Math.max(0, a), b);
-
-export function formRad(form, az, v, amp = 1) {
-  if (form === 'rock') {
-    // flat foot, hemispherical dome
-    const rr = v < 0 ? pw(1 - pw(-v, 16), 1 / 2.2) : Math.sqrt(pw(1 - v * v, 1));
-    return rr * (1 + amp * (.085 * Math.sin(3 * az + 1.1) * Math.cos(2.4 * v + .5)
-                          + .055 * Math.sin(5 * az - .7)));
-  }
-  if (form === 'slime') {
-    // a round base under a tapering peak. The exponent above the waist
-    // is what makes the tip a POINT: at 1/2 it would be another dome.
-    return v < 0 ? pw(1 - pw(-v, 3.2), 1 / 2.2) : pw(1 - pw(v, 1.25), 1 / 1.25);
-  }
-  return null;                        // sphere and cube use `surfT`
-}
-
-/** is this form drawn from a profile rather than from the exponent? */
-export const isProfiled = form => form === 'rock' || form === 'slime';
+// Two shapes the exponent cannot reach — a rock that sits FLAT and a
+// slime that comes to a POINT — are not here at all. They were tried
+// twice in this file, first as a radial displacement on the ball and
+// then as a surface of revolution over a silhouette, and both are gone:
+// see `gform.js`, which models them from a control cage. A radial
+// scale moves a ball's surface but keeps its topology of extents, so
+// nothing can sit flat; a profile is only an outline, and everything a
+// shape does that is not its outline then has to be smuggled in on
+// top. A shape you can name the parts of wants a cage.
 
 /** how far along direction (dx,dy,dz) the surface sits. */
 export function surfT(dx, dy, dz, rx, ry, rz, n) {
@@ -352,28 +316,15 @@ export function surfN(x, y, z, rx, ry, rz, n) {
  * ball eye's lid, a cap that sits OVER another solid — which is why the
  * open rim is fine: whatever a dome caps is filling it from inside.
  */
-export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0,
-                              form = null, amp = 1) {
+export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0) {
   const g = dome
     ? new THREE.SphereGeometry(1, 72, 40, 0, Math.PI * 2,
                                Math.PI * domeFrom, Math.PI * (dome - domeFrom))
     : new THREE.SphereGeometry(1, 72, 54);
   const pos = g.attributes.position, nor = g.attributes.normal;
-  const profiled = isProfiled(form);
   for (let i = 0; i < pos.count; i++) {
     // a sphere vertex is already a unit direction
     const dx = pos.getX(i), dy = pos.getY(i), dz = pos.getZ(i);
-    if (profiled) {
-      // a surface of REVOLUTION over the profile: the sphere vertex
-      // gives the height and the azimuth, the profile gives the rest.
-      // At the poles the horizontal part is nothing and the profile is
-      // nothing with it, so the row collapses to the axis — which is
-      // the tip of a drop, for free.
-      const hl = Math.hypot(dx, dz) || 1;
-      const rr = formRad(form, Math.atan2(dx, dz), dy, amp);
-      pos.setXYZ(i, dx / hl * rr * rx, dy * ry, dz / hl * rr * rz);
-      continue;
-    }
     const t = surfT(dx, dy, dz, rx, ry, rz, n);
     const x = dx * t, y = dy * t, z = dz * t;
     pos.setXYZ(i, x, y, z);
@@ -381,17 +332,12 @@ export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0,
     nor.setXYZ(i, nn[0], nn[1], nn[2]);
   }
   pos.needsUpdate = true; nor.needsUpdate = true;
-  // A PROFILED surface's normal is not the implicit gradient — the
-  // gradient describes the ellipsoid the profile replaced. Averaging
-  // the triangles is right here and wrong on a plain cube (that is the
-  // whole reason `surfN` exists), so it is done only for the profiles.
-  if (profiled) g.computeVertexNormals();
   g.computeBoundingSphere();
   return g;
 }
 
 /**
- * The skull's mesh (see gskull.js) → BufferGeometry. The arrays arrive
+ * A modeled mesh (`gform.js`, `ghair.js`) → BufferGeometry. The arrays arrive
  * ALREADY BUILT from the layout's surface — the same vertices the
  * features were placed against — so this is packing, not modeling.
  * All vertices are shared, so computeVertexNormals is seam-free.

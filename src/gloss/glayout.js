@@ -30,7 +30,8 @@ import { mouthReach, mouthSpan } from './gparts/mouth.js';
 // the ONE copy of each surface: the same functions/arrays the body is
 // BUILT from, so where a feature lands and where the skin is can
 // never disagree (see gshape.js and gskull.js)
-import { surfT, surfN, formRad, isProfiled } from './gshape.js';
+import { surfT, surfN } from './gshape.js';
+import { formSurface, isMeshForm } from './gform.js';
 import { HAIR_BY_ID, INK, mix, luma, pickAcc } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
@@ -67,78 +68,53 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // `rock` and `slime` keep the ball's exponent and bend the SURFACE
   // instead — see `formK`. A cube is the only form that reads `corner`.
   const exp = form === 'cube' ? B.corner : 2;
-  const bent = isProfiled(form);
-  const amp = B.lump ?? 1;
-  const cy = ry, topY = ry * 2;
+  const meshed = isMeshForm(form);
+  let cy = ry, topY = ry * 2, at, top, hwAt, formMesh = null;
 
-  /** a direction → the point on the body. A profiled form reads its
-   *  silhouette off `formRad`; the ball and the block push the
-   *  direction out to the implicit surface. */
-  const surf = d => {
-    if (bent) {
-      const hl = Math.hypot(d[0], d[2]) || 1;
-      const rr = formRad(form, Math.atan2(d[0], d[2]), d[1], amp);
-      return [d[0] / hl * rr * rx, d[1] * ry, d[2] / hl * rr * rz];
-    }
-    const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp);
-    return [d[0] * t, d[1] * t, d[2] * t];
-  };
-  const dirAt = (u, v) => { const cv = Math.cos(v);
-    return [Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv]; };
-
-  function at(ax, ay) {
-    const u = ax * SPREAD, v = ay * SPREAD;
-    const q = surf(dirAt(u, v));
-    // On the plain forms the normal is the GRADIENT of the implicit
-    // surface, never the direction from the centre — get that wrong
-    // and every feature on a squashed body tips, and on a cube they
-    // all point at the corners instead of lying flat on the face.
-    //
-    // On a BENT one the gradient is the wrong surface's: it describes
-    // the ellipsoid the displacement moved away from, so a feature on
-    // a rock's lump would tilt as if the lump were not there. Two
-    // finite-difference tangents give the real one.
-    if (!bent) return { p: [q[0], q[1] + cy, q[2]], n: surfN(q[0], q[1], q[2], rx, ry, rz, exp) };
-    const e = .012;
-    const a = surf(dirAt(u + e, v)), b = surf(dirAt(u - e, v));
-    const c = surf(dirAt(u, v + e)), d2 = surf(dirAt(u, v - e));
-    const t1 = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-    const t2 = [c[0] - d2[0], c[1] - d2[1], c[2] - d2[2]];
-    let n = [t1[1] * t2[2] - t1[2] * t2[1],
-             t1[2] * t2[0] - t1[0] * t2[2],
-             t1[0] * t2[1] - t1[1] * t2[0]];
-    const l = Math.hypot(n[0], n[1], n[2]) || 1;
-    n = [n[0] / l, n[1] / l, n[2] / l];
-    // The cross product's sign follows the parametrisation, and which
-    // way that lands is not worth reasoning about — it was guessed
-    // wrong here and every feature on a rock faced into it. So it is
-    // CHECKED instead, against the outward ray, which cannot be
-    // ambiguous on a star-shaped body.
-    if (n[0] * q[0] + n[1] * q[1] + n[2] * q[2] < 0) { n[0] = -n[0]; n[1] = -n[1]; n[2] = -n[2]; }
-    return { p: [q[0], q[1] + cy, q[2]], n };
+  if (meshed) {
+    // MODELED: a control cage through Catmull-Clark (`gform.js`), and
+    // `at` raycasts the very arrays the body will be stamped from, so
+    // a feature lands on the real subdivided surface rather than on an
+    // idea of it.
+    const F = formSurface(form, { scale: B.r, width: B.wide, height: B.tall, depth: B.deep });
+    formMesh = F.mesh;
+    cy = -F.minY;
+    topY = cy + F.maxY;
+    const cast = (dx, dy, dz) =>
+      // the jittered retry is for a ray grazing an edge exactly: rare,
+      // but a null here would take the whole build down
+      F.pick(dx, dy, dz) ?? F.pick(dx + 1e-4, dy + 1e-4, dz);
+    at = (ax, ay) => {
+      const u = ax * SPREAD, v = ay * SPREAD, cv = Math.cos(v);
+      const h = cast(Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv);
+      return { p: [h.p[0], h.p[1] + cy, h.p[2]], n: h.n };
+    };
+    top = t => {
+      const h = cast(Math.sin(t), Math.cos(t), 0);
+      return { p: [h.p[0], h.p[1] + cy, h.p[2]], n: h.n };
+    };
+    hwAt = yy => F.halfWidthAt(yy - cy);
+  } else {
+    at = (ax, ay) => {
+      const u = ax * SPREAD, v = ay * SPREAD, cv = Math.cos(v);
+      // a direction, then pushed out to wherever the surface actually
+      // is; the normal is the GRADIENT of the implicit surface, never
+      // the direction from the centre — get this wrong and every
+      // feature on a squashed body tips, and on a cube they would all
+      // point at the corners instead of lying flat on the face
+      const d = [Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv];
+      const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp);
+      const x = d[0] * t, y = d[1] * t, z = d[2] * t;
+      return { p: [x, y + cy, z], n: surfN(x, y, z, rx, ry, rz, exp) };
+    };
+    top = t => {
+      const d = [Math.sin(t), Math.cos(t), 0];
+      const s2 = surfT(d[0], d[1], 0, rx, ry, rz, exp);
+      const x = d[0] * s2, y = d[1] * s2;
+      return { p: [x, y + cy, 0], n: surfN(x, y, 0, rx, ry, rz, exp) };
+    };
+    hwAt = () => rx;
   }
-  function top(t) {
-    const d = [Math.sin(t), Math.cos(t), 0];
-    const q = surf(d);
-    if (!bent) return { p: [q[0], q[1] + cy, q[2]], n: surfN(q[0], q[1], q[2], rx, ry, rz, exp) };
-    // the same finite-difference tangents `at` uses, in the crown's
-    // own plane — the implicit gradient is the wrong surface's here
-    const e = .012;
-    const a = surf([Math.sin(t + e), Math.cos(t + e), 0]);
-    const b = surf([Math.sin(t - e), Math.cos(t - e), 0]);
-    let n = [a[0] - b[0], a[1] - b[1], 0];
-    const l = Math.hypot(n[0], n[1]) || 1;
-    n = [n[1] / l, -n[0] / l, 0];             // the in-plane perpendicular
-    if (n[0] * q[0] + n[1] * q[1] < 0) { n[0] = -n[0]; n[1] = -n[1]; }
-    return { p: [q[0], q[1] + cy, q[2]], n };
-  }
-  // THE REAL HALF-WIDTH at a height. On a ball this is just `rx`, but a
-  // profiled form is narrow where its profile is narrow — the peak of a
-  // drop is most of its height — and a feature guarded against `rx`
-  // there sails straight off the silhouette.
-  const hwAt = bent
-    ? yy => rx * formRad(form, 0, clamp((yy - cy) / ry, -1, 1), 0)
-    : () => rx;
 
   // WHERE THE FACE'S ROWS SIT, published once. Brows must clear the
   // eyes, a nose must land between the eyes and the mouth, cheeks sit
@@ -316,6 +292,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     // the body as raw numbers — the only thing HAIR needs in order to
     // grow on it, and the reason one hair generator covers both forms
     shape: { rx, ry, rz, exp, cy },
+    formMesh,                  // the modeled bodies' arrays, to stamp
     hair: hairHex,
     // pulled toward ink: a platinum brow at full strength vanishes, and
     // an ink brow under blonde hair belongs to a different face

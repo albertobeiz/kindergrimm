@@ -314,22 +314,23 @@ file look like a phantom `SyntaxError`.
   starts in mid-air at the temple or flies off the side of the head.
   Size the bridge off the lens centre's world x, not off a face
   coordinate — those are not the same unit and it came out floating.
-- There are **four bodies**: sphere and cube (the exponent), plus
-  `rock` and `slime`, which are PROFILED — a surface of revolution over
-  `formRad(form, az, v)`, the horizontal radius at normalised height.
-  A rock is flat on the bottom and domed on top (with fixed harmonics
-  for lumps, or it boils); a slime is a drop, wide round base to a soft
-  point. A radial displacement cannot make either and was tried: it
-  moves a ball's surface but keeps its topology of extents, so nothing
-  can sit flat and no peak can close early.
-- A profiled surface's normal is NOT the gradient (that describes the
-  ellipsoid the profile replaced): use two finite-difference tangents,
-  and CHECK the cross product's sign against the outward ray rather
-  than reasoning about it — guessed wrong, every feature on a rock
-  faced inward. `hwAt` must read the profile too, and the FACE follows
-  the width: the upper-half rule would put a slime's eyes on its spike,
-  so a form may bias the face down. Deal them weighted; uniform made
-  the profiled pair 40% of a sheet.
+- There are **four bodies**, built two ways: `sphere` and `cube` are
+  the superellipsoid; `rock` and `slime` are MODELED in `gform.js` — a
+  low-poly cage of `[y, radius]` rings through Catmull-Clark, and `at`
+  raycasts the same arrays that get stamped. Both were tried as
+  formulas twice first (a radial displacement, then a silhouette
+  profile) and neither works: a radial scale keeps a ball's topology of
+  extents so nothing sits flat, and a profile is only an outline. *A
+  shape you can name the parts of wants a cage.*
+- Give a rock FEW sides — twelve subdivide into a smooth pebble, eight
+  keep facets. Put the lumps in the CAGE with fixed harmonics, so
+  subdivision softens them into swells and they cannot boil.
+- A modeled form needs two things from the layout: `hwAt` must read its
+  binned half-width (the peak of a drop is most of its height, and a
+  feature guarded against `rx` there leaves the silhouette), and the
+  FACE follows the width — the upper-half rule would put a slime's eyes
+  on its spike, so a form may bias the face down. Deal them weighted;
+  uniform made the modeled pair 40% of a sheet.
 - Adding an eye style is one entry in `eyes.js`'s `STYLE` table — and
   ADD IT TO THE WEIGHTS TOO. A style in the table but not in the
   `wpick` list is unreachable and nothing will tell you; that has

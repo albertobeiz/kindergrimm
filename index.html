@@ -15,46 +15,78 @@
     display: flex; align-items: center; justify-content: center;
     padding: 32px 20px 44px;
   }
-  main { width: 100%; max-width: 760px; }
+  main { width: 100%; max-width: 900px; }
 
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   h1 { font-size: 22px; font-weight: normal; letter-spacing: .28em; }
   .sub { opacity: .5; margin-top: 5px; letter-spacing: .05em; }
+
+  /* the github link — a real button, not a buried footer mention */
+  a.gh {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 13px; text-decoration: none; color: inherit;
+    border: 1px solid var(--ink); border-radius: 4px;
+    font-size: 11px; letter-spacing: .04em; white-space: nowrap;
+  }
+  a.gh:hover { background: var(--ink); color: var(--paper); }
+  a.gh svg { width: 14px; height: 14px; fill: currentColor; }
+
   /* the hand-drawn rule: a border nobody ruled straight */
   .rule {
-    height: 2px; margin: 16px 0 20px;
+    height: 2px; margin: 16px 0 22px;
     background: var(--ink); opacity: .8;
     clip-path: polygon(0 30%, 12% 0, 34% 55%, 61% 8%, 83% 62%, 100% 22%,
                        100% 78%, 78% 100%, 52% 44%, 26% 96%, 8% 40%, 0 82%);
   }
 
-  /* the two games first, then the three tools */
-  .games { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); margin-bottom: 10px; }
+  section.cat { margin-bottom: 26px; }
+  section.cat:last-of-type { margin-bottom: 0; }
+  .cat-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .cat-head b {
+    font-weight: normal; font-size: 12px; letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+  .cat-head span { font-size: 11px; opacity: .5; }
+  .cat-head::after {
+    content: ''; flex: 1; height: 1px; background: var(--line);
+  }
+
+  .games { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
   .scenes { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+
   a.scene {
-    position: relative; display: flex; flex-direction: column; gap: 5px;
-    padding: 14px 15px 15px; text-decoration: none; color: inherit;
+    position: relative; display: flex; flex-direction: column;
+    text-decoration: none; color: inherit; overflow: hidden;
     border: 1px solid rgba(31,29,26,.22); border-radius: 4px;
     background: var(--paper2);
   }
-  a.scene:hover { border-color: var(--ink); background: #e4dcc7; }
+  a.scene:hover { border-color: var(--ink); }
+  a.scene .thumb {
+    aspect-ratio: 3 / 2; width: 100%; object-fit: cover; display: block;
+    border-bottom: 1px solid rgba(31,29,26,.22);
+    filter: sepia(8%) saturate(92%);
+  }
+  a.scene:hover .thumb { filter: none; }
+  a.scene .body { position: relative; padding: 11px 13px 12px; display: flex; flex-direction: column; gap: 4px; }
+  a.scene:hover .body { background: #e4dcc7; }
   a.scene b { font-weight: normal; font-size: 14px; letter-spacing: .1em; }
   a.scene span { font-size: 11px; opacity: .6; line-height: 1.45; }
   a.scene i {
-    position: absolute; right: 10px; top: 9px;
-    font-style: normal; font-size: 10px; opacity: .32;
+    position: absolute; right: 10px; top: -30px;
+    font-style: normal; font-size: 10px; opacity: .55;
+    background: var(--paper); padding: 1px 5px; border-radius: 3px;
   }
 
   /* a game is not one of three tools — it is what the tools are for.
      The two games get the SAME card: same size, same ink, same weight,
      so the menu never says one of them is the real one. */
-  a.game {
-    background: #22242c; color: #e8e0cd; border-color: #22242c;
-    padding: 20px 20px 21px;
-  }
-  a.game:hover { background: #2c3040; border-color: #2c3040; }
+  a.game { background: #22242c; color: #e8e0cd; border-color: #22242c; }
+  a.game:hover { background: #22242c; border-color: #2c3040; }
+  a.game .thumb { border-bottom-color: rgba(232,224,205,.18); }
+  a.game:hover .body { background: #2c3040; }
   a.game b { font-size: 19px; letter-spacing: .2em; }
   a.game span { opacity: .62; font-size: 12px; }
-  a.game i { opacity: .4; }
+  a.game i { opacity: .85; background: #22242c; }
 
   footer { margin-top: 22px; font-size: 11px; opacity: .38; letter-spacing: .04em; }
   footer a { color: inherit; }
@@ -68,81 +100,141 @@
 </head>
 <body>
   <main>
-    <h1>kindergrimm</h1>
-    <div class="sub">characters drawn by hand, by a machine · and the games they live in</div>
+    <div class="top">
+      <div>
+        <h1>kindergrimm</h1>
+        <div class="sub">characters drawn by hand, by a machine · and the games they live in</div>
+      </div>
+      <a class="gh" href="https://github.com/albertobeiz/kindergrimm">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+          0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
+          1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+          0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27
+          2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82
+          1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01
+          2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        github
+      </a>
+    </div>
     <div class="rule"></div>
 
-    <div class="games">
-      <a class="scene game" href="orla.html" data-k="1">
-        <b>class photo</b>
-        <span>the class photo, scored like a poker hand. pick five children
-              of ten; the objects on the wall do the rest.</span>
-        <i>1</i>
-      </a>
+    <section class="cat">
+      <div class="cat-head"><b>play</b><span>two games, same weight — the menu doesn't say which is real</span></div>
+      <div class="games">
+        <a class="scene game" href="orla.html" data-k="1">
+          <img class="thumb" src="assets/thumbs/orla.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>class photo</b>
+            <span>the class photo, scored like a poker hand. pick five children
+                  of ten; the objects on the wall do the rest.</span>
+            <i>1</i>
+          </div>
+        </a>
 
-      <a class="scene game" href="game.html" data-k="2">
-        <b>the dark floor</b>
-        <span>a baby school after dark. tap where the class walks — a child
-              only fights what it can see, and light is the only sight.</span>
-        <i>2</i>
-      </a>
-    </div>
+        <a class="scene game" href="game.html" data-k="2">
+          <img class="thumb" src="assets/thumbs/game.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>the dark floor</b>
+            <span>a baby school after dark. tap where the class walks — a child
+                  only fights what it can see, and light is the only sight.</span>
+            <i>2</i>
+          </div>
+        </a>
+      </div>
+    </section>
 
-    <div class="scenes">
-      <a class="scene" href="editor.html" data-k="3">
-        <b>editor</b>
-        <span>one face and every parameter it has, with the recipe in JSON.</span>
-        <i>3</i>
-      </a>
+    <section class="cat">
+      <div class="cat-head"><b>drawn · 2d</b><span>graphite on cream paper — the original generator</span></div>
+      <div class="scenes">
+        <a class="scene" href="editor.html" data-k="3">
+          <img class="thumb" src="assets/thumbs/editor.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>editor</b>
+            <span>one face and every parameter it has, with the recipe in JSON.</span>
+            <i>3</i>
+          </div>
+        </a>
 
-      <a class="scene" href="crowd.html" data-k="4">
-        <b>crowd</b>
-        <span>35 live characters at once — the variety at a glance.</span>
-        <i>4</i>
-      </a>
+        <a class="scene" href="crowd.html" data-k="4">
+          <img class="thumb" src="assets/thumbs/crowd.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>crowd</b>
+            <span>35 live characters at once — the variety at a glance.</span>
+            <i>4</i>
+          </div>
+        </a>
 
-      <a class="scene" href="items.html" data-k="5">
-        <b>toy shop</b>
-        <span>every object family × every rank: the contact sheet.</span>
-        <i>5</i>
-      </a>
+        <a class="scene" href="items.html" data-k="5">
+          <img class="thumb" src="assets/thumbs/items.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>toy shop</b>
+            <span>every object family × every rank: the contact sheet.</span>
+            <i>5</i>
+          </div>
+        </a>
 
-      <a class="scene" href="voxel.html" data-k="6">
-        <b>voxel lab</b>
-        <span>the same recipe, built out of cubes. drag to walk around it.</span>
-        <i>6</i>
-      </a>
+        <a class="scene" href="how.html" data-k="9">
+          <img class="thumb" src="assets/thumbs/how.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>how it works</b>
+            <span>eleven live steps from one pencil stroke to a creature
+                  that blinks.</span>
+            <i>9</i>
+          </div>
+        </a>
+      </div>
+    </section>
 
-      <a class="scene" href="voxelcrowd.html" data-k="7">
-        <b>voxel crowd</b>
-        <span>twenty solids assembling on a midnight platform, under
-              lanterns that go round.</span>
-        <i>7</i>
-      </a>
+    <section class="cat">
+      <div class="cat-head"><b>voxel · 3d</b><span>the same recipe, built out of cubes</span></div>
+      <div class="scenes">
+        <a class="scene" href="voxel.html" data-k="6">
+          <img class="thumb" src="assets/thumbs/voxel.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>voxel lab</b>
+            <span>the same recipe, built out of cubes. drag to walk around it.</span>
+            <i>6</i>
+          </div>
+        </a>
 
-      <a class="scene" href="gloss.html" data-k="8">
-        <b>gloss lab</b>
-        <span>one vinyl toy and every knob it has — face, colour,
-              finish.</span>
-        <i>8</i>
-      </a>
+        <a class="scene" href="voxelcrowd.html" data-k="7">
+          <img class="thumb" src="assets/thumbs/voxelcrowd.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>voxel crowd</b>
+            <span>twenty solids assembling on a midnight platform, under
+                  lanterns that go round.</span>
+            <i>7</i>
+          </div>
+        </a>
+      </div>
+    </section>
 
-      <a class="scene" href="glosscrowd.html" data-k="0">
-        <b>gloss sheet</b>
-        <span>thirty-five faces on a wall, looking around the room and
-              reacting to it.</span>
-        <i>0</i>
-      </a>
+    <section class="cat">
+      <div class="cat-head"><b>gloss · 3d</b><span>glossy vinyl designer toys — solid geometry, not graphite</span></div>
+      <div class="scenes">
+        <a class="scene" href="gloss.html" data-k="8">
+          <img class="thumb" src="assets/thumbs/gloss.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>gloss lab</b>
+            <span>one vinyl toy and every knob it has — face, colour,
+                  finish.</span>
+            <i>8</i>
+          </div>
+        </a>
 
-      <a class="scene" href="how.html" data-k="9">
-        <b>how it works</b>
-        <span>eleven live steps from one pencil stroke to a creature
-              that blinks.</span>
-        <i>9</i>
-      </a>
-    </div>
+        <a class="scene" href="glosscrowd.html" data-k="0">
+          <img class="thumb" src="assets/thumbs/glosscrowd.jpg" alt="" loading="lazy">
+          <div class="body">
+            <b>gloss sheet</b>
+            <span>thirty-five faces on a wall, looking around the room and
+                  reacting to it.</span>
+            <i>0</i>
+          </div>
+        </a>
+      </div>
+    </section>
 
-    <footer>graphite on cream paper · <a href="https://github.com/albertobeiz/kindergrimm">code</a></footer>
+    <footer>graphite on cream paper · <a href="https://github.com/albertobeiz/kindergrimm">github.com/albertobeiz/kindergrimm</a></footer>
   </main>
 
   <script>
