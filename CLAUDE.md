@@ -119,11 +119,8 @@ file look like a phantom `SyntaxError`.
   once as a floor prop but re-drawn every boil frame on a child, so
   anything rolled with `s.jr()` shimmers. Roll it in `gen()`.
 - **Keep a game small.** A 2500-line turn-based build was thrown away
-  for being too complex; `src/orla.js` is the shape to copy — one
-  file, one screen, one verb, a rule you can say in a sentence. If an
+  for being too complex; `src/orla.js` is the shape to copy. If an
   idea needs a second subsystem, say what it would cost and wait.
-  And the test for any new game here: would it be as good with
-  coloured squares? Then it is the wrong game for this engine.
 - In `orla.html` the scoring vocabulary may only name things you can
   SEE. Two traps are already written down in `src/orla.js`: gear is
   `base:['biped']`, so "carries something" secretly means "is not a
