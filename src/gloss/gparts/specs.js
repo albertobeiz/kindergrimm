@@ -93,10 +93,19 @@ export const Specs = {
     // of lenses with nothing joining them reads as two stickers.
     if (!st.single) {
       const b = L.at(0, L.eyeY);
-      add({ type: 'plate', id: 'specBridge', outline: 'band', curve: 'line',
-            w: L.eyeSize * L.eyeX * .9, h: r * .09, tube: r * .09,
-            p: b.p, n: b.n, d: d * .8, bevel: d * .3,
-            proud: lift - d * .1, color: frame , finish: fin });
+      // the lens centre's WORLD x, from the same call that placed the
+      // frames — `eyeX` is a face coordinate and `w` a world length,
+      // and multiplying them gave a bar that reached neither lens
+      const xw = Math.abs(L.onFace(L.eyeX, L.eyeY, { halfW: w }).p[0]);
+      // run out past each frame's inner edge, most of the way through
+      // its rim: the bevel eats a hair off the band's ends, and a bar
+      // that only kisses the rim's midline can still fall short of it
+      const span = xw - w * (1 - st.thick * .75);
+      if (span > 0)
+        add({ type: 'plate', id: 'specBridge', outline: 'band', curve: 'line',
+              w: span, h: r * .09, tube: r * .09,
+              p: b.p, n: b.n, d: d * .8, bevel: d * .3,
+              proud: lift - d * .1, color: frame , finish: fin });
     }
 
     // and a STRAP for the goggles: one band round the head, which is

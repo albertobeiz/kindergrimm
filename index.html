@@ -15,7 +15,7 @@
     display: flex; align-items: center; justify-content: center;
     padding: 32px 20px 44px;
   }
-  main { width: 100%; max-width: 900px; }
+  main { width: 100%; max-width: 1100px; }
 
   .top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   h1 { font-size: 22px; font-weight: normal; letter-spacing: .28em; }
@@ -52,7 +52,7 @@
   }
 
   .games { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
-  .scenes { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+  .scenes { display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); }
 
   a.scene {
     position: relative; display: flex; flex-direction: column;
@@ -62,18 +62,23 @@
   }
   a.scene:hover { border-color: var(--ink); }
   a.scene .thumb {
-    aspect-ratio: 3 / 2; width: 100%; object-fit: cover; display: block;
+    height: 92px; width: 100%; object-fit: cover; display: block;
     border-bottom: 1px solid rgba(31,29,26,.22);
     filter: sepia(8%) saturate(92%);
   }
+  .games a.scene .thumb { height: 150px; }
   a.scene:hover .thumb { filter: none; }
-  a.scene .body { position: relative; padding: 11px 13px 12px; display: flex; flex-direction: column; gap: 4px; }
+  a.scene .body { position: relative; padding: 8px 10px 9px; display: flex; flex-direction: column; gap: 2px; }
   a.scene:hover .body { background: #e4dcc7; }
-  a.scene b { font-weight: normal; font-size: 14px; letter-spacing: .1em; }
-  a.scene span { font-size: 11px; opacity: .6; line-height: 1.45; }
+  a.scene b { font-weight: normal; font-size: 12.5px; letter-spacing: .06em; }
+  a.scene span {
+    font-size: 10px; opacity: .6; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .games a.scene span { font-size: 12px; -webkit-line-clamp: 3; }
   a.scene i {
-    position: absolute; right: 10px; top: -30px;
-    font-style: normal; font-size: 10px; opacity: .55;
+    position: absolute; right: 7px; top: -24px;
+    font-style: normal; font-size: 9px; opacity: .55;
     background: var(--paper); padding: 1px 5px; border-radius: 3px;
   }
 
@@ -84,16 +89,21 @@
   a.game:hover { background: #22242c; border-color: #2c3040; }
   a.game .thumb { border-bottom-color: rgba(232,224,205,.18); }
   a.game:hover .body { background: #2c3040; }
-  a.game b { font-size: 19px; letter-spacing: .2em; }
-  a.game span { opacity: .62; font-size: 12px; }
+  a.game .body { padding: 11px 13px 12px; gap: 4px; }
+  a.game b { font-size: 17px; letter-spacing: .16em; }
+  a.game span { opacity: .62; }
   a.game i { opacity: .85; background: #22242c; }
 
   footer { margin-top: 22px; font-size: 11px; opacity: .38; letter-spacing: .04em; }
   footer a { color: inherit; }
 
+  @media (max-width: 760px) {
+    .scenes { grid-template-columns: repeat(2, 1fr); }
+  }
   @media (max-width: 620px) {
     body { padding: 24px 16px 36px; align-items: flex-start; }
-    .games, .scenes { grid-template-columns: 1fr; }
+    .games { grid-template-columns: 1fr; }
+    .games a.scene .thumb { height: 120px; }
     h1 { font-size: 19px; letter-spacing: .22em; }
   }
 </style>
