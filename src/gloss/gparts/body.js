@@ -1,6 +1,9 @@
-// THE BODY. A sphere or a cube, which are one superellipsoid with a
-// squareness knob. The face catalogue never knows which: features
-// place through `L.at`, the only thing a form has to provide.
+// THE BODY. Four forms and one primitive: a sphere and a cube are the
+// same superellipsoid with a squareness knob, and a ROCK and a SLIME
+// are that ball with its surface bent — lumpy harmonics for one, a
+// downward swell for the other (`formK` in gshape.js). The face
+// catalogue never knows which: features place through `L.at`, the only
+// thing a form has to provide.
 export const Body = {
   id: 'body', label: 'body', order: 0,
 
@@ -20,10 +23,10 @@ export const Body = {
     // a sphere is pinned at 2 so it stays an exact ball. 2.8 is a
     // pillow, 5.5 is a proper block with the edges softened.
     corner: C.range(rng, 'corner', 2.8, 5.5),
-    // which chibi skull. Only a `head` reads it — the preset is a
-    // whole modeled cage (gskull.js), so the pick IS the silhouette.
-    // The neutral egg and the bun carry the shelf; the pointier and
-    // squarer skulls are the exceptions.
+    // how hard the bent forms are bent. Only `rock` and `slime` read
+    // it, and it is WIDE, because on those two the bend is the entire
+    // difference between one and the ball it started as.
+    lump: C.range(rng, 'lump', .7, 1.5),
   }),
 
   meta: () => ({
@@ -32,11 +35,14 @@ export const Body = {
     tall: { label: 'height', range: [.7, 1.4] },
     deep: { label: 'depth', range: [.7, 1.2] },
     corner: { label: 'squareness', range: [2, 8] },
+    lump: { label: 'lumpiness', range: [0, 2] },
   }),
 
   build(add, P, L) {
     add({ type: 'solid', id: 'body',
-          rx: L.rx, ry: L.ry, rz: L.rz, exp: L.exp, pos: [0, L.cy, 0],
-          color: L.body });
+          rx: L.rx, ry: L.ry, rz: L.rz, exp: L.exp,
+          // the same bend the layout landed the face with
+          form: L.form, amp: P.body.lump,
+          pos: [0, L.cy, 0], color: L.body });
   },
 };

@@ -25,12 +25,12 @@
 // pointing this way, and it beats copying the style table in here.
 import { eyeReach, eyeSpan, eyeProud } from './gparts/eyes.js';
 import { hairOuter } from './ghair.js';
-import { hatHug } from './gparts/hat.js';
+import { hatBare } from './gparts/hat.js';
 import { mouthReach, mouthSpan } from './gparts/mouth.js';
 // the ONE copy of each surface: the same functions/arrays the body is
 // BUILT from, so where a feature lands and where the skin is can
 // never disagree (see gshape.js and gskull.js)
-import { surfT, surfN } from './gshape.js';
+import { surfT, surfN, formK } from './gshape.js';
 import { HAIR_BY_ID, INK, mix, luma, pickAcc } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
@@ -63,28 +63,60 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // was carrying — the hair, the proportions, the face catalogue — sits
   // on these two perfectly well, and one exponent is a knob you can
   // scrub where a cage is a thing you have to sculpt.
+  // `rock` and `slime` keep the ball's exponent and bend the SURFACE
+  // instead — see `formK`. A cube is the only form that reads `corner`.
   const exp = form === 'cube' ? B.corner : 2;
+  const bent = form === 'rock' || form === 'slime';
+  const amp = B.lump ?? 1;
   const cy = ry, topY = ry * 2;
+
+  /** a direction → the point on the body. */
+  const surf = d => {
+    const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp) * formK(form, d[0], d[1], d[2], amp);
+    return [d[0] * t, d[1] * t, d[2] * t];
+  };
+  const dirAt = (u, v) => { const cv = Math.cos(v);
+    return [Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv]; };
 
   function at(ax, ay) {
     const u = ax * SPREAD, v = ay * SPREAD;
-    const cv = Math.cos(v);
-    // a direction, then pushed out to wherever the surface actually
-    // is; the normal is the GRADIENT of the implicit surface, never
-    // the direction from the centre — get this wrong and every
-    // feature on a squashed body tips, and on a cube they would all
-    // point at the corners instead of lying flat on the face
-    const d = [Math.sin(u) * cv, Math.sin(v), Math.cos(u) * cv];
-    const t = surfT(d[0], d[1], d[2], rx, ry, rz, exp);
-    const x = d[0] * t, y = d[1] * t, z = d[2] * t;
-    return { p: [x, y + cy, z], n: surfN(x, y, z, rx, ry, rz, exp) };
+    const q = surf(dirAt(u, v));
+    // On the plain forms the normal is the GRADIENT of the implicit
+    // surface, never the direction from the centre — get that wrong
+    // and every feature on a squashed body tips, and on a cube they
+    // all point at the corners instead of lying flat on the face.
+    //
+    // On a BENT one the gradient is the wrong surface's: it describes
+    // the ellipsoid the displacement moved away from, so a feature on
+    // a rock's lump would tilt as if the lump were not there. Two
+    // finite-difference tangents give the real one.
+    if (!bent) return { p: [q[0], q[1] + cy, q[2]], n: surfN(q[0], q[1], q[2], rx, ry, rz, exp) };
+    const e = .012;
+    const a = surf(dirAt(u + e, v)), b = surf(dirAt(u - e, v));
+    const c = surf(dirAt(u, v + e)), d2 = surf(dirAt(u, v - e));
+    const t1 = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    const t2 = [c[0] - d2[0], c[1] - d2[1], c[2] - d2[2]];
+    let n = [t1[1] * t2[2] - t1[2] * t2[1],
+             t1[2] * t2[0] - t1[0] * t2[2],
+             t1[0] * t2[1] - t1[1] * t2[0]];
+    const l = Math.hypot(n[0], n[1], n[2]) || 1;
+    n = [n[0] / l, n[1] / l, n[2] / l];
+    // The cross product's sign follows the parametrisation, and which
+    // way that lands is not worth reasoning about — it was guessed
+    // wrong here and every feature on a rock faced into it. So it is
+    // CHECKED instead, against the outward ray, which cannot be
+    // ambiguous on a star-shaped body.
+    if (n[0] * q[0] + n[1] * q[1] + n[2] * q[2] < 0) { n[0] = -n[0]; n[1] = -n[1]; n[2] = -n[2]; }
+    return { p: [q[0], q[1] + cy, q[2]], n };
   }
   function top(t) {
     const d = [Math.sin(t), Math.cos(t), 0];
-    const s2 = surfT(d[0], d[1], 0, rx, ry, rz, exp);
+    const s2 = surfT(d[0], d[1], 0, rx, ry, rz, exp) * formK(form, d[0], d[1], 0, amp);
     const x = d[0] * s2, y = d[1] * s2;
     return { p: [x, y + cy, 0], n: surfN(x, y, 0, rx, ry, rz, exp) };
   }
+  // a bent form is never NARROWER than the ball it came from at the
+  // face, so the ball's own half-width stays the conservative guard
   const hwAt = () => rx;
 
   // WHERE THE FACE'S ROWS SIT, published once. Brows must clear the
@@ -227,7 +259,10 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // reads as somebody else's eyebrows glued on. That is exactly the
   // "anything two parts must agree on lives here" rule.
   let hairHex = HAIR_BY_ID[P.hair?.color]?.hex ?? INK;
-  const hasHair = !!(P.hair && P.hair.style !== 'bald');
+  // A beanie or a headband is worn on a bare head: there is no size at
+  // which one shares a skull with a haircut without fighting it.
+  const bare = hatBare(P);
+  const hasHair = !!(P.hair && P.hair.style !== 'bald') && !bare;
 
   // HAIR HAS TO COME OFF THE HEAD IT IS ON. Skin and hair are rolled
   // from two independent tables, so nothing stops caramel hair landing
@@ -268,8 +303,8 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     // the hair can know how far out they reach.
     eyeProud: eyeProud(P),
     hairTop: hasHair ? hairOuter(P) : 1,
-    // a pulled-on hat squashes the hair above its rim — see `hatHug`
-    hatHug: hatHug(P),
+    // a pulled-on hat is worn on a BARE head — see `hatBare`
+    hatBare: bare,
     // what the EXTRAS are made of: never the toy's own five, and
     // guaranteed clear of both the skin and the hair
     acc: pickAcc(P.hat?.accIx ?? 0, colors.body, hairHex),

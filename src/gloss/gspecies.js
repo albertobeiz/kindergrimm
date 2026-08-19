@@ -19,6 +19,11 @@
 // of it — which is worth knowing before adding a species: if it cannot
 // be told apart by its silhouette, it has nothing to be told apart by.
 //
+// A species may also NAME the body forms it may be poured as, and the
+// two BENT ones (`rock`, `slime`) are where that matters most: a lumpy
+// rock is a creature and a humanoid is not one, so the humanoid's
+// profile lists the two forms a person can be.
+//
 // `wildcard` is the free roll — the shelf the lab had before species
 // existed. It stays the biggest slice on purpose: the casting is there
 // to make the compound toys (bunny, pig, robot) arrive assembled, not
@@ -82,7 +87,7 @@ export const GSPECIES = {
 
   monster: {
     label: 'monster',
-    body: { cube: 55, sphere: 45 },
+    body: { cube: 34, sphere: 26, rock: 24, slime: 16 },
     cast: {
       crest:  { style: { horns: 68, stubs: 16, none: 16 } },
       eyes:   { style: { cross: 18, angry: 18, slab: 16, googly: 14, ring: 12,
@@ -98,7 +103,9 @@ export const GSPECIES = {
     label: 'humanoid',
     // A humanoid is a TOY like the rest of the shelf — a ball or a
     // block with a face and a haircut. It had a modeled skull for a
-    // while and the skull was the wrong object.
+    // while and the skull was the wrong object. It is NOT a rock or a
+    // slime: those two are creature shapes, and naming the two forms a
+    // person may be is what keeps them off this species.
     body: { sphere: 62, cube: 38 },
     // the one species that names its own palette and material — see
     // the note in `ensureGParams`. A humanoid is made of SKIN.
@@ -114,6 +121,12 @@ export const GSPECIES = {
       // stood in for hair here — tuft, mop, curl — were a placeholder
       // and are not dealt to anybody any more.
       crest:  { style: { none: 100 } },
+      // HATS ARE HUMAN. The part's own default is `none` at 100, so a
+      // bear cannot turn up in a beanie; this is the only table that
+      // deals them. `beanie` and `band` are worn on a bare head (see
+      // `hatBare`), so between them they also carry most of the shelf's
+      // bald characters — which is why they are not the rarest here.
+      hat:    { style: { none: 82, beanie: 6, band: 4, bow: 4, flower: 3, crown: 1 } },
       // THE HAIRCUT, and it is most of the character. Weighted the way
       // a room of people is: short and medium carry it, the very long
       // cuts and the tied-up ones are the ones you notice. `bald` stays
@@ -215,10 +228,12 @@ const wpick = (rng, pairs) => {
   return pairs[pairs.length - 1][0];
 };
 
-/** the species' opinion on sphere vs cube, if it has one. */
-export function pickGBody(speciesId, rng, defaultIds) {
+/** the species' opinion on which body form, if it has one — otherwise
+ *  the shelf's own weighted deal. Weighted on BOTH sides: a uniform
+ *  default made the two bent forms 40% of a sheet. */
+export function pickGBody(speciesId, rng, defaultPairs) {
   const w = GSPECIES[speciesId]?.body;
-  return w ? wpick(rng, Object.entries(w)) : defaultIds[(rng.r(0, 1) * defaultIds.length) | 0];
+  return wpick(rng, w ? Object.entries(w) : defaultPairs);
 }
 
 /**

@@ -299,14 +299,30 @@ file look like a phantom `SyntaxError`.
   distance, not luma, or a terracotta lands on peach skin. They wear
   the `acc` finish, whose sheen is SELF-COLOURED: rubber's white sheen
   washed a brick red to pale pink, the same error the hair records.
-- A hat either **hugs or perches**. A beanie sized to clear a big cut
-  is a bowl balanced on the head; sized to the skull it vanishes under
-  the hair. What really happens is that it FLATTENS the hair above its
-  rim and the cut spills out below — `hat.js` publishes `hatHug` and
-  `ghair.js` obeys it. Same edge as `eyes.js` publishing `eyeProud` so
-  spectacles clear a ball eye, and `ghair.js` publishing `hairOuter` so
-  a headband perches on the hair: the part that knows a fact states it,
-  and the layout hands it over.
+- A hat either **hugs or perches**. A bow or a crown perches on the
+  hair (`L.hairTop`). A beanie or a headband is pulled ON, and no size
+  lets one share a skull with a haircut — clear the hair and it is a
+  bowl balanced on the head, hug the skull and it vanishes underneath,
+  squash the hair under its rim (built, worked) and they still fight
+  every seed. They are worn on a BARE head: `hat.js` publishes
+  `hatBare` and `ghair.js` builds nothing. Same edge as `eyeProud` for
+  spectacles clearing a ball eye — the part that knows a fact states
+  it and the layout hands it over.
+- **Hats are human.** The part default is `none` at 100 so only the
+  humanoid's profile deals them. Spectacles are frames plus a BRIDGE,
+  never temple arms: a plate lands on a tangent plane, so an arm either
+  starts in mid-air at the temple or flies off the side of the head.
+  Size the bridge off the lens centre's world x, not off a face
+  coordinate — those are not the same unit and it came out floating.
+- There are **four bodies**: sphere and cube (the exponent), plus
+  `rock` and `slime` — the same ball with its surface BENT in `formK`,
+  radially, so `surfT` still finds it. Fixed harmonics for the rock, or
+  it boils. And a bent surface's normal is NOT the gradient (that
+  describes the ellipsoid it moved away from): use two finite-
+  difference tangents and CHECK the cross product's sign against the
+  outward ray rather than reasoning about it — guessed wrong, every
+  feature on a rock faced inward. Deal them weighted; uniform made the
+  bent pair 40% of a sheet.
 - Adding an eye style is one entry in `eyes.js`'s `STYLE` table — and
   ADD IT TO THE WEIGHTS TOO. A style in the table but not in the
   `wpick` list is unreachable and nothing will tell you; that has

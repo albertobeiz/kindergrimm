@@ -23,7 +23,7 @@ const STYLE = {
   sunnies: { outline: 'rring', wf: 1.42, hf: 1.02, thick: .16, r: .3, lens: 'ink' },
   // a pale lens behind a dark frame: the goggle read, and the one
   // style where the eye still shows THROUGH something
-  goggles: { outline: 'ring', wf: 1.5, hf: 1.5, thick: .26, lens: 'lite', strap: true },
+  goggles: { outline: 'ring', wf: 1.5, hf: 1.5, thick: .26, lens: 'lite' },
   // ONE lens, on one side, and the asymmetry is the joke
   monocle: { outline: 'ring', wf: 1.3, hf: 1.3, thick: .18, single: true },
 };

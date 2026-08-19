@@ -22,7 +22,7 @@
 //   DOME   a sphere cut short (`dome`) — a beanie, a cap's crown
 //   BAND   a sphere ZONE, cut at both ends (`domeFrom`) — a brim, a
 //          cuff, a headband. This is what `domeFrom` was added for.
-//   PLATE  the flat stuff — a visor, a bow, a flower
+//   PLATE  the flat stuff — a bow, a flower, a crown's points
 //
 // Colour comes off the toy's own palette (`warm`, `lite`, `ink`) rather
 // than a new table. A hat in an unrelated colour is a different
@@ -30,11 +30,9 @@
 const STYLE = {
   none:    null,
   // pulled down over the crown, with a rolled cuff at the rim
-  beanie:  { dome: .42, cuff: [.38, .47], hug: 1.09 },
-  // a shallower crown plus a visor out front
-  cap:     { dome: .34, visor: true, hug: 1.08 },
+  beanie:  { dome: .42, cuff: [.38, .47], hug: 1.09, bare: true },
   // a thin zone lying round the head: the headband
-  band:    { band: [.28, .35], grow: 1.04 },
+  band:    { band: [.26, .33], hug: 1.05, bare: true },
   // points standing round the crown
   crown:   { points: 6, grow: 1.03 },
   // one bow on the side of the head
@@ -46,21 +44,22 @@ const STYLE = {
 export const HAT_STYLES = Object.keys(STYLE);
 
 /**
- * What a PULLED-ON hat does to the hair under it, or null.
+ * Does this hat go on a BARE head?
  *
- * A beanie neither clears the hair nor hides inside it: it FLATTENS it.
- * Sized to clear a big cut it is a bowl balanced on the head; sized to
- * the skull it vanishes under the hair entirely — both were built.
- * What actually happens is that the hair is squashed above the hat's
- * rim and spills out below it, so this publishes the ceiling and where
- * it starts, and `ghair.js` reads it off the LAYOUT. The two parts have
- * to agree about one number, which is the layout's whole job.
+ * A beanie and a headband are pulled ON, and there is no arrangement of
+ * sizes that lets one share a skull with a big soft haircut: sized to
+ * clear the hair it is a bowl balanced on the head, sized to the skull
+ * it vanishes underneath, and squashing the hair under its rim — which
+ * was built, and worked — still leaves the two fighting for the same
+ * few millimetres at every seed. So they are simply worn on a bare
+ * head, which is a real look and needs no negotiation at all.
+ *
+ * `ghair.js` reads this off the LAYOUT and builds nothing. The hats
+ * that PERCH (a bow, a flower, a crown) sit on top of the hair as
+ * before and are not listed here.
  */
-export function hatHug(P) {
-  const st = STYLE[P.hat?.style];
-  if (!st || !st.hug) return null;
-  const k = st.hug * (P.hat.size ?? 1);
-  return { k, rimY: k * Math.cos(Math.PI * st.dome) };
+export function hatBare(P) {
+  return !!STYLE[P.hat?.style]?.bare;
 }
 
 export const Hat = {
@@ -69,9 +68,9 @@ export const Hat = {
 
   // Rare. A hat is a strong statement and the shelf can carry a few.
   gen: (rng, C) => ({
-    style: C.pick(rng, 'style', [['none', 86], ['beanie', 3], ['cap', 3],
-                                 ['band', 3], ['bow', 2], ['flower', 2],
-                                 ['crown', 1]]),
+    // NOBODY wears a hat unless a species asks — see the header. A bear
+    // in a beanie is one line away and it is not one anybody wanted.
+    style: C.pick(rng, 'style', [['none', 100]]),
     // WHICH accessory colour. The layout turns this into a hex that is
     // guaranteed to stand clear of the skin and the hair.
     accIx: rng.ri(0, 9),
@@ -100,7 +99,7 @@ export const Hat = {
     const fin = 'acc';
     // HUG the head and let the hair squash under it, or PERCH on top
     // of whatever the hair is doing — see the header
-    const k = (st.hug ? st.hug : L.hairTop * st.grow) * T.size;
+    const k = (st.hug ?? (L.hairTop * st.grow)) * T.size;
     const rx = L.rx * k, ry = L.ry * k, rz = L.rz * k;
     const solid = (id, extra) => add({
       type: 'solid', id, rx, ry, rz, exp: L.exp, cast: true, finish: fin,
@@ -120,18 +119,6 @@ export const Hat = {
       add({ type: 'solid', id: 'hat', exp: L.exp, cast: true,
             rx, ry, rz, dome: st.band[1], domeFrom: st.band[0], finish: fin,
             pos: [0, L.cy, 0], color: col });
-
-    // THE VISOR — a flat plate out over the face at the cap's rim. The
-    // one piece that says which way a cap is pointing.
-    if (st.visor) {
-      const a = L.at(0, .52);
-      add({ type: 'plate', id: 'hatVisor', outline: 'ellipse',
-            w: L.rx * .62 * T.size, h: L.rz * .52 * T.size,
-            p: [a.p[0], a.p[1], a.p[2] + L.rz * .12],
-            // laid nearly flat, tipped a little down at the front
-            n: [0, .86, .5], d: L.s * .05, bevel: L.s * .022,
-            proud: 0, color: col, cast: true, finish: fin });
-    }
 
     // THE CROWN — points standing round the top on `L.top`, the same
     // anchor the ears use

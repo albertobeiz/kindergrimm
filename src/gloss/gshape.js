@@ -268,6 +268,36 @@ export function plateGeometry(spec) {
 // in gskull.js — and this family stays what it is: a ball with a
 // squareness knob.
 
+/**
+ * A RADIAL DISPLACEMENT on top of the superellipsoid — the two body
+ * forms an exponent cannot reach.
+ *
+ *   rock   lumpy and faceted. Three fixed harmonics of the DIRECTION,
+ *          which is what makes it the same rock every rebuild: driven
+ *          by anything rolled per frame it would boil, and a solid has
+ *          no business shimmering (same rule as `wobble`).
+ *   slime  a droplet — narrow domed crown swelling to a wide base, so
+ *          it reads as something that settled rather than something
+ *          that was moulded.
+ *
+ * The exponent stays the shape family's; this only moves the surface
+ * in and out along the ray, so `surfT` still finds it and the layout
+ * still lands features on it.
+ */
+export function formK(form, dx, dy, dz, amp = 1) {
+  if (form === 'rock')
+    return 1 + amp * (.09 * Math.sin(4.1 * dx + 1.3) * Math.cos(3.3 * dy + .7)
+                    + .07 * Math.sin(2.9 * dz + 2.1)
+                    + .05 * Math.cos(5.2 * dx * dz - .9));
+  if (form === 'slime')
+    // widening downward, and easing rather than coning: a straight
+    // taper reads as a party hat turned over
+    return 1 + amp * .30 * smoothK(-dy);
+  return 1;
+}
+const smoothK = u => { const t = Math.min(1, Math.max(0, (u + 1) * .5));
+                       return t * t * (3 - 2 * t); };
+
 /** how far along direction (dx,dy,dz) the surface sits. */
 export function surfT(dx, dy, dz, rx, ry, rz, n) {
   return 1 / Math.pow(Math.pow(Math.abs(dx / rx), n)
@@ -306,7 +336,8 @@ export function surfN(x, y, z, rx, ry, rz, n) {
  * ball eye's lid, a cap that sits OVER another solid — which is why the
  * open rim is fine: whatever a dome caps is filling it from inside.
  */
-export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0) {
+export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0,
+                              form = null, amp = 1) {
   const g = dome
     ? new THREE.SphereGeometry(1, 72, 40, 0, Math.PI * 2,
                                Math.PI * domeFrom, Math.PI * (dome - domeFrom))
@@ -315,13 +346,19 @@ export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0) {
   for (let i = 0; i < pos.count; i++) {
     // a sphere vertex is already a unit direction
     const dx = pos.getX(i), dy = pos.getY(i), dz = pos.getZ(i);
-    const t = surfT(dx, dy, dz, rx, ry, rz, n);
+    const t = surfT(dx, dy, dz, rx, ry, rz, n) * formK(form, dx, dy, dz, amp);
     const x = dx * t, y = dy * t, z = dz * t;
     pos.setXYZ(i, x, y, z);
     const nn = surfN(x, y, z, rx, ry, rz, n);
     nor.setXYZ(i, nn[0], nn[1], nn[2]);
   }
   pos.needsUpdate = true; nor.needsUpdate = true;
+  // A DISPLACED surface's normal is no longer the implicit gradient —
+  // the gradient describes the ellipsoid the displacement moved away
+  // from. Averaging the triangles is right here and wrong on a plain
+  // cube (that is the whole reason `surfN` exists), so it is done only
+  // where the surface was actually bent.
+  if (form) g.computeVertexNormals();
   g.computeBoundingSphere();
   return g;
 }

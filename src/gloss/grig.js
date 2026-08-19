@@ -31,7 +31,14 @@ import { gcastingFor, pickGBody, GSPECIES, GSPECIES_WEIGHTS } from './gspecies.j
 
 export { GPARTS, GPART_BY_ID };
 
-export const BODY_IDS = ['sphere', 'cube'];
+export const BODY_IDS = ['sphere', 'cube', 'rock', 'slime'];
+
+// How an un-opinionated species is poured. WEIGHTED, not uniform: the
+// ball and the block carry the shelf, and the two bent forms are the
+// treats — dealt evenly they were 40% of a sheet, and a rock is a
+// strong enough silhouette that four of them in a row stop being a
+// surprise. A humanoid is neither shape, and says so in its profile.
+export const BODY_WEIGHTS = [['sphere', 36], ['cube', 34], ['rock', 18], ['slime', 12]];
 
 export function newGRecipe(seed = (Math.random() * 1e9) | 0) {
   return { seed, species: null, body: null, palette: null, colorIx: null,
@@ -66,7 +73,7 @@ export function ensureGParams(recipe) {
   // the species FIRST: it loads the dice for everything after it —
   // the body form it prefers, and every part's own rolls
   recipe.species ??= wpick(rng, GSPECIES_WEIGHTS);
-  recipe.body ??= pickGBody(recipe.species, rng, BODY_IDS);
+  recipe.body ??= pickGBody(recipe.species, rng, BODY_WEIGHTS);
   // A species may NAME a palette and a material, and exactly one does.
   // The standing rule is that it must not — what a toy is made of is a
   // separate lever, and a lavender panda is still a panda. The
@@ -150,7 +157,8 @@ export function buildGloss(recipe, { materialFor } = {}) {
     const geo = spec.type === 'mesh' || spec.type === 'skull'
       ? skullGeometry(spec.mesh ?? spec.skull)
       : spec.type === 'solid'
-      ? solidGeometry(spec.rx, spec.ry, spec.rz, spec.exp ?? 2, spec.dome, spec.domeFrom)
+      ? solidGeometry(spec.rx, spec.ry, spec.rz, spec.exp ?? 2, spec.dome, spec.domeFrom,
+                      spec.form, spec.amp)
       : plateGeometry(spec);
     // The SHELL is the body and nothing else. Everything else is a
     // feature set into it, and takes whatever `gmedia.js` says a

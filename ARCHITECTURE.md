@@ -1390,16 +1390,34 @@ three instances of the same edge (`eyeReach` was the first):
 |---|---|---|
 | `eyes.js` | `eyeProud` — how far the eye's front stands off the skin | spectacles: an `orb` is a ball standing ¾ of its radius out, and a lens placed for a flat plate cuts through the eyeball |
 | `ghair.js` | `hairOuter` — the hair's outer radius | a hat that PERCHES (band, bow, flower, crown) |
-| `hat.js` | `hatHug` — the ceiling a pulled-on hat imposes, and where it starts | the hair, which flattens under it |
+| `hat.js` | `hatBare` — whether this hat is worn on a bare head | the hair, which builds nothing |
 
-**A hat either hugs or perches, and that split is the whole design.** A
-beanie sized to clear a big soft cut stands a whole hair's volume off
-the skull at every height, including down at the ears where there is
-no hair, and comes out as a bowl balanced on the head. Sized to the
-skull instead, it vanishes under the hair. Neither is what happens: a
-worn hat FLATTENS the hair above its rim and the cut spills out below
-— so `hatHug` publishes the ceiling and `ghair.js` obeys it. Two parts
-agreeing about one number is the layout's whole job.
+**A hat either hugs or perches, and that split is the whole design.**
+A bow, a flower and a crown PERCH: they sit on top of whatever is up
+there and want `L.hairTop`. A beanie and a headband are pulled ON, and
+there is no size at which one shares a skull with a haircut. Sized to
+clear a big cut it stands a whole hair's volume off the skull at every
+height, including down at the ears where there is no hair — a bowl
+balanced on the head. Sized to the skull it vanishes underneath.
+Squashing the hair under its rim was built next, and it worked, and
+the two still fought for the same few millimetres at every seed. So a
+pulled-on hat is simply worn on a BARE head, which is a real look and
+needs no negotiation: `hatBare` says so and `ghair.js` builds nothing.
+
+**Hats are HUMAN.** The part's own default is `none` at 100, so the
+humanoid's profile is the only table that deals them — a bear in a
+beanie is one line away and it is not one anybody wanted.
+
+Spectacles are frames and a BRIDGE and nothing else. There were temple
+arms, and they are gone: an arm has to start at the frame and run back
+along the head, and a plate lands on a tangent plane — placed out at
+the temple it began in mid-air with a gap behind the lens, and placed
+on the lens's own basis it flew off the side of the head as the
+surface curved away. The bridge itself had the same disease in
+miniature, sized in FACE coordinates against a world width, which is
+not a unit at all: it came out short and floated in the gap. It is
+measured off the lens centre's own x now, with an overlap that runs it
+into both frames. A join you can see is the only kind there is.
 
 **Accessories have their own colour table** (`ACC_COLORS`), for exactly
 the reason hair does. A toy's five are what make a shelf one product
@@ -1550,8 +1568,26 @@ from going dead flat.
 - a **variant** of an existing part = one entry in that part's `STYLE`
   table. This is the cheap lever and it should be the usual answer.
 - a **palette** = one entry in `gpalette.js`.
-- a **body** = a case in `body.js` and whatever `L.at` needs to
-  describe its surface.
+- a **body** = a case in `formK` and one entry in `BODY_WEIGHTS`.
+  There are four: `sphere` and `cube` are the superellipsoid with its
+  squareness knob, and `rock` and `slime` are that same ball with its
+  surface BENT — fixed harmonics of the direction for one (fixed, so
+  it is the same rock every rebuild; rolled per frame it would boil),
+  a downward swell for the other. The bend is radial, so `surfT` still
+  finds the surface and the whole face catalogue still lands on it.
+
+  > A BENT surface's normal is NOT the implicit gradient — the gradient
+  > describes the ellipsoid the displacement moved away from, so a
+  > feature on a rock's lump would tilt as if the lump were not there.
+  > Two finite-difference tangents give the real one. Their cross
+  > product's SIGN follows the parametrisation, which is not worth
+  > reasoning about: it was guessed wrong and every feature on a rock
+  > faced into it. Check it against the outward ray instead.
+
+  Dealt weighted, never uniformly: the ball and the block carry the
+  shelf and the two bent forms are treats. Dealt evenly they were 40%
+  of a sheet, and a rock is a strong enough silhouette that four in a
+  row stop being a surprise.
 
 ### The face life (`gface.js`)
 

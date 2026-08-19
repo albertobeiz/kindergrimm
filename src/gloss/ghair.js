@@ -239,7 +239,7 @@ function makeFlow(st, H) {
  * hugging the head — no caps, no seams, no bare skin, and the fold at
  * the hem is the thick rounded rim of a molded piece.
  */
-function hairMass(st, pt, H, shape, F, hug) {
+function hairMass(st, pt, H, shape, F) {
   const vol = st.vol * H.vol;
   const lift = (st.pomp ?? 0) * H.pomp;
   const n = Math.max(8, Math.round(st.n * H.density));
@@ -304,12 +304,7 @@ function hairMass(st, pt, H, shape, F, hug) {
       const y = lerp(hem, 1.0, smooth(t) * .85 + t * .15);
       const swell = .72 + .28 * Math.sin(Math.min(1, .15 + t) * Math.PI * .8);
       const wob = st.wave ? st.wave * H.wave * Math.sin(az * 3 + t * 9) : 0;
-      let infl = 1.012 + vol * swell * carve(az, y) + wob;
-      // UNDER A HAT the hair is flattened, above the hat's rim only —
-      // below it the cut spills out as usual, which is the read that
-      // says the hat is being WORN rather than balanced on top
-      if (hug && y > hug.rimY) infl = Math.min(infl, hug.k - .03);
-      const p = pt(az, y, infl);
+      const p = pt(az, y, 1.012 + vol * swell * carve(az, y) + wob);
       // THE POMPADOUR: a radial push cannot make an upswept fringe — it
       // just makes a fatter helmet — so this displaces the outer surface
       // UP and FORWARD over the front only, peaking between hairline and
@@ -510,13 +505,14 @@ function ahogeAt(pt, ry, H) {
 export function buildHair(P, L) {
   const H = P.hair;
   const st = STYLE[H.style];
-  if (!st || !L.shape) return [];
+  // a beanie or a headband is worn BARE — see `hatBare` in hat.js
+  if (!st || !L.shape || L.hatBare) return [];
   const pt = pointer(L.shape);
   const ry = L.shape.ry;
   const vol = st.vol * H.vol;
   const F = makeFlow(st, H);
 
-  const out = [{ id: 'hair', mesh: hairMass(st, pt, H, L.shape, F, L.hatHug) }];
+  const out = [{ id: 'hair', mesh: hairMass(st, pt, H, L.shape, F) }];
   out.push({ id: 'hairWisps', mesh: wispSet(st, pt, H, F, L.shape, 1 + vol) });
 
   if (st.tails === 2) {
