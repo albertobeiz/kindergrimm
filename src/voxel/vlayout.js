@@ -147,7 +147,7 @@ function headLayout(Ps, B) {
   // curving: every row extrudes its widest section straight out to one
   // fixed front plane, so the skull is a loaf — rounded back, rounded
   // silhouette, dead-flat face. Flat is what makes a voxel face read:
-  // the whole eye sits at ONE depth, the way every toy voxel character
+  // the whole eye sits at ONE depth, the way every voxel character
   // ever shipped does it. The silhouette shapes (tall, drop, wonky…)
   // all survive, because the silhouette is the y-profile and the flat
   // front shows it off.

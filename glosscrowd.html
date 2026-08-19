@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>drawai — gloss shelf</title>
+<title>drawai — gloss sheet</title>
 <style>
   :root { --ink: #1f1d1a; --paper: #f6f1e5; }
   * { box-sizing: border-box; margin: 0; }
@@ -48,7 +48,7 @@
   }
   #filters select:hover, #filters select:focus { border-bottom-color: rgba(36,31,25,.7); outline: none; }
   /* a pinned palette is ONE dot, not a five-colour strip: the strip was
-     a block of colour bigger than any toy on the sheet */
+     a block of colour bigger than any character on the sheet */
   #filters .dot {
     width: 9px; height: 9px; border-radius: 50%; margin-left: -6px;
     box-shadow: 0 0 0 1px rgba(36,31,25,.25) inset;
@@ -63,8 +63,8 @@
 <body>
   <div id="stage"></div>
   <div id="hud">
-    <h1>gloss shelf</h1>
-    <span class="hint">click a toy = mold another · drag = turn · wheel = zoom · space = straighten · R = new sheet</span>
+    <h1>gloss sheet</h1>
+    <span class="hint">click a character = another · drag = turn · wheel = zoom · space = straighten · R = new sheet</span>
     <a href="index.html">← menu</a>
   </div>
   <div id="filters"></div>

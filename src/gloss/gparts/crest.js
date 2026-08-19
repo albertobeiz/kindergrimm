@@ -1,11 +1,11 @@
 // THE CREST — ears, horns, and whatever else breaks the top of the
-// head. This is the other half of why the reference reads as a shelf
+// head. This is the other half of why the reference reads as a sheet
 // of CREATURES: a cat, a bear and a bunny are the same ball with the
 // same face, told apart entirely by what sticks up. The silhouette is
 // doing the species work.
 //
 // Ears are PLATES, like the face: flat shapes with a bevelled rim,
-// facing the camera. That is not a cheat — the reference toys' ears
+// facing the camera. That is not a cheat — the reference characters' ears
 // really are this flat — and it means an inner-ear is just a smaller
 // warm plate on top, the way an eye's pupil is. They stand on
 // `L.top(t)`, the layout's rim-of-the-head anchor, tilted a little

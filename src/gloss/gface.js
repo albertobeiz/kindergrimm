@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------
-// THE FACE LIFE — the autonomic half of `anim.js`, ported to a toy
+// THE FACE LIFE — the autonomic half of `anim.js`, ported to a character
 // that has no bones.
 //
 // The drawn rig gets its life from blink, gaze, sway and breath. Only
@@ -7,15 +7,16 @@
 // and gaze is the one that matters:
 //
 //   SOMETHING CATCHES THE EYE, gets looked at, and is let go. The eyes
-//   move first. Then the head WHIPS after them on a loose spring, so
-//   it overshoots and settles rather than easing into place. That
-//   overshoot is the entire difference between a cartoon head turning
-//   and a camera panning, and it is why the spring here is deliberately
-//   under-damped.
+//   move FIRST and FAST — a saccade is ballistic, it lands and stops —
+//   and the head follows late, slower, and only some of the time,
+//   because most real glances are eyes-only. Two separate springs,
+//   both critically damped: an under-damped head was tried (the
+//   cartoon whip-and-overshoot) and it read as bouncing, not looking.
+//   The life is in the eyes leading, not in the head ringing.
 //
-// Here the toy IS the head, so the spring drives the whole body — and
-// because every feature is its own mesh (see `gshape.js`), the eyes
-// leading the head is two translations, not a rebuild.
+// Here the character IS the head, so the head spring drives the whole body —
+// and because every feature is its own mesh (see `gshape.js`), the
+// eyes leading the head is two translations, not a rebuild.
 //
 // EVERYTHING WRITTEN HERE IS AN OFFSET FROM REST. Each frame the
 // features are put back where the rig left them and the offsets are
@@ -52,7 +53,7 @@ const isBrow = id => id.startsWith('brow');
 /**
  * built → an animator that owns every write to the face meshes.
  * `update(t, dt)` then leaves the head's offset on `.head`, which the
- * page adds to whatever else it is doing with that toy.
+ * page adds to whatever else it is doing with that character.
  */
 export function createGlossFace(built, opts = {}) {
   const u = built.L.s;                       // one unit: the body radius
@@ -66,11 +67,13 @@ export function createGlossFace(built, opts = {}) {
 
   let nextBlink = 1 + Math.random() * 3, blinkT = -1;
   let dir = null, until = 0, next = 1 + Math.random() * 4, queue = [];
-  let gx = 0, gy = 0, gvx = 0, gvy = 0;      // the head spring
+  let ex = 0, ey = 0, evx = 0, evy = 0;      // the eyes — a saccade
+  let gx = 0, gy = 0, gvx = 0, gvy = 0;      // the head — settles, never rings
+  let headFollow = 1;                        // does THIS glance turn the head?
   let cur = 'idle', target = 'idle', w = 1;
 
   const api = {
-    // x/y in the TOY's own units (a page at cell scale must multiply),
+    // x/y in the CHARACTER's own units (a page at cell scale must multiply),
     // yaw/pitch/rot in radians
     head: { x: 0, y: 0, yaw: 0, pitch: 0, rot: 0 },
     face: () => target,
@@ -97,7 +100,12 @@ export function createGlossFace(built, opts = {}) {
           // what stops the sheet reading as everyone scanning a room
           queue = Math.random() < .3 ? [d, OPPOSITE[d]] : [d];
           dir = queue.shift();
-          until = t + .5 + Math.random() * 1.4;
+          // most real glances are eyes-only — the head stays put and
+          // only the eyes dart. The head joining in is the exception,
+          // and an eyes-only glance is quicker: a dart, not a stare
+          headFollow = Math.random() < .45 ? 1 : 0;
+          until = t + (headFollow ? .5 + Math.random() * 1.4
+                                  : .3 + Math.random() * .8);
         } else if (dir && t > until) {
           dir = queue.shift() ?? null;
           if (dir) until = t + .4 + Math.random() * 1.1;
@@ -106,12 +114,26 @@ export function createGlossFace(built, opts = {}) {
       }
       const tx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
       const ty = dir === 'up' ? 1 : dir === 'down' ? -1 : 0;
-      // under-damped ON PURPOSE — k high, damp near 1, so it passes the
-      // target and comes back
-      const k = 150, damp = .86;
-      gvx = (gvx + (tx - gx) * k * dt) * damp;
-      gvy = (gvy + (ty - gy) * k * dt) * damp;
-      gx += gvx * dt; gy += gvy * dt;
+      // Both springs are stepped with the EXACT critically-damped
+      // solution, not Euler: the eye spring is stiff (ω·dt > 1 on any
+      // long frame, and building a character costs ~20ms), and an Euler step
+      // there flips the damping term's sign and flings every eye into
+      // a corner. The closed form cannot blow up at any dt.
+      const step = (x, v, tgt, om, h) => {
+        const dx = x - tgt, e = Math.exp(-om * h), b = v + om * dx;
+        return [tgt + (dx + b * h) * e, (v - om * b * h) * e];
+      };
+      // the EYES: fast — a saccade is ballistic, it lands and stops,
+      // it does not ease and it does not ring
+      const eo = 24;
+      [ex, evx] = step(ex, evx, tx, eo, dt);
+      [ey, evy] = step(ey, evy, ty, eo, dt);
+      // the HEAD: slower, chasing the same target only when this
+      // glance turns it — so the eyes visibly arrive first and the
+      // head settles after them without bouncing
+      const ho = 6;
+      [gx, gvx] = step(gx, gvx, tx * headFollow, ho, dt);
+      [gy, gvy] = step(gy, gvy, ty * headFollow, ho, dt);
 
       // ---- expression blend ----
       if (w < 1) w = Math.min(1, w + dt * 4);
@@ -140,8 +162,8 @@ export function createGlossFace(built, opts = {}) {
           // about the eye's middle and a pupil left out at the edge
           // would be squashed about somewhere else and slide clear.
           const tv = m.userData.travel;
-          if (tv) { m.translateX(gx * tv[0] * shut); m.translateY(gy * tv[1] * shut); }
-          else { m.translateX(gx * u * .17); m.translateY(gy * u * .13); }
+          if (tv) { m.translateX(ex * tv[0] * shut); m.translateY(ey * tv[1] * shut); }
+          else { m.translateX(ex * u * .17); m.translateY(ey * u * .13); }
 
           // A parked pupil comes back to the middle as the lid closes.
           // The white squashes about the EYE's centre; a pupil resting
@@ -164,8 +186,10 @@ export function createGlossFace(built, opts = {}) {
 
           m.scale.set(r.scale.x * eyeS, r.scale.y * eyeS * eyeSY * (m.userData.shut ? 1 : shut), r.scale.z);
         } else if (isBrow(id)) {
-          m.translateX(gx * u * .13);
-          m.translateY(gy * u * .12 + browLift * u * .11);
+          // brows belong to the eyes, not the skull — they ride the
+          // saccade, so an eyes-only glance still moves them
+          m.translateX(ex * u * .13);
+          m.translateY(ey * u * .12 + browLift * u * .11);
           m.rotateZ(browRoll * r.side);
         } else if (id.startsWith('mouth')) {
           // ALL the mouth's plates: a maw is an outline, an interior,

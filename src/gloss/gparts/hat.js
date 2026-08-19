@@ -24,9 +24,9 @@
 //          cuff, a headband. This is what `domeFrom` was added for.
 //   PLATE  the flat stuff — a bow, a flower, a crown's points
 //
-// Colour comes off the toy's own palette (`warm`, `lite`, `ink`) rather
+// Colour comes off the character's own palette (`warm`, `lite`, `ink`) rather
 // than a new table. A hat in an unrelated colour is a different
-// product; a hat in the family's colours is an accessory.
+// object; a hat in the family's colours is an accessory.
 const STYLE = {
   none:    null,
   // pulled down over the crown, with a rolled cuff at the rim
@@ -66,7 +66,7 @@ export const Hat = {
   // after the hair, whose outer radius it needs
   id: 'hat', label: 'hat', order: 3,
 
-  // Rare. A hat is a strong statement and the shelf can carry a few.
+  // Rare. A hat is a strong statement and the sheet can carry a few.
   gen: (rng, C) => ({
     // NOBODY wears a hat unless a species asks — see the header. A bear
     // in a beanie is one line away and it is not one anybody wanted.
@@ -92,7 +92,7 @@ export const Hat = {
     const st = STYLE[T.style];
     if (!st) return;
     const col = L.acc;
-    // An accessory is NOT made of the toy: left to inherit the shell's
+    // An accessory is NOT made of the character: left to inherit the shell's
     // finish a beanie on a humanoid is poured in SKIN. `acc` is the
     // soft plastic they all wear, and its sheen is self-coloured —
     // rubber's white one washed a brick red out to pale pink.

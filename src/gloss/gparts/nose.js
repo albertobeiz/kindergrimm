@@ -17,9 +17,9 @@ export const NOSE_STYLES = Object.keys(STYLE);
 export const Nose = {
   id: 'nose', label: 'nose', order: 3,
 
-  // Most toys have NO nose. Two eyes and a mouth is the whole face in
-  // the reference, and a nose on every one of them turns a shelf of
-  // characters into a shelf of the same character.
+  // Most characters have NO nose. Two eyes and a mouth is the whole face in
+  // the reference, and a nose on every one of them turns a sheet of
+  // characters into a sheet of the same character.
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['none', 91], ['dot', 3], ['button', 2], ['snout', 1],
                                  ['cat', 1], ['beak', 1], ['heart', 1]]),

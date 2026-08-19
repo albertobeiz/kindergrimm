@@ -1,5 +1,5 @@
 // SPECTACLES — the first of the EXTRAS, and the ones that change a face
-// most for the least geometry: two frames, a bridge, and the toy is
+// most for the least geometry: two frames, a bridge, and the character is
 // suddenly somebody in particular.
 //
 // Every style is stacked plates, the same trick as a pupil on a white:
@@ -36,7 +36,7 @@ export const Specs = {
   id: 'specs', label: 'specs', order: 4,
 
   // Anecdotal, like the brows and for the same reason: glasses on every
-  // toy stop being a character and become the house style.
+  // character stop being a character and become the house style.
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['none', 88], ['round', 4], ['square', 3],
                                  ['sunnies', 2], ['goggles', 2], ['monocle', 1]]),
@@ -56,13 +56,13 @@ export const Specs = {
     const st = STYLE[S.style];
     if (!st) return;
     const r = L.eyeSize * S.size;
-    // ink, or the accessory colour — never the toy's own warm, which
+    // ink, or the accessory colour — never the character's own warm, which
     // on a humanoid is another skin tone and vanishes
     const frame = S.ink ? L.ink : L.acc;
     // clear of whatever the eyes built, plus air. `eyeProud` is in eye
     // units, so it scales with them.
     const lift = L.eyeSize * (L.eyeProud + .16);
-    // spectacles are plastic, not whatever the toy is poured in
+    // spectacles are plastic, not whatever the character is poured in
     const fin = 'glossy';
     const w = r * st.wf, h = r * st.hf;
     const d = r * .18;

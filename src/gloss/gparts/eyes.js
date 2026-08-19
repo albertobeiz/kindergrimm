@@ -1,4 +1,4 @@
-// THE EYES — the part that decides what the toy IS. Every style is one
+// THE EYES — the part that decides what the character IS. Every style is one
 // plate per side — plus a border, a pupil and a lid on the white-eyed
 // ones — and every one of them lands through `L.at`, so none of them
 // know what shape they are sitting on.
@@ -16,7 +16,7 @@
 // outline + the numbers that outline reads.
 //   `shut`   already a closed lid, so the blink leaves it alone
 //   `sclera` a WHITE eye with a dark pupil laid on it — two plates,
-//            and the pupil is the one thing on this toy that moves
+//            and the pupil is the one thing on this character that moves
 //            independently of the face it is on
 const STYLE = {
   bead:     { outline: 'ellipse', wf: .62, hf: .62 },
@@ -131,7 +131,7 @@ export const Eyes = {
   id: 'eyes', label: 'eyes', order: 1,
 
   // Weighted, not uniform: eleven styles dealt evenly gives a sheet
-  // where a third of the toys have hearts or stars for eyes, and the
+  // where a third of the characters have hearts or stars for eyes, and the
   // odd ones stop being odd. The plain shapes carry the line and the
   // rest are the exceptions.
   gen: (rng, C) => ({
@@ -152,18 +152,18 @@ export const Eyes = {
     // three, which is why it is not the default.
     pupilY: rng.wpick([[.78, 26], [-.72, 20], [0, 24], [.45, 16], [-.4, 14]]),
     // a heavy lid over the top of the eye, and it comes DOWN when the
-    // toy blinks. Only the white-and-pupil eyes read it — a lid on a
+    // character blinks. Only the white-and-pupil eyes read it — a lid on a
     // solid black shape is just a thicker black shape.
     lid: C.chance(rng, 'lid', .4),
     // a wink is not a twelfth style, it is any style with one lid down
     wink: C.chance(rng, 'wink', .08),
     // The face lives in the UPPER half — that empty sweep of body under
-    // the mouth is most of what makes the reference read as a toy
+    // the mouth is most of what makes the reference read as a character
     // rather than a smiley. And these ranges are WIDE on purpose:
     // tiny-eyed and saucer-eyed are the same generator.
     // WIDE-SET and not huge. Two big eyes crowding the centre line is
     // the single thing that makes these read as emoji instead of as
-    // toys — the reference sets them far enough apart that there is
+    // characters — the reference sets them far enough apart that there is
     // face between them.
     x: C.range(rng, 'x', .46, .68),       // face coordinate, out from the middle
     y: C.range(rng, 'y', .08, .3),
@@ -211,7 +211,7 @@ export const Eyes = {
       // radius is a fraction of the SHORTER half-extent — a bar rounded
       // its ends into a capsule and stopped being the shape it named. A
       // clamp on the stretch only bounded the damage. The size varies,
-      // the aspect does not, so `round` is round on every toy.
+      // the aspect does not, so `round` is round on every character.
       const w = r * st.wf;
       const h = r * st.hf;
       const d = r * .34;
@@ -309,7 +309,7 @@ export const Eyes = {
             travel: ride,
             shut: !!(st.shut || shut) });
 
-      // THE PUPIL, and it is the only part of this toy that moves
+      // THE PUPIL, and it is the only part of this character that moves
       // relative to the face it is on. It carries its own travel
       // budget — how far it may slide before it would leave the white
       // — so `gface.js` can drive it without knowing an eye's shape.
@@ -334,7 +334,7 @@ export const Eyes = {
               travel: [(w - pw) * .74, roomY * (1 - Math.abs(E.pupilY)) * .85] });
 
         // THE LID: a heavy stroke lying over the top of the eye, and
-        // it slides down as the toy blinks. It is the clearest thing
+        // it slides down as the character blinks. It is the clearest thing
         // the separate-mesh face buys — a lid closing over a pupil
         // costs one translate and no geometry at all.
         if (E.lid) {

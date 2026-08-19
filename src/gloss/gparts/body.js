@@ -6,10 +6,10 @@
 export const Body = {
   id: 'body', label: 'body', order: 0,
 
-  // The sheet normalises every toy to one HEIGHT, so `r` is nearly
+  // The sheet normalises every character to one HEIGHT, so `r` is nearly
   // invisible and the ratios are everything: squat-and-wide against
   // tall-and-narrow is the only silhouette variety a sphere has. These
-  // were ±6% and every toy came out the same circle.
+  // were ±6% and every character came out the same circle.
   gen: (rng, C) => ({
     r: C.range(rng, 'r', .46, .54),
     // A head is square or WIDER, never taller than it is wide. A tall

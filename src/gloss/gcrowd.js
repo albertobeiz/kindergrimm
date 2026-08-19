@@ -1,20 +1,20 @@
 // ---------------------------------------------------------------
 // THE GLOSS SHEET — `crowd.html` for the molded rig, and built the
 // same way that page is: a FLAT GRID seen straight on, seven across
-// and five down, every toy the same size in its own cell.
+// and five down, every character the same size in its own cell.
 //
-// It was a floor shelf first, receding into depth, and that was the
+// It was a floor first, receding into depth, and that was the
 // wrong page. Depth costs the two things a contact sheet is for: the
 // back row is smaller than the front row so you cannot compare them,
-// and a toy that moves is moving away from you where it barely reads.
+// and a character that moves is moving away from you where it barely reads.
 // Flatten it and every cell is worth the same.
 //
-// The toys hang on a WALL rather than standing on a floor, and the
+// The characters hang on a WALL rather than standing on a floor, and the
 // wall is what makes the lighting work: it sits just behind them, so
-// every toy throws a short shadow onto it and the sheet has depth
+// every character throws a short shadow onto it and the sheet has depth
 // without the camera needing any.
 //
-// THE ANIMATION IS ALL FACE. There is no body-move director — a toy
+// THE ANIMATION IS ALL FACE. There is no body-move director — a character
 // hopping in its cell is a screensaver, and the thing worth watching
 // is thirty-five faces looking around a room and reacting. That whole
 // vocabulary is `gface.js`: gaze, the head whipping after it, blinks,
@@ -25,17 +25,17 @@
 // shows up here with no second implementation to keep in step.
 // ---------------------------------------------------------------
 import * as THREE from 'three';
-import { buildGloss, newGRecipe, ensureGParams, BODY_IDS } from './grig.js';
+import { buildGloss, newGRecipe, ensureGParams, BODY_IDS, STANCE_IDS } from './grig.js';
 import { studioEnv, makeMaterialFactory, dressScene, MATERIALS } from './gmedia.js';
 import { createGlossFace } from './gface.js';
 import { PALETTES } from './gpalette.js';
 import { GSPECIES_IDS } from './gspecies.js';
 
 const CELL_W = 1, CELL_H = 1.06;
-// of a cell. It leaves real air around each toy, and it has to: a gaze
+// of a cell. It leaves real air around each character, and it has to: a gaze
 // swings the head a little way out of its cell and a wide one is close
 // to its neighbour before it even moves.
-const TOY = .74;
+const CHARACTER = .74;
 
 const stage = document.getElementById('stage');
 const countEl = document.getElementById('count');
@@ -50,14 +50,14 @@ const chooseGrid = () => {
 // THE FILTERS. Each dimension is pinned or left to roll — hold two
 // still and the third is the only thing varying, which is the only way
 // to see whether a lever is doing any work. There is deliberately no
-// face-part filter: a sheet with the eyes pinned is not a product
-// line, it is a spreadsheet.
-const filters = { species: 'all', body: 'all', palette: 'all', material: 'all' };
+// face-part filter: a sheet with the eyes pinned is not a cast of
+// characters, it is a spreadsheet.
+const filters = { species: 'all', body: 'all', stance: 'all', palette: 'all', material: 'all' };
 
 // The filters live in the URL, not just in memory: a link with
 // ?species=panda pinned is the whole feature — no share button, no
 // storage, just query params a filter change keeps in sync.
-const FILTER_KEYS = ['species', 'body', 'palette', 'material'];
+const FILTER_KEYS = ['species', 'body', 'stance', 'palette', 'material'];
 function readFiltersFromURL() {
   const q = new URLSearchParams(location.search);
   for (const k of FILTER_KEYS) {
@@ -86,7 +86,7 @@ dressScene(scene, renderer, { shadows: 'wall', span: SPAN, wallZ: .55 });
 const materialFor = makeMaterialFactory(studioEnv(renderer));
 
 // A real lens, not an ortho box: a long-ish 26° so the grid barely
-// converges, but the toys out at the edges still turn a few degrees
+// converges, but the characters out at the edges still turn a few degrees
 // toward you and the sheet reads as objects on a wall instead of a
 // printed page.
 const camera = new THREE.PerspectiveCamera(26, 1, .1, 100);
@@ -127,13 +127,13 @@ function buildSlot(s, recipe = null) {
     // a pinned filter is written in BEFORE the recipe is filled: every
     // field in `ensureGParams` uses ??=, so it only rolls what it was
     // not told
-    for (const k of ['species', 'body', 'palette', 'material'])
+    for (const k of FILTER_KEYS)
       if (filters[k] !== 'all') recipe[k] = filters[k];
   }
   ensureGParams(recipe);
   const built = buildGloss(recipe, { materialFor });
 
-  // One size for the whole sheet — a cell is a cell, and a toy that
+  // One size for the whole sheet — a cell is a cell, and a character that
   // rolled a bigger radius should not get a bigger square.
   //
   // Fitted on BOTH dimensions, not just height: the body ratios go out
@@ -143,15 +143,15 @@ function buildSlot(s, recipe = null) {
   // THE HEAD IS THE SUBJECT, so the head is what gets normalised — a
   // sheet of faces wants every face the same size to be comparable.
   // But fitting by the head ALONE let ears climb into the row above,
-  // and fitting by the whole toy shrank a long-eared head to a pebble
+  // and fitting by the whole character shrank a long-eared head to a pebble
   // to make room for its own ears. So: size by the head, and only fall
   // back to the total when the total would get out of hand. Ears
   // overhang, which is what ears do.
   const B = built.bounds;
-  const budget = CELL_H * TOY;
+  const budget = CELL_H * CHARACTER;
   const scale = Math.min(
     budget / built.L.H,               // heads all one size…
-    // …unless the whole toy runs away. 1.45 × the head budget is 0.98
+    // …unless the whole character runs away. 1.45 × the head budget is 0.98
     // of a cell, so the tallest pair of ears still stops short of the
     // row above — that headroom is the difference between a bunny
     // keeping its head and shrinking it to a pebble to hold its ears.
@@ -159,9 +159,9 @@ function buildSlot(s, recipe = null) {
     // and SIDEWAYS the same bargain, for the same reason: twin tails
     // and a pair of rabbit ears are both wider than the head they are
     // on, and fitted hard they shrank the face to half its
-    // neighbours'. 1.2 × the toy's share is .89 of a cell, so the
+    // neighbours'. 1.2 × the character's share is .89 of a cell, so the
     // widest still leaves a lane between itself and the next one.
-    (CELL_W * TOY * 1.2) / B.w,
+    (CELL_W * CHARACTER * 1.2) / B.w,
   );
   const holder = new THREE.Group();
   holder.position.set(s.x, s.y, 0);
@@ -193,7 +193,7 @@ function hud() {
     .map(([k, v]) => `${k}: ${v}`).join(' · ');
   countEl.textContent = made.length < slots.length
     ? `molding… ${made.length}/${slots.length}`
-    : `${slots.length} toys · ${made.reduce((a, s) => a + s.built.stats.verts, 0).toLocaleString()} verts`
+    : `${slots.length} characters · ${made.reduce((a, s) => a + s.built.stats.verts, 0).toLocaleString()} verts`
       + (pinned ? ` · ${pinned}` : '');
 }
 
@@ -223,6 +223,7 @@ function buildFilters() {
 
   sel('species', GSPECIES_IDS.map(id => ({ id, label: id })));
   sel('body', BODY_IDS.map(id => ({ id, label: id })));
+  sel('stance', STANCE_IDS.map(id => ({ id, label: id })));
   sel('palette', PALETTES);
   // a palette is unreadable as a word, so the pinned one carries a dot
   // of its first colour — one colour, not the whole five-swatch strip
@@ -310,11 +311,15 @@ function animate(s, t, dt) {
   const swayY = Math.cos(own * .37) * CELL_H * .006;
 
   const h = s.holder;
-  // head.x/y arrive in the TOY's units — a cell is a different size, so
-  // they have to be brought over or the whole gaze becomes a twitch
-  h.position.set(s.x + swayX + head.x * s.scale, s.y + swayY + head.y * s.scale, 0);
-  h.rotation.set(head.pitch, head.yaw, head.rot);
-  // volume-preserving, so a breath reads as weight and not as the toy
+  h.position.set(s.x + swayX, s.y + swayY, 0);
+  // the gaze turns the HEAD, not the holder: head.x/y are already in
+  // the character's own units, and the head group lives inside the scaled
+  // group, so no unit conversion — and a character with a torso keeps its
+  // feet planted while it looks
+  const hd = s.built.head;
+  hd.position.set(head.x, hd.userData.restY + head.y, 0);
+  hd.rotation.set(head.pitch, head.yaw, head.rot);
+  // volume-preserving, so a breath reads as weight and not as the character
   // changing size
   h.scale.set(s.scale / Math.sqrt(sy), s.scale * sy, s.scale / Math.sqrt(sy));
 }
@@ -336,7 +341,7 @@ addEventListener('pointerup', e => {
   drag = null;
 });
 
-// a tap re-molds that toy: the same cell, somebody else in it
+// a tap re-molds that character: the same cell, somebody else in it
 function tap(ev) {
   const r = renderer.domElement.getBoundingClientRect();
   ray.setFromCamera(new THREE.Vector2(
@@ -344,7 +349,11 @@ function tap(ev) {
     -((ev.clientY - r.top) / r.height) * 2 + 1,
   ), camera);
   for (const hit of ray.intersectObjects(scene.children, true)) {
-    const s = slots.find(s => s.built && hit.object.parent?.parent === s.holder);
+    // walk up to the holder: a face mesh is one level deeper than a
+    // frame mesh now that the head is its own group
+    let o = hit.object;
+    while (o && !slots.some(s => s.holder === o)) o = o.parent;
+    const s = slots.find(s => s.built && s.holder === o);
     if (s && !queue.includes(s)) { queue.push(s); return; }
   }
 }
@@ -374,7 +383,7 @@ function frame(now = performance.now()) {
   const t = now / 1000, dt = Math.max(0, Math.min(.1, (now - last) / 1000));
   last = now;
 
-  // a TIME budget, not a count: a toy is a few ms now, so the sheet
+  // a TIME budget, not a count: a character is a few ms now, so the sheet
   // fills almost at once on a fast machine and still never stutters
   if (queue.length) {
     const until = performance.now() + 8;
@@ -426,5 +435,6 @@ window.__gcrowd = {
     faces: slots.map(s => s.life?.face()),
     palettes: slots.map(s => s.recipe?.palette),
     materials: slots.map(s => s.recipe?.material),
+    stances: slots.map(s => s.recipe?.stance),
   }),
 };

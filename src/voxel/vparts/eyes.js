@@ -114,7 +114,7 @@ function base(type, pal, ix, iy, W, H, gix, giy, tight, sd) {
   const px = Math.max(0, Math.min(W - 1, Math.round(cx + gix * swx)));
   const py = Math.max(0, Math.min(H - 1, Math.round(cy + giy * swy)));
   const pupil = (rx, ry) => Math.abs(ix - px) <= rx && Math.abs(iy - py) <= ry;
-  // A toy pupil is a BLOCK — about a third of the eye, never clipped:
+  // A voxel pupil is a BLOCK — about a third of the eye, never clipped:
   // it slides along the sclera and stays whole at the far edge, which
   // is what sells "looking at something" instead of "eye glitching".
   // Both the block and its travel grow with the eye.

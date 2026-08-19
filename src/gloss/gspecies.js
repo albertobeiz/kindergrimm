@@ -13,7 +13,7 @@
 // Anything a profile does not mention keeps the part's own default, so
 // a profile states only what makes that species different. A species
 // may also bias the BODY form (sphere vs cube) — but never the palette
-// or the material: what a toy is made of is a separate lever, and a
+// or the material: what a character is made of is a separate lever, and a
 // lavender bear is still a bear. The EARS do the species work, and
 // after the eye patch and the muzzle were both cut they do nearly all
 // of it — which is worth knowing before adding a species: if it cannot
@@ -24,17 +24,23 @@
 // rock is a creature and a humanoid is not one, so the humanoid's
 // profile lists the two forms a person can be.
 //
-// `wildcard` is the free roll — the shelf the lab had before species
+// `wildcard` is the free roll — the sheet the lab had before species
 // existed. It stays the biggest slice on purpose: the casting is there
-// to make the compound toys (bunny, pig, robot) arrive assembled, not
+// to make the compound characters (bunny, robot) arrive assembled, not
 // to turn the generator into eight fixed characters.
 // ---------------------------------------------------------------
+
+// A species may also weight the STANCE (none / biped) the same way it
+// weights the body form. Head-only stays everyone's biggest slice — it
+// is the house look — and the lump species pin it, because a slime
+// with legs contradicts what a slime is.
 
 export const GSPECIES = {
   wildcard: { label: 'wildcard', cast: {} },
 
   bear: {
     label: 'bear',
+    stance: { none: 56, biped: 44 },
     cast: {
       crest:  { style: { bear: 90, none: 10 }, size: [.72, .95], spread: [.5, .72] },
       eyes:   { style: { bead: 38, pupil: 24, oval: 20, sleepy: 18 },
@@ -47,6 +53,7 @@ export const GSPECIES = {
 
   bunny: {
     label: 'bunny',
+    stance: { none: 56, biped: 44 },
     cast: {
       body:   { tall: [.94, 1] },
       crest:  { style: { bunny: 95, none: 5 }, size: [.82, 1] },
@@ -61,6 +68,7 @@ export const GSPECIES = {
 
   cat: {
     label: 'cat',
+    stance: { none: 65, biped: 35 },
     cast: {
       crest:  { style: { cat: 95, none: 5 } },
       // set WIDE, and winking more than anybody else
@@ -69,19 +77,6 @@ export const GSPECIES = {
       mouth:  { style: { cat: 44, smile: 20, zig: 16, flat: 20 }, teeth: .5, tongue: .5 },
       nose:   { style: { none: 86, cat: 9, dot: 5 } },
       brows:  { style: { none: 94, sad: 6 } },
-    },
-  },
-
-  pig: {
-    label: 'pig',
-    cast: {
-      // the pig's snout is the NOSE part's now: a wide plate, warm,
-      // and bigger than any other nose gets
-      nose:   { style: { snout: 78, button: 14, dot: 8 }, size: [1.5, 2], warm: .85 },
-      crest:  { style: { stubs: 42, cat: 28, none: 30 }, size: [.7, .9] },
-      eyes:   { style: { bead: 44, pupil: 24, sleepy: 16, googly: 16 }, size: [.115, .155] },
-      mouth:  { style: { smile: 36, flat: 26, open: 20, none: 18 } },
-      blush:  { style: { oval: 45, round: 20, none: 35 } },
     },
   },
 
@@ -99,9 +94,58 @@ export const GSPECIES = {
     },
   },
 
+  // THE LUMPS — a rock and a slime as whole characters, not just body
+  // forms a wildcard can roll. Same name as the form on purpose: the
+  // species IS the shape. Head only (the form's foot or base is
+  // already its bottom), no hair, no extras — a rock in spectacles is
+  // a gag, and one gag per sheet is the mark part's job, not a
+  // species'. The silhouette does all the species work here, so the
+  // crest stays off it too.
+  rock: {
+    label: 'rock',
+    body: { rock: 100 },
+    stance: { none: 100 },
+    cast: {
+      crest:  { style: { none: 100 } },
+      // heavy-lidded and unimpressed: a rock has been here a while
+      eyes:   { style: { bead: 30, sleepy: 24, pupil: 18, oval: 14, cross: 7, angry: 7 },
+                size: [.11, .15] },
+      mouth:  { style: { flat: 30, frown: 22, smile: 18, zig: 16, open: 14 }, teeth: .15 },
+      nose:   { style: { none: 100 } },
+      brows:  { style: { none: 55, flat: 25, angry: 20 } },
+      blush:  { style: { none: 75, oval: 15, round: 10 } },
+      specs:  { style: { none: 100 } },
+      mark:   { style: { none: 100 } },
+    },
+  },
+
+  slime: {
+    label: 'slime',
+    body: { slime: 100 },
+    stance: { none: 100 },
+    cast: {
+      crest:  { style: { none: 100 } },
+      // wide awake and delighted about it — the drop shape reads sad
+      // on its own, so the face pulls the other way
+      eyes:   { style: { googly: 22, bead: 20, happy: 16, pupil: 14, oval: 12,
+                         wobble: 8, spiral: 8 } },
+      mouth:  { style: { open: 26, smile: 24, grin: 18, cat: 12, zig: 10, holler: 10 },
+                tongue: .5, teeth: .3 },
+      nose:   { style: { none: 100 } },
+      brows:  { style: { none: 85, worry: 15 } },
+      blush:  { style: { none: 55, round: 25, oval: 20 } },
+      specs:  { style: { none: 100 } },
+      mark:   { style: { none: 100 } },
+    },
+  },
+
   humanoid: {
     label: 'humanoid',
-    // A humanoid is a TOY like the rest of the shelf — a ball or a
+    // A PERSON STANDS. Head-only is the house look for a creature, but
+    // a floating humanoid head with no body reads as a decapitation,
+    // not a character — so this is the one species pinned to biped.
+    stance: { biped: 100 },
+    // A humanoid is a CHARACTER like the rest of the sheet — a ball or a
     // block with a face and a haircut. It had a modeled skull for a
     // while and the skull was the wrong object. It is NOT a rock or a
     // slime: those two are creature shapes, and naming the two forms a
@@ -115,6 +159,9 @@ export const GSPECIES = {
       // near-square and softly cornered: the head is the stage the
       // face and the hair are set on, so it stays out of the way
       body:   { wide: [1, 1.12], tall: [.92, 1], corner: [2.6, 3.6] },
+      // ALWAYS DRESSED. A skin-coloured torso on a person reads as
+      // naked, not as a blank — the one biped that cannot go bare.
+      frame:  { dressed: 1 },
       // NO CREST. Ears and horns are the other species' silhouette
       // work; a humanoid's is its HAIR, which is a part of its own now
       // (`hair.js`) and owns the whole crown. The three ink plates that
@@ -124,7 +171,7 @@ export const GSPECIES = {
       // HATS ARE HUMAN. The part's own default is `none` at 100, so a
       // bear cannot turn up in a beanie; this is the only table that
       // deals them. `beanie` and `band` are worn on a bare head (see
-      // `hatBare`), so between them they also carry most of the shelf's
+      // `hatBare`), so between them they also carry most of the sheet's
       // bald characters — which is why they are not the rarest here.
       hat:    { style: { none: 82, beanie: 6, band: 4, bow: 4, flower: 3, crown: 1 } },
       // THE HAIRCUT, and it is most of the character. Weighted the way
@@ -132,7 +179,7 @@ export const GSPECIES = {
       // cuts and the tied-up ones are the ones you notice. `bald` stays
       // in at a few percent because a bald chibi is a real character
       // and the skull is good enough to show off.
-      // Weighted so the SHELF has styling, not one haircut in fourteen
+      // Weighted so the SHEET has styling, not one haircut in fourteen
       // lengths. The blunt bowl is deliberately small — it was most of
       // the sheet, and a blunt fringe is the one shape that makes every
       // head look like the same head. The upswept group and the media
@@ -148,7 +195,7 @@ export const GSPECIES = {
       // features, and casting three styles gave three characters.
       // Only the placement is opinionated: chibi eyes sit LOW, at or
       // under the centreline, down in the wide cheeks with all that
-      // cranium empty above — the opposite of the toys' upper-half
+      // cranium empty above — the opposite of the characters' upper-half
       // rule, and it is what the reference sheets all do.
       // Listed in full because a cast style table is EXCLUSIVE — what
       // you leave out cannot happen — so "all of them, orb first" has
@@ -169,7 +216,7 @@ export const GSPECIES = {
                          crescent: 1, star: 1, heart: 1, ring: 1,
                          flower: 1, angry: 1, wobble: 1, spiral: 1 },
                 size: [.15, .185], x: [.58, .70], y: [-.38, -.24], lid: .3 },
-      // a face with a real nose more often than the toys get one
+      // a face with a real nose more often than the characters get one
       nose:   { style: { none: 62, button: 14, dot: 12, cat: 4, heart: 4, beak: 2, snout: 2 },
                 warm: .6 },
       // SMALL, and a line rather than a maw. Two jobs: the reference
@@ -179,7 +226,7 @@ export const GSPECIES = {
       mouth:  { style: { smile: 26, cat: 16, flat: 14, zig: 10, frown: 8, none: 12,
                          open: 8, grin: 6 },
                 y: [-.52, -.36], size: [.32, .5] },
-      // the most browed species on the shelf, and the only one where
+      // the most browed species on the sheet, and the only one where
       // brows are the RULE rather than an anecdote: the reference
       // faces nearly all have a pair, high on that clear forehead,
       // and on a face this plain they carry the whole expression
@@ -192,8 +239,12 @@ export const GSPECIES = {
   robot: {
     label: 'robot',
     body: { cube: 90, sphere: 10 },
+    stance: { none: 40, biped: 60 },
     cast: {
       body:   { corner: [3.4, 5.5] },
+      // a robot's torso is its own chassis — the pour, chrome and all —
+      // not a jumper pulled over it
+      frame:  { dressed: .1 },
       crest:  { style: { stubs: 52, none: 36, horns: 12 }, size: [.58, .8] },
       eyes:   { style: { box: 38, square: 26, slab: 20, ring: 16 }, lid: .15 },
       // mostly bare: a robot's face is the grid grin and the screen
@@ -207,18 +258,20 @@ export const GSPECIES = {
 
 export const GSPECIES_IDS = Object.keys(GSPECIES);
 
-// how the shelf deals them. Wildcard stays the biggest slice — see the
+// how the sheet deals them. Wildcard stays the biggest slice — see the
 // header — and the compound species split the rest about evenly.
 // `panda` used to sit here. Its whole identity was the ink eye patch,
 // so when that went it cast a bear with different weights — a species
 // you cannot tell from another is not a species. Its share went back
-// to the bear it had become.
-// The pig is dealt THIN because it always has a snout, and a snout is
-// a nose: at 9% of the shelf it was over half of every nose on it, so
-// the pig's share is the real lever on how nosey the whole sheet is.
+// to the bear it had become. `pig` is gone too, and its share went
+// back to the wildcard.
+// The lumps are dealt THIN because their body forms also still turn up
+// through the wildcard and the monster, so their species share plus
+// those rolls is the real rate of geology on a sheet.
 export const GSPECIES_WEIGHTS = [
-  ['wildcard', 30], ['bear', 17], ['bunny', 12], ['cat', 12],
-  ['monster', 11], ['humanoid', 9], ['robot', 8], ['pig', 5],
+  ['wildcard', 32], ['bear', 16], ['bunny', 12], ['cat', 12],
+  ['monster', 10], ['humanoid', 9], ['robot', 8],
+  ['rock', 5], ['slime', 4],
 ];
 
 const wpick = (rng, pairs) => {
@@ -229,10 +282,26 @@ const wpick = (rng, pairs) => {
 };
 
 /** the species' opinion on which body form, if it has one — otherwise
- *  the shelf's own weighted deal. Weighted on BOTH sides: a uniform
+ *  the sheet's own weighted deal. Weighted on BOTH sides: a uniform
  *  default made the two bent forms 40% of a sheet. */
-export function pickGBody(speciesId, rng, defaultPairs) {
+export function pickGBody(speciesId, rng, defaultPairs, { without = null } = {}) {
   const w = GSPECIES[speciesId]?.body;
+  let pairs = w ? Object.entries(w) : defaultPairs;
+  // a PINNED stance excludes the modeled forms before the roll — a
+  // rock cannot take a frame, and a biped-pinned sheet full of
+  // head-only lumps is the filter quietly not filtering
+  if (without) {
+    pairs = pairs.filter(([id]) => !without(id));
+    // a species whose whole table is excluded (a rock pinned to biped)
+    // falls back to the sheet's deal, still filtered
+    if (!pairs.length) pairs = defaultPairs.filter(([id]) => !without(id));
+  }
+  return wpick(rng, pairs);
+}
+
+/** the same deal for the STANCE — head-only or biped. */
+export function pickGStance(speciesId, rng, defaultPairs) {
+  const w = GSPECIES[speciesId]?.stance;
   return wpick(rng, w ? Object.entries(w) : defaultPairs);
 }
 

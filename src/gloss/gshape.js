@@ -9,7 +9,7 @@
 // The plate is the whole face system, and it is one shape of thing on
 // purpose: a flat front with a rounded rim. That rim is the cartoon
 // read — it is what catches the studio highlight around the edge of an
-// eye, and it is why a feature looks moulded into the toy rather than
+// eye, and it is why a feature looks moulded into the character rather than
 // printed on it.
 //
 // AUTHORING RULE: a plate's front crest sits at z = 0 and its body

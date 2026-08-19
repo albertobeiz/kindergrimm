@@ -2,7 +2,7 @@
 // THE LAYOUT — everything two parts must agree on, measured once.
 //
 // Coordinates: world units, y up, +z toward the viewer (the face is on
-// the +z side), origin at the FLOOR under the toy. Same convention as
+// the +z side), origin at the FLOOR under the character. Same convention as
 // the voxel lab, and for the same reason: a solid wants measuring from
 // the ground it sits on.
 //
@@ -27,12 +27,13 @@ import { eyeReach, eyeSpan, eyeProud } from './gparts/eyes.js';
 import { hairOuter } from './ghair.js';
 import { hatBare } from './gparts/hat.js';
 import { mouthReach, mouthSpan } from './gparts/mouth.js';
+import { frameLayout } from './gparts/frame.js';
 // the ONE copy of each surface: the same functions/arrays the body is
 // BUILT from, so where a feature lands and where the skin is can
 // never disagree (see gshape.js and gskull.js)
 import { surfT, surfN } from './gshape.js';
 import { formSurface, isMeshForm } from './gform.js';
-import { HAIR_BY_ID, INK, mix, luma, pickAcc } from './gpalette.js';
+import { HAIR_BY_ID, INK, mix, luma, pickAcc, pickOutfit } from './gpalette.js';
 
 // how far off centre ax = ±1 reaches, in radians. Beyond ~1.05 a
 // feature starts wrapping onto the side of the head where the camera
@@ -40,7 +41,7 @@ import { HAIR_BY_ID, INK, mix, luma, pickAcc } from './gpalette.js';
 const SPREAD = .92;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-export function buildGlossLayout(P, colors, form = 'sphere') {
+export function buildGlossLayout(P, colors, form = 'sphere', stance = 'none') {
   const B = P.body;
 
   // ---- the surface, per form ------------------------------------------
@@ -60,7 +61,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   //
   // There WAS a third form here — `head`, a modeled chibi skull from a
   // subdivided control cage. It is gone, and so is `gskull.js`. It was
-  // a good skull and it was the wrong object: this lab makes TOYS, and
+  // a good skull and it was the wrong object: this lab makes CHARACTERS, and
   // a sphere or a cube with a face on it is one. Everything the skull
   // was carrying — the hair, the proportions, the face catalogue — sits
   // on these two perfectly well, and one exponent is a knob you can
@@ -69,7 +70,24 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // instead — see `formK`. A cube is the only form that reads `corner`.
   const exp = form === 'cube' ? B.corner : 2;
   const meshed = isMeshForm(form);
-  let cy = ry, topY = ry * 2, at, top, hwAt, formMesh = null;
+
+  // THE STANCE — what the head stands on. Computed FIRST, because the
+  // head's whole height depends on it; everything after this only sees
+  // a bigger `cy`, which is what lets the face catalogue survive a
+  // torso arriving under it untouched. A modeled form (rock, slime) is
+  // already a whole creature — its foot or its base IS its bottom — so
+  // it never takes a frame.
+  if (meshed) stance = 'none';
+  const frame = stance !== 'none'
+    ? frameLayout(P.frame, { r: B.r, ry }, stance) : null;
+  const lift = frame ? frame.headBase : 0;
+
+  let cy = ry + lift, topY = ry * 2 + lift, at, top, hwAt, formMesh = null;
+  // the HEAD's lowest point. The floor and the bottom of the head used
+  // to be the same y, and the chin clamps below leaned on that — with
+  // a frame they split, and a clamp still measuring off the floor
+  // would happily run a maw down onto the chest.
+  let botY = lift;
 
   if (meshed) {
     // MODELED: a control cage through Catmull-Clark (`gform.js`), and
@@ -80,6 +98,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     formMesh = F.mesh;
     cy = -F.minY;
     topY = cy + F.maxY;
+    botY = 0;
     const cast = (dx, dy, dz) =>
       // the jittered retry is for a ray grazing an edge exactly: rare,
       // but a null here would take the whole build down
@@ -148,7 +167,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     // is shallower than the cranium, so an eye set low runs out of
     // chin long before it runs out of forehead
     const roomUp = topY * .93 - a0.p[1];
-    const roomDn = a0.p[1] - cy * .07;
+    const roomDn = a0.p[1] - (botY + (cy - botY) * .07);
     eyeSize = Math.min(
       eyeSize,
       Math.min(roomUp, roomDn) / reachY,     // stays on the head, top and bottom
@@ -174,7 +193,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // sine. The height a face coordinate lands at depends on the depth
   // radius and the exponent as well as `ry`, so `asin(y / ry)` is only
   // right on a perfect sphere — and it was wrong often enough to leave
-  // one toy in twenty still overlapping.
+  // one character in twenty still overlapping.
   const surfY = v => at(0, v).p[1];
   const clearY = at(eyeX, eyeY).p[1]                    // the eye's centre
                  - eyeReach(P) * eyeSize                // down to its lowest ink
@@ -208,7 +227,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
   // looked upward at the eyes.
   {
     const need = mouthReach(P) * eyeR * mouthFit;
-    const room = surfY(mouthY) - cy * .12;
+    const room = surfY(mouthY) - (botY + (cy - botY) * .12);
     if (need > room) mouthFit *= Math.max(.35, room / need);
   }
 
@@ -229,7 +248,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
    * there stands almost edge-on: it reads as a fin sticking off the
    * outline rather than a mark on the face. Cheeks are the ones that
    * do it — they are placed OUTBOARD of the eyes by design, and one
-   * toy in five had one hanging off the side.
+   * character in five had one hanging off the side.
    *
    * The guard used to live in the face part, and was lost when the
    * face was split into six of them. It belongs here: it is a fact
@@ -286,18 +305,42 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
                     .18 + .42 * (NEED - Math.abs(d)) / NEED);
   }
 
+  // THE OUTFIT — colours the frame wears, resolved HERE because they
+  // are agreements: cloth must clear the skin and the hair, gloves and
+  // shoes must clear the cloth, and the print's ink must clear its own
+  // cloth (light ink on dark cloth, dark on light — a tone-on-tone
+  // print vanishes at sheet scale). The frame part just reads it.
+  let outfit = null;
+  if (frame) {
+    const F = P.frame;
+    const { cloth, glove, shoe } = pickOutfit(F.clothIx ?? 0, colors.body, hairHex);
+    outfit = {
+      dressed: !!F.dressed, cloth, glove, shoe,
+      motif: F.dressed ? (F.motif ?? 'none') : 'none',
+      ink: luma(cloth) < .45 ? '#F2ECE2' : '#2B2422',
+    };
+  }
+
   return {
+    outfit,
     rx, ry, rz,
     form, exp,                 // the body's shape family, for the part
     // the body as raw numbers — the only thing HAIR needs in order to
     // grow on it, and the reason one hair generator covers both forms
     shape: { rx, ry, rz, exp, cy },
     formMesh,                  // the modeled bodies' arrays, to stamp
+    // the STANCE, measured. `frame` is null for a head-only character, and
+    // the frame part stamps exactly what is in here — the layout is
+    // the one place the head and the torso can agree on a socket.
+    stance, frame,
     hair: hairHex,
     // pulled toward ink: a platinum brow at full strength vanishes, and
     // an ink brow under blonde hair belongs to a different face
     browColor: hasHair ? mix(hairHex, INK, .38) : INK,
-    H: topY, W: rx * 2,
+    // H is the HEAD's height, not the character's: the sheet normalises faces
+    // by it, and a head that shrank because it grew a body would defeat
+    // the point of having one. The whole character's height is in `bounds`.
+    H: topY - botY, W: rx * 2,
     cy,                        // the body's centre, sitting on the floor
     s: B.r,                    // the one number every feature scales off
     eyeX, eyeY, mouthY, mouthFit,
@@ -308,7 +351,7 @@ export function buildGlossLayout(P, colors, form = 'sphere') {
     hairTop: hasHair ? hairOuter(P) : 1,
     // a pulled-on hat is worn on a BARE head — see `hatBare`
     hatBare: bare,
-    // what the EXTRAS are made of: never the toy's own five, and
+    // what the EXTRAS are made of: never the character's own five, and
     // guaranteed clear of both the skin and the hair
     acc: pickAcc(P.hat?.accIx ?? 0, colors.body, hairHex),
     eyeR,                      // the unit the OTHER face parts size off

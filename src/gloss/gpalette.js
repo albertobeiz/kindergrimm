@@ -2,8 +2,8 @@
 // THE PALETTES — twelve soft five-colour sets, from the reference
 // sheet. A character picks a PALETTE, then one colour out of it for
 // the body and a second for its warm bits (blush, tongue, an accent).
-// Both come from the same five, which is what stops a shelf of twenty
-// looking like twenty unrelated toys.
+// Both come from the same five, which is what stops a sheet of twenty
+// looking like twenty unrelated characters.
 //
 // These were sampled from the swatches by eye — the printed hex codes
 // on the sheet are below legible resolution. Correcting one is editing
@@ -20,11 +20,11 @@ export const INK = '#2b2422';
 // The white of an eye — warm and slightly off, never paper white. It
 // sits outside the palettes for the same reason INK does: one value
 // across the whole lab is what makes twelve palettes look like one
-// product line rather than twelve products.
+// cast rather than twelve unrelated ones.
 export const SCLERA = '#f6f2e9';
 
 // Inside an open mouth. Dark warm maroon, shared like INK: every open
-// maw on the shelf is the same pour, which is most of what makes a
+// maw on the sheet is the same pour, which is most of what makes a
 // mouth read as an interior rather than as a dark sticker.
 export const MAW = '#5b2530';
 
@@ -69,13 +69,13 @@ export const PALETTE_BY_ID = Object.fromEntries(PALETTES.map(p => [p.id, p]));
 
 // ---------------------------------------------------------------
 // HAIR. Its own table, and that is the point: hair is never the body's
-// colour. A toy's five-colour set is what makes a shelf look like one
-// product line; a HEAD's hair is what tells two of them apart, so it is
+// colour. A character's five-colour set is what makes a sheet look like
+// one cast; a HEAD's hair is what tells two of them apart, so it is
 // dealt from here instead, exactly as `INK` sits outside the palettes.
 //
 // Weighted, because frequency is art direction here too. The naturals
 // carry the line — a sheet where a third of the heads are mint is a
-// toy shelf again, not a cast of characters — and the dyed half is the
+// novelty aisle, not a cast of characters — and the dyed half is the
 // treat. `ink` leads: black hair is the commonest hair there is, and it
 // is the one value already doing every brow and eye in the lab.
 // ---------------------------------------------------------------
@@ -106,14 +106,14 @@ export const HAIR_WEIGHTS = HAIR_COLORS.filter(c => c.w > 0).map(c => [c.id, c.w
 // ---------------------------------------------------------------
 // ACCESSORIES. Their own table, for exactly the reason hair has one: a
 // hat, a frame or a plaster has to be VISIBLE, and it cannot be if it
-// is drawn from the toy's own five. On a humanoid that is fatal —
+// is drawn from the character's own five. On a humanoid that is fatal —
 // every colour in the `skin` palette IS a skin tone, so the first
 // beanie came out as a bald head.
 //
-// These are the accessory colours a toy shelf actually uses: strong,
+// These are the colours real accessories actually use: strong,
 // slightly dirty, and few. `pickAcc` then guarantees the one chosen
 // stands clear of BOTH the body and the hair, so a red hat never lands
-// on a red toy and a black one never lands on black hair.
+// on a red character and a black one never lands on black hair.
 // ---------------------------------------------------------------
 // No terracotta and no tan. They were in, and against a skin body they
 // scored well on luma while being the same HUE — a brick beanie on a
@@ -124,7 +124,7 @@ export const ACC_COLORS = [
   '#5E9E86', '#3F7FA6', '#6E4E8C', '#8A8E93', '#B8375C', '#3E5C4A',
 ];
 
-/** the accessory colour furthest in luma from both the toy and its
+/** the accessory colour furthest in luma from both the character and its
  *  hair, chosen deterministically from a rolled index so the same
  *  recipe always gets the same one. */
 export function pickAcc(i, body, hair) {
@@ -144,11 +144,41 @@ export function pickAcc(i, body, hair) {
     // stand off the skin and off the hair, not average well
     const d = Math.min(dist(C, B), dist(C, H));
     // the rolled index breaks ties, so a sheet still varies instead of
-    // every toy converging on the one safest colour
+    // everyone converging on the one safest colour
     const sc = d + (k === 0 ? .05 : 0);
     if (sc > score) { score = sc; best = c; }
   }
   return best;
+}
+
+/**
+ * The OUTFIT: cloth for the torso, gloves, shoes — three picks from
+ * `ACC_COLORS`, chosen greedily so each stands clear of the skin, the
+ * hair AND the pieces already picked. Same scoring as `pickAcc` (full
+ * RGB distance, worst clearance decides) and deterministic from the
+ * rolled index, so a recipe always dresses the same way. Gloves and
+ * shoes only have to clear the CLOTH and the skin — a glove matching
+ * a shoe is a set, not a clash.
+ */
+export function pickOutfit(i, body, hair) {
+  const rgb = hex => { const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const pickVs = (ix, against) => {
+    let best = ACC_COLORS[0], score = -1;
+    for (let k = 0; k < ACC_COLORS.length; k++) {
+      const c = ACC_COLORS[(k + ix) % ACC_COLORS.length];
+      const C = rgb(c);
+      const d = Math.min(...against.map(a => dist(C, rgb(a))));
+      const sc = d + (k === 0 ? .05 : 0);
+      if (sc > score) { score = sc; best = c; }
+    }
+    return best;
+  };
+  const cloth = pickVs(i, [body, hair]);
+  const glove = pickVs(i + 3, [body, cloth]);
+  const shoe = pickVs(i + 6, [body, cloth]);
+  return { cloth, glove, shoe };
 }
 
 /** a → b by t, in hex. For the brow, which is the hair's own colour

@@ -49,3 +49,9 @@ be saved, shared and rebuilt inside a game at runtime.
   Eyes pre-draw six states, so a glance is a texture swap.
 - `src/crowd.js` — the crowd, plus the life director that makes one
   character glance, mutter or throw an emote every so often.
+
+## License
+
+Public domain, under [the Unlicense](LICENSE) — use it anywhere, for
+anything, no strings. Attribution is not required, but a link back is
+always appreciated.

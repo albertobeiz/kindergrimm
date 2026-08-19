@@ -1,6 +1,6 @@
 // THE BLUSH. Two warm patches out on the cheeks, in a colour taken
-// from the toy's own palette rather than a pink invented for the job —
-// which is what keeps a shelf of twenty looking like one product line.
+// from the character's own palette rather than a pink invented for the job —
+// which is what keeps a sheet of twenty looking like one cast.
 //
 // It sits barely proud: a cheek is the one feature that should read as
 // painted on rather than moulded in.

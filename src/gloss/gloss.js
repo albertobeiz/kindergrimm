@@ -1,11 +1,12 @@
 // ---------------------------------------------------------------
-// THE GLOSS LAB — one toy on a cream sweep with every knob exposed.
-// The shelf page (`gcrowd.js`) is the opposite view of the SAME
+// THE GLOSS LAB — one character on a cream sweep with every knob exposed.
+// The sheet page (`gcrowd.js`) is the opposite view of the SAME
 // generator: both call `buildGloss`, so a part added here shows up
 // there with no second implementation to keep in step.
 // ---------------------------------------------------------------
 import * as THREE from 'three';
-import { buildGloss, newGRecipe, ensureGParams, rerollGPart, GPARTS, BODY_IDS } from './grig.js';
+import { buildGloss, newGRecipe, ensureGParams, rerollGPart, GPARTS, BODY_IDS,
+         STANCE_IDS } from './grig.js';
 import { GSPECIES, GSPECIES_IDS } from './gspecies.js';
 import { PALETTES, PALETTE_BY_ID } from './gpalette.js';
 import { studioEnv, makeMaterialFactory, dressScene, MATERIALS } from './gmedia.js';
@@ -49,7 +50,9 @@ let yaw = 0, pitch = .05, dist = 3.2, drag = null;
 function placeCamera() {
   const L = built.L;
   const cy = L.cy;
-  const d = dist * Math.max(L.H, L.W);
+  // frame the HEAD, but never so tight the character's feet fall off the
+  // bottom of the stage — the bounds carry whatever a stance added
+  const d = dist * Math.max(L.H, L.W, built.bounds.h * .8);
   camera.position.set(
     Math.sin(yaw) * Math.cos(pitch) * d,
     cy + Math.sin(pitch) * d,
@@ -81,9 +84,10 @@ function frame(dt = 16) {
   const head = life.update(t, d);
   const s = 1 + Math.sin(t * 1.8) * .007;                     // breathing
   built.group.scale.set(1 / Math.sqrt(s), s, 1 / Math.sqrt(s));
-  built.group.position.set(head.x, head.y, 0);
-  // the turn is what sells a look; the shift is the follow-through
-  built.group.rotation.set(head.pitch, head.yaw, head.rot);
+  // the turn is what sells a look; the shift is the follow-through —
+  // and it is the HEAD's, so a character with a torso keeps its feet still
+  built.head.position.set(head.x, built.head.userData.restY + head.y, 0);
+  built.head.rotation.set(head.pitch, head.yaw, head.rot);
 
   placeCamera();
   renderer.render(scene, camera);
@@ -118,6 +122,7 @@ function refreshChips() {
   chips($('species'), GSPECIES_IDS, id => id === recipe.species, id => {
     recipe.species = id;
     recipe.body = null;
+    recipe.stance = null;
     recipe.parts = {};
     ensureGParams(recipe);
     rebuild(); refreshUI();
@@ -125,6 +130,9 @@ function refreshChips() {
 
   chips($('body-pick'), BODY_IDS, id => id === recipe.body,
         id => { recipe.body = id; rebuild(); refreshChips(); });
+
+  chips($('stance-pick'), STANCE_IDS, id => id === recipe.stance,
+        id => { recipe.stance = id; rebuild(); refreshChips(); });
 
   chips($('palette'), PALETTES, p => p.id === recipe.palette, p => {
     recipe.palette = p.id;
@@ -228,7 +236,7 @@ ensureGParams(recipe);
 rebuild();
 refreshUI();
 resize();
-// capped at 30, same as the sheet: one toy idling is not worth every
+// capped at 30, same as the sheet: one character idling is not worth every
 // frame a 120 Hz panel can offer, and `frame` advances by the fixed
 // step it is handed either way
 {

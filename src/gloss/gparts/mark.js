@@ -1,12 +1,12 @@
 // MARKS — the small stuff painted or stuck on a face: a scar, a
 // plaster, freckles, a beauty spot, ink tears. The drawn generator has
 // had these since the beginning (`src/parts/extras.js`) and they do the
-// same job here: they are the difference between a product and a
+// same job here: they are the difference between a mascot and a
 // character, and they cost almost nothing.
 //
 // EVERY ONE IS ASYMMETRIC OR SCATTERED, on purpose. A mark mirrored
 // neatly onto both cheeks stops reading as something that HAPPENED to
-// this toy and starts reading as decoration that came out of the mould
+// this character and starts reading as decoration that came out of the mould
 // — which is the one thing a scar must not do. So a scar takes a side,
 // freckles are a scatter, and only `tears` is a pair (it is a face
 // doing something, not a mark).

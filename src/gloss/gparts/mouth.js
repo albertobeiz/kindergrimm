@@ -144,7 +144,7 @@ export const Mouth = {
       // Hanging FROM the top lip, and SPLIT. One white slab in a dark
       // mouth reads as a sticking plaster however it is placed — what
       // makes it teeth is the divisions, which is exactly why `grin`
-      // was the best-reading mouth on the shelf. Same trick here.
+      // was the best-reading mouth on the sheet. Same trick here.
       const tw = w * .62, th = h * .3, ty = h * .8 - th;
       add({ type: 'plate', id: 'mouthTeeth', outline: 'rect',
             w: tw, h: th, r: th * .16,

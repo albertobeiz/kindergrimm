@@ -1,14 +1,14 @@
 // ---------------------------------------------------------------
 // THE STUDIO — one shared light rig and one material factory.
 //
-// Half of the designer-toy look is not in the geometry at all: it is
+// Half of the gloss look is not in the geometry at all: it is
 // a big soft studio reflected in a clearcoat. So the environment here
 // is hand-built — three overbright softbox planes in a grey room,
 // prefiltered once — and every material takes it. Parts and the rig
 // never construct a material; they name a RANK and a colour and this
 // factory pours it. Same rule as `F.media.*` for the pencil and
 // `V.pal.*` for the cubes: one place owns the finish, so the whole
-// shelf reads as one product line.
+// sheet reads as one cast.
 // ---------------------------------------------------------------
 import * as THREE from 'three';
 // for the reachability check at the bottom only — a species may NAME a
@@ -56,13 +56,13 @@ export function studioEnv(renderer) {
 
 // ELEVEN finishes, and the rule that decides whether one earns its
 // place is the SHEET, not the turntable: a finish that only reads
-// while a toy is spinning at 400px is a parameter, not a variety.
+// while a character is spinning at 400px is a parameter, not a variety.
 // Every one below changes something you can see in a 1/35th cell —
 // the size of the highlight, whether there is one at all, or what the
 // silhouette's edge does.
 //
 // FREQUENCY IS ART DIRECTION, the same as a style table in `eyes.js`.
-// Glossy and rubber carry the shelf; a chrome turns up about
+// Glossy and rubber carry the sheet; a chrome turns up about
 // once a sheet, which is what keeps it worth catching. Dealt with
 // `wpick` in `grig.js`, never a uniform pick.
 export const MATERIALS = [
@@ -81,7 +81,7 @@ export const MATERIALS = [
 export const MATERIAL_IDS = MATERIALS.map(m => m.id);
 
 /** how often each turns up. Sums to 100 so a weight reads as a percent
- *  of the shelf, which is the number you actually want when deciding
+ *  of the sheet, which is the number you actually want when deciding
  *  whether something has become common enough to stop being a treat.
  *
  *  `skin` is NOT dealt: it is the humanoid's material, asked for by
@@ -124,7 +124,7 @@ const FINISH = {
 
   // Soft-vinyl pearl. The best value on the list: iridescence is a thin
   // film whose colour depends on the ANGLE, so the rim shifts green to
-  // pink as the toy turns and the finish animates for free on a page
+  // pink as the character turns and the finish animates for free on a page
   // where nothing else moves but a face.
   //
   // THREE NUMBERS HERE ARE NOT FREE CHOICES.
@@ -141,7 +141,7 @@ const FINISH = {
   //
   // And the thickness range only means anything because of the MAP: with
   // no map the shader takes the maximum and ignores the minimum, so the
-  // toy would be one flat film. See `pearlThickness` in `gtexture.js`.
+  // character would be one flat film. See `pearlThickness` in `gtexture.js`.
   pearl: c => new THREE.MeshPhysicalMaterial({
     color: c, roughness: .3, metalness: 0, ior: 1.9,
     clearcoat: .35, clearcoatRoughness: .1, envMapIntensity: 1.05,
@@ -158,7 +158,7 @@ const FINISH = {
     envMapIntensity: .55,
   }),
 
-  // A turned toy. The COLOUR stays the palette's — a wood albedo would
+  // A turned character. The COLOUR stays the palette's — a wood albedo would
   // quietly overrule `gpalette.js`, and painted beech is a real object
   // anyway. What says wood is the grain, and the grain arrives as
   // roughness and a whisper of relief, never as hue.
@@ -239,7 +239,7 @@ const FINISH = {
   // strong whitened sheen — and sheen is a rim lobe, so on a grooved
   // surface it lit every groove edge as a glassy STREAK, which read as
   // cellophane. The reference figures have neither: their hair is the
-  // flattest thing on the toy, and the grooves read by OCCLUSION and
+  // flattest thing on the character, and the grooves read by OCCLUSION and
   // the soft studio gradient, not by any highlight. So: rough, no
   // coat, the faintest self-coloured sheen so the silhouette does not
   // go dead, and matte from ROUGHNESS — never from dimming the
@@ -259,7 +259,7 @@ const FINISH = {
  * A face feature is an `ExtrudeGeometry` plate, and its UVs are three's
  * world-space default — which is to say a texture laid on one is noise.
  * That is the mechanical reason a map is shell-only. The good reason is
- * that it is also how the real objects are built: a knitted toy has
+ * that it is also how the real objects are built: a knitted doll has
  * PLASTIC safety eyes, a turned one has painted pupils. Nobody knits an
  * eye.
  *
@@ -271,7 +271,7 @@ const FINISH = {
 const FEATURE_OF = { wool: 'glossy', wood: 'glossy' };
 
 /** the tile each finish lays on its shell, and how hard. Baked once,
- *  in `gtexture.js`, and shared by every toy on the page. */
+ *  in `gtexture.js`, and shared by every character on the page. */
 const MAPS = {
   // the swirl in the film — see the note on `pearl` above for why this
   // is load-bearing rather than decoration
@@ -289,40 +289,40 @@ const MAPS = {
 /**
  * `(finish, colour, shell) -> material`, cached for the whole page.
  *
- * `shell` is true for the toy's BODY and nothing else. Everything else
+ * `shell` is true for the character's BODY and nothing else. Everything else
  * is a feature set into it, and takes `FEATURE_OF` if the shell is
  * wearing something a feature cannot wear, and never takes a tile.
  *
  * The cache key is the RESOLVED finish, not the requested one, so a
- * wool toy's glossy eyes share one material with a glossy toy's — 
- * thirty-five toys on the sheet still come out with a couple of dozen
+ * wool character's glossy eyes share one material with a glossy character's — 
+ * thirty-five characters on the sheet still come out with a couple of dozen
  * materials between them.
  */
 // THE CROSS-CHECK. `FINISH[id] || FINISH.glossy` fails SILENTLY: add a
-// finish to `MATERIALS` and forget its recipe and you get a glossy toy
+// finish to `MATERIALS` and forget its recipe and you get a glossy character
 // with the right chip lit, the right filter pinned and the right id in
 // the recipe. That is precisely the bug `CLAUDE.md` records against
 // `eyes.js` — "a style in the table but not in the wpick list is
 // unreachable and nothing will tell you; that has already happened
 // once". Two parallel tables with no cross-check is the pattern, so
 // here is the check, at module load, where it costs nothing.
-// A material may reach a toy TWO ways now: dealt by weight, or asked
+// A material may reach a character TWO ways now: dealt by weight, or asked
 // for BY NAME by a species (`skin`). Both count as reachable; anything
 // with neither is the silent bug this check exists for.
 const NAMED_MATERIALS = new Set(
   Object.values(GSPECIES).map(s => s.material).filter(Boolean));
 
 // `hair` and `acc` are deliberately NOT in `MATERIALS`. They are not
-// finishes a TOY can be poured in — you cannot make a chrome toy out of
+// finishes a CHARACTER can be poured in — you cannot make a chrome character out of
 // haircut — they are what two particular parts are always made of, named
 // per-spec via `spec.finish`. So they are exempt from the reachability
-// check below, which is about the finishes the shelf deals.
+// check below, which is about the finishes the sheet deals.
 
 for (const id of MATERIAL_IDS) {
   if (!FINISH[id]) throw new Error(`gmedia: material '${id}' has no FINISH recipe`);
   if (!MATERIAL_WEIGHTS.some(w => w[0] === id) && !NAMED_MATERIALS.has(id))
     throw new Error(`gmedia: material '${id}' is neither dealt nor named by a species, `
-                  + `so it can never reach a toy`);
+                  + `so it can never reach a character`);
 }
 for (const [id] of MATERIAL_WEIGHTS) {
   if (!MATERIAL_IDS.includes(id))
@@ -331,14 +331,20 @@ for (const [id] of MATERIAL_WEIGHTS) {
 
 export function makeMaterialFactory(env) {
   const cache = new Map();
-  const materialFor = (finish, color, shell = false) => {
+  const materialFor = (finish, color, shell = false, print = null) => {
     const id = shell ? finish : (FEATURE_OF[finish] ?? finish);
     const tiled = shell && MAPS[id] ? 1 : 0;
-    const key = `${id}:${tiled}:${color}`;
+    const key = print ? `${id}:print:${print.key}` : `${id}:${tiled}:${color}`;
     if (cache.has(key)) return cache.get(key);
     const mat = (FINISH[id] || FINISH.glossy)(new THREE.Color(color));
     mat.envMap = env;
     if (tiled) MAPS[id](mat);
+    // A PRINT carries the whole diffuse — cloth ground and motif ink —
+    // so the base colour steps aside to white and the map decides. The
+    // finish was still built from the CLOTH colour first, because that
+    // is what keeps the sheen self-coloured: a white-based sheen on
+    // dark cloth is the beanie bug a third time.
+    if (print) { mat.map = print.tex; mat.color.set('#ffffff'); }
     cache.set(key, mat);
     return mat;
   };
@@ -371,8 +377,8 @@ function cycTexture() {
 /**
  * the cyc, one steep key with a genuinely blurred shadow, soft fill.
  *
- * `span` is how wide a piece of floor has to catch shadow: one toy on
- * the lab's turntable needs 6.4 units, a shelf of twenty needs the
+ * `span` is how wide a piece of floor has to catch shadow: one character on
+ * the lab's turntable needs 6.4 units, a sheet of twenty needs the
  * whole grid. Everything else scales off it — the catcher, the key's
  * shadow frustum, and how far the key stands back — so a crowd gets
  * the same studio, only bigger. Returns the two handles a scene might
@@ -383,10 +389,10 @@ export function dressScene(scene, renderer,
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.06;
 
-  // A page of toys hung on a grid has no ground to fall on — so it
+  // A page of characters hung on a grid has no ground to fall on — so it
   // gets a WALL instead, close behind, and the shadows land on that.
   // The key is nearly head-on and only a little up and to the left, so
-  // each toy throws a short shadow down-right onto the wall just
+  // each character throws a short shadow down-right onto the wall just
   // behind it. Rake it any harder and every shadow lands on the
   // neighbour instead of reading as depth.
   if (shadows === 'wall') {
@@ -424,12 +430,12 @@ export function dressScene(scene, renderer,
   }
 
   renderer.shadowMap.enabled = true;
-  // VSM, not PCF: `radius` is a real blur here, and a molded toy wants
+  // VSM, not PCF: `radius` is a real blur here, and a molded character wants
   // a shadow that reads as a pool rather than an outline
   renderer.shadowMap.type = THREE.VSMShadowMap;
   scene.background = cycTexture();
 
-  // steep and slightly to the side, so the pool sits under the toy
+  // steep and slightly to the side, so the pool sits under the character
   const k = span / 6.4;
   const key = new THREE.DirectionalLight('#fff6e8', 1.45);
   key.position.set(1.6 * k, 6 * k, 2.6 * k);

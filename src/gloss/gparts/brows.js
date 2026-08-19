@@ -19,7 +19,7 @@ export const Brows = {
   id: 'brows', label: 'brows', order: 2,
 
   // ANECDOTAL. A brow changes a face completely, which is exactly why
-  // almost nobody gets one — on a shelf where every toy has them they
+  // almost nobody gets one — on a sheet where every character has them they
   // stop being expression and become furniture.
   gen: (rng, C) => ({
     style: C.pick(rng, 'style', [['none', 88], ['flat', 3], ['angry', 3], ['round', 2],

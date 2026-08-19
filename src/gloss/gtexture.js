@@ -43,7 +43,7 @@ function surface(w, h) {
 function wrap(tex, rx, ry) {
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(rx, ry);
-  // grazing angles are most of a toy's silhouette and that is exactly
+  // grazing angles are most of a character's silhouette and that is exactly
   // where an unfiltered repeat turns to mush. three clamps this to
   // whatever the card actually supports.
   tex.anisotropy = 8;
@@ -93,7 +93,7 @@ function normalFromHeight(ctx, strength) {
  *
  * Canvas blur does not know the tile repeats: at the edges it mixes the
  * pattern with nothing, so every edge comes back slightly flattened and
- * the seam shows up on the toy as a fine line ruled around it. Which it
+ * the seam shows up on the character as a fine line ruled around it. Which it
  * did, right across the crown of the first knitted head.
  *
  * So the tile is laid out three by three, blurred whole, and the middle
@@ -125,7 +125,7 @@ function once(fn) {
 // purpose — where two legs cross, the height stacks, and that little
 // bump is what reads as one strand passing over another. Modelling the
 // over/under properly would need depth sorting for a bump nobody can
-// see from across a shelf.
+// see from across a sheet.
 const KNIT = 8;                       // stitches per tile, both ways
 
 export const knitNormal = once(() => {
@@ -164,7 +164,7 @@ export const knitNormal = once(() => {
 });
 
 // ---- 2. TURNED WOOD ---------------------------------------------------
-// A toy on a lathe takes its grain as RINGS around the spin axis, and
+// A character on a lathe takes its grain as RINGS around the spin axis, and
 // the sphere's v runs pole to pole — so a ring is a band of constant
 // v and the mapping is free. The wander across u is built from whole
 // harmonics of u only, which is what makes it periodic and therefore
@@ -207,11 +207,11 @@ function woodProfile(depth) {
 
 /** the grain as ROUGHNESS: late wood drinks the light, early wood
  *  polishes. This is the half of wood you actually see on a painted
- *  toy, where the colour is the palette's and not the timber's. */
+ *  character, where the colour is the palette's and not the timber's. */
 export const woodRough = once(() => {
   // SHALLOW on purpose. `roughnessMap` MULTIPLIES `material.roughness`,
   // so a full-contrast profile would take the early wood down to a
-  // near-mirror and the toy would read as striped plastic. A ring is a
+  // near-mirror and the character would read as striped plastic. A ring is a
   // change of sheen, not a change of surface.
   const g = woodProfile(.42);
   const tex = new THREE.CanvasTexture(g.canvas);
@@ -227,7 +227,7 @@ export const woodNormal = once(() => wrap(normalFromHeight(soften(woodProfile(.8
 //
 // This one exists because of a trap in three: without a thickness map,
 // `iridescenceThicknessRange[0]` is dead — the shader takes the MAXIMUM
-// and nothing else, so the whole toy is one flat film and the range you
+// and nothing else, so the whole character is one flat film and the range you
 // wrote is a lie. Give it a map and the low number wakes up, and a
 // pearl gets what a pearl actually has: bands of colour that swirl over
 // each other rather than one even sheen.
@@ -331,3 +331,76 @@ export const crazeNormal = once(() => {
   soften(g, .9);
   return wrap(normalFromHeight(g, 2.6), 2, 1);
 });
+
+// ---- THE PRINT SHOP ---------------------------------------------------
+// A dressed torso can carry a PRINT — the screen-printed graphic real
+// vinyl blanks get, and the one place a texture is the right tool for
+// clothing: a painted hem has no thickness and reads as a mistake, but
+// a star on the chest reads as print because it IS print.
+//
+// Unlike the tiles above, a print is not colour-free: the map carries
+// the whole diffuse (cloth ground + motif ink) and the factory sets the
+// material's colour to white, so a light motif can sit on dark cloth —
+// a map that only multiplied the cloth colour could never lighten it.
+// Cached by (motif, cloth, ink): the combinations on a sheet are few.
+//
+// The chest lands at u = .25 (the front of `SphereGeometry`'s
+// parametrisation — +z is a quarter-turn in), v ≈ .55. `flipY` turns
+// canvas y over, so that is canvas (W * .25, H * .45).
+
+const PRINT_CACHE = new Map();
+const N_PRINT = 256;
+
+export const PRINT_MOTIFS = ['none', 'stripes', 'star', 'heart', 'spot', 'zig'];
+
+export function clothPrint(motif, cloth, ink) {
+  const key = `${motif}:${cloth}:${ink}`;
+  if (PRINT_CACHE.has(key)) return PRINT_CACHE.get(key);
+
+  const g = surface(N_PRINT, N_PRINT);
+  g.fillStyle = cloth;
+  g.fillRect(0, 0, N_PRINT, N_PRINT);
+  g.fillStyle = ink;
+  g.strokeStyle = ink;
+
+  const cx = N_PRINT * .25, cy = N_PRINT * .45, s = N_PRINT * .16;
+  if (motif === 'stripes') {
+    // horizontal bands: periodic in u by construction, so no seam
+    for (let y = 0; y < 5; y++)
+      g.fillRect(0, N_PRINT * (.14 + y * .19), N_PRINT, N_PRINT * .085);
+  } else if (motif === 'zig') {
+    g.lineWidth = N_PRINT * .05;
+    g.lineJoin = 'round';
+    g.beginPath();
+    // one full period across the canvas, so the seam at u = 0 joins
+    for (let i = 0; i <= 16; i++)
+      g[i ? 'lineTo' : 'moveTo'](N_PRINT * i / 16, cy + (i % 2 ? -1 : 1) * N_PRINT * .05);
+    g.stroke();
+  } else if (motif === 'spot') {
+    g.beginPath();
+    g.arc(cx, cy, s * .8, 0, Math.PI * 2);
+    g.fill();
+  } else if (motif === 'star') {
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const r = (i % 2 ? .45 : 1) * s;
+      g[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    g.closePath();
+    g.fill();
+  } else if (motif === 'heart') {
+    g.beginPath();
+    g.moveTo(cx, cy + s * .9);
+    g.bezierCurveTo(cx - s * 1.2, cy - s * .1, cx - s * .6, cy - s * 1.1, cx, cy - s * .35);
+    g.bezierCurveTo(cx + s * .6, cy - s * 1.1, cx + s * 1.2, cy - s * .1, cx, cy + s * .9);
+    g.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(g.canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const out = { key, tex };
+  PRINT_CACHE.set(key, out);
+  return out;
+}
