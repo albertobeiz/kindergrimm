@@ -7,13 +7,13 @@
 <meta name="description" content="How the drawn creatures in drawai are generated: a wobbling pencil stroke, a ring of points, a skull polygon, a shared layout, a registry of parts, species as loaded dice, the boil, expressions, poses and one seed. Eleven live steps, every drawing made by the real generator.">
 <meta name="author" content="Alberto Beiz">
 <meta name="theme-color" content="#f6f1e5">
-<link rel="canonical" href="https://kindergrimm.vercel.app/how.html">
+<link rel="canonical" href="https://kindergrimm.vercel.app/how">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="kindergrimm">
 <meta property="og:title" content="How a creature is drawn">
 <meta property="og:description" content="The pencil, the polygon, the skull, the rig — eleven live steps through a procedural character generator that draws in graphite instead of pixels.">
-<meta property="og:url" content="https://kindergrimm.vercel.app/how.html">
+<meta property="og:url" content="https://kindergrimm.vercel.app/how">
 <meta property="og:image" content="https://kindergrimm.vercel.app/assets/how-og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -39,19 +39,19 @@
     "url": "https://kindergrimm.vercel.app/",
     "sameAs": ["https://x.com/albertobeicas", "https://github.com/albertobeiz"]
   },
-  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://kindergrimm.vercel.app/how.html" },
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://kindergrimm.vercel.app/how" },
   "step": [
-    { "@type": "HowToStep", "position": 1, "name": "The pencil", "url": "https://kindergrimm.vercel.app/how.html#s1", "text": "A stroke is a filled ribbon, not a line: the spine is resampled and pushed sideways by three summed sines, the half width breathes, the ends overshoot, and thick strokes shed graphite crumbs." },
-    { "@type": "HowToStep", "position": 2, "name": "The shape", "url": "https://kindergrimm.vercel.app/how.html#s2", "text": "Every shape is a ring of sixteen points around a modulated ellipse, smoothed once, drawn by hand. A wobble parameter says how carefully it was drawn." },
-    { "@type": "HowToStep", "position": 3, "name": "The material", "url": "https://kindergrimm.vercel.app/how.html#s3", "text": "A medium answers three questions — tone, skin, edge — so one shape can be graphite, ink, watercolour, oil, charcoal or marker without a part knowing which." },
-    { "@type": "HowToStep", "position": 4, "name": "The head", "url": "https://kindergrimm.vercel.app/how.html#s4", "text": "The skull is a dense polygon slid most of the way onto a target radius function: round, square, tall, drop, pear, lump, wide, bumpy or wonky." },
-    { "@type": "HowToStep", "position": 5, "name": "The map", "url": "https://kindergrimm.vercel.app/how.html#s5", "text": "One layout pass measures the body and publishes every shared anchor — eye positions, nose and mouth height, shoulders, hips, grip and floor — so no two parts compute the same number twice." },
-    { "@type": "HowToStep", "position": 6, "name": "The parts", "url": "https://kindergrimm.vercel.app/how.html#s6", "text": "A part is one file exporting gen, bones, size and draw. The registry lists them in draw order, and adding a feature is one file plus one line." },
-    { "@type": "HowToStep", "position": 7, "name": "The species", "url": "https://kindergrimm.vercel.app/how.html#s7", "text": "A species is a table of loaded dice, not new drawings: weighted picks, ranges and probabilities that bias generation only." },
-    { "@type": "HowToStep", "position": 8, "name": "The boil", "url": "https://kindergrimm.vercel.app/how.html#s8", "text": "Every part is drawn several times with a different boil seed and swapped between at its own cadence, which is what makes a still drawing feel alive." },
-    { "@type": "HowToStep", "position": 9, "name": "The face", "url": "https://kindergrimm.vercel.app/how.html#s9", "text": "Expressions are pre-drawn texture states swapped while a blink hides the change, with continuous body language riding a crossfade." },
-    { "@type": "HowToStep", "position": 10, "name": "The pose", "url": "https://kindergrimm.vercel.app/how.html#s10", "text": "Poses write bone offsets scaled by a blend weight, so transitions are two poses mixing; walk and run share one gait phase." },
-    { "@type": "HowToStep", "position": 11, "name": "The seed", "url": "https://kindergrimm.vercel.app/how.html#s11", "text": "The recipe is the only state: one seed plus per-part parameters, so the same JSON rebuilds the same creature on any machine." }
+    { "@type": "HowToStep", "position": 1, "name": "The pencil", "url": "https://kindergrimm.vercel.app/how#s1", "text": "A stroke is a filled ribbon, not a line: the spine is resampled and pushed sideways by three summed sines, the half width breathes, the ends overshoot, and thick strokes shed graphite crumbs." },
+    { "@type": "HowToStep", "position": 2, "name": "The shape", "url": "https://kindergrimm.vercel.app/how#s2", "text": "Every shape is a ring of sixteen points around a modulated ellipse, smoothed once, drawn by hand. A wobble parameter says how carefully it was drawn." },
+    { "@type": "HowToStep", "position": 3, "name": "The material", "url": "https://kindergrimm.vercel.app/how#s3", "text": "A medium answers three questions — tone, skin, edge — so one shape can be graphite, ink, watercolour, oil, charcoal or marker without a part knowing which." },
+    { "@type": "HowToStep", "position": 4, "name": "The head", "url": "https://kindergrimm.vercel.app/how#s4", "text": "The skull is a dense polygon slid most of the way onto a target radius function: round, square, tall, drop, pear, lump, wide, bumpy or wonky." },
+    { "@type": "HowToStep", "position": 5, "name": "The map", "url": "https://kindergrimm.vercel.app/how#s5", "text": "One layout pass measures the body and publishes every shared anchor — eye positions, nose and mouth height, shoulders, hips, grip and floor — so no two parts compute the same number twice." },
+    { "@type": "HowToStep", "position": 6, "name": "The parts", "url": "https://kindergrimm.vercel.app/how#s6", "text": "A part is one file exporting gen, bones, size and draw. The registry lists them in draw order, and adding a feature is one file plus one line." },
+    { "@type": "HowToStep", "position": 7, "name": "The species", "url": "https://kindergrimm.vercel.app/how#s7", "text": "A species is a table of loaded dice, not new drawings: weighted picks, ranges and probabilities that bias generation only." },
+    { "@type": "HowToStep", "position": 8, "name": "The boil", "url": "https://kindergrimm.vercel.app/how#s8", "text": "Every part is drawn several times with a different boil seed and swapped between at its own cadence, which is what makes a still drawing feel alive." },
+    { "@type": "HowToStep", "position": 9, "name": "The face", "url": "https://kindergrimm.vercel.app/how#s9", "text": "Expressions are pre-drawn texture states swapped while a blink hides the change, with continuous body language riding a crossfade." },
+    { "@type": "HowToStep", "position": 10, "name": "The pose", "url": "https://kindergrimm.vercel.app/how#s10", "text": "Poses write bone offsets scaled by a blend weight, so transitions are two poses mixing; walk and run share one gait phase." },
+    { "@type": "HowToStep", "position": 11, "name": "The seed", "url": "https://kindergrimm.vercel.app/how#s11", "text": "The recipe is the only state: one seed plus per-part parameters, so the same JSON rebuilds the same creature on any machine." }
   ]
 }
 </script>
