@@ -33,6 +33,12 @@ export const Hair = {
     part: C.range(rng, 'part', .7, 1.3),
     // how hard an upswept style lifts. Only the styles that ask.
     pomp: C.range(rng, 'pomp', .75, 1.35),
+    // where this head's whorl sits, nudged off the style's own spot —
+    // two heads with the same cut still comb differently
+    whorl: C.range(rng, 'whorl', -.35, .35),
+    // how long and how present the point strands are — the momiage in
+    // front of the ears, the loose fringe wisps, the flyaways
+    wisps: C.range(rng, 'wisps', .75, 1.3),
     // ONE seed for every per-clump variation on the head. It has to be
     // a rolled parameter rather than live randomness: hair is rebuilt
     // on every boil frame, and anything re-rolled per frame shimmers.
@@ -65,6 +71,8 @@ export const Hair = {
     width: { label: 'clump width', range: [.7, 1.4] },
     jag: { label: 'ragged tips', range: [0, 2] },
     pomp: { label: 'sweep up', range: [0, 2] },
+    whorl: { label: 'whorl', range: [-1, 1] },
+    wisps: { label: 'wisps', range: [.3, 2] },
     seed: { label: 'shuffle', range: [0, 6.28] },
     tailY: { label: 'tied at', range: [.2, .8] },
     tailLen: { label: 'tail length', range: [.4, 2.4] },

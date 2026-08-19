@@ -56,40 +56,6 @@ const STYLE = {
   diamond:  { outline: 'sparkle', wf: .92, hf: 1.18, pinch: .5 },
   square:   { outline: 'rect', wf: .66, hf: .7, r: .28 },
 
-  // --- THE MANGA FAMILY: the one PRINTED eye ------------------------
-  // These three are decals, not plates — the only painted thing on the
-  // toy, and `gdecal.js` holds both the artwork and the argument for
-  // it. Short version: a manga eye is a tapered lash, a graded iris,
-  // striations and two catchlights, and every one of those is a width
-  // or a gradient. Built as extruded outlines they came out as
-  // goggles: an ink ring, a black bead and an arc floating over it.
-  //
-  // A style names the BOX (`wf`/`hf`), how big the iris is in it
-  // (`pupilF`/`pupilHF`), how heavy the lash is (`lash`, a fraction of
-  // the box's height) and how far the outer corner lifts (`lift`) —
-  // that slant is what separates the three more than anything else.
-  // `simple` below stays MOULDED: a solid ink leaf has no line work in
-  // it, so it has nothing to gain from being printed.
-  //
-  // The lash is still its own mesh and still comes down on a blink,
-  // and a style that wears one does not also roll the rolled `lid`.
-  manga:  { decal: true, wf: 1.0, hf: 1.1, pupilF: .58, pupilHF: .74,
-            lash: .1, lift: .26, apex: .42 },
-  // the eye that fills the face. The layout cuts a big eye back to
-  // fit the head it is on, so this asks for everything and takes what
-  // fits — and a pupil that fills the white has almost nowhere to
-  // look, which is authentic: a chibi eye stares with the head.
-  chibi:  { decal: true, wf: 1.02, hf: 1.34, pupilF: .78, pupilHF: .8,
-            lash: .085, lift: .2, apex: .46 },
-  // THE SHONEN EYE: a small pupil and a glint that eats a third of
-  // it. Thickest border and heaviest lash in the catalogue — the
-  // whole style is line work around a lot of white.
-  dbz:    { decal: true, wf: 1.06, hf: .92, pupilF: .5, pupilHF: .84,
-            lash: .13, lift: .34, apex: .38 },
-  // and the plainest manga eye: a solid ink leaf, no white, no lash.
-  // The pointed ends are the whole difference from `angry`'s round
-  // oval — at sheet scale a row of these reads as one drawn cast.
-  simple: { outline: 'leaf', wf: .84, hf: 1.1 },
   // --- the BALL eye: the one eye that is a solid, not a plate ---
   // A white sphere standing proud of the head, an ink bead sunk into
   // its front, and a hemisphere CAP in the body colour lying over the
@@ -123,7 +89,7 @@ export const EYE_STYLES = Object.keys(STYLE);
 function extent(P, alongY) {
   const st = STYLE[P.eyes.style] ?? STYLE.oval;
   const hf = st.hf;
-  const bt = st.sclera && !st.decal ? Math.min(st.wf, hf) * st.border : 0;
+  const bt = st.sclera ? Math.min(st.wf, hf) * st.border : 0;
   const a = (alongY ? hf : st.wf) + bt;      // the axis we want
   const b = (alongY ? st.wf : hf) + bt;      // and the one that rolls into it
   const rl = Math.abs(st.roll ?? 0);
@@ -156,9 +122,9 @@ export const Eyes = {
     // beads, white-and-pupil eyes and lidded ones — sparkles are OUR
     // habit, not his, and they drop to a treat
     style: C.pick(rng, 'style', [['pupil', 17], ['bead', 15], ['slab', 9], ['box', 8],
-                      ['googly', 8], ['manga', 7], ['simple', 5], ['oval', 8], ['sleepy', 6], ['happy', 6],
-                      ['chibi', 3], ['cross', 5], ['round', 4], ['sparkle', 3], ['orb', 3],
-                      ['square', 2], ['dbz', 3],
+                      ['googly', 8], ['oval', 8], ['sleepy', 6], ['happy', 6],
+                      ['cross', 5], ['round', 4], ['sparkle', 3], ['orb', 3],
+                      ['square', 2],
                       ['diamond', 2], ['crescent', 1], ['star', 1], ['ring', 1],
                       ['heart', 1], ['flower', 1], ['angry', 1], ['spiral', 1],
                       ['wobble', 1]]),
@@ -232,49 +198,6 @@ export const Eyes = {
       const w = r * st.wf;
       const h = r * st.hf;
       const d = r * .34;
-
-      // THE PRINTED EYE takes its own road too: three sheets of art,
-      // no outlines. They share ONE box, so nothing can misalign, and
-      // they keep the same three ids the moulded eye uses — so
-      // `gface.js` blinks, glances and drops a lash here without ever
-      // learning that this one is painted.
-      if (st.decal) {
-        // A sheet curves on a radius LARGER than the head's, so it can
-        // only ever float off the skin and never dip into it. A cube's
-        // face is flat and wants almost none of it.
-        const bend = L.rz * (L.form === 'cube' ? 3.4 : 1.35);
-        const art = { flip: side < 0, lift: st.lift, apex: st.apex,
-                      ink: L.ink, sclera: L.sclera };
-        // a printed feature stands a little further out than a moulded
-        // one: it has no rim of its own to lift it off the pour
-        const proud = r * Math.max(E.proud, .16);
-        const ride = [w * .1, h * .08];
-
-        add({ type: 'decal', id, p: a.p, n: a.n, w, h, bend, proud,
-              art: { ...art, kind: 'mangaWhite', aspect: w / h },
-              travel: ride });
-
-        // THE IRIS, and it is the one thing on this toy that moves
-        // relative to the face. Its travel is cut back hard against a
-        // moulded pupil's: the white it has to stay inside is a
-        // slanted almond, not the rectangle its own box describes, so
-        // the corners of that box are already outside the eye.
-        const pw = w * st.pupilF, ph = h * (st.pupilHF ?? st.pupilF);
-        const roomY = h - ph;
-        const park = roomY * E.pupilY * .5;
-        add({ type: 'decal', id: id + 'Pupil', p: a.p, n: a.n,
-              w: pw, h: ph, bend, proud: proud + r * .012,
-              art: { ...art, kind: 'mangaIris', aspect: pw / ph,
-                     iris: L.warm, pupil: .42 },
-              offset: [0, park], anchorY: park,
-              travel: [(w - pw) * .4, roomY * (1 - Math.abs(E.pupilY)) * .4] });
-
-        add({ type: 'decal', id: id + 'Lid', p: a.p, n: a.n,
-              w, h, bend, proud: proud + r * .024,
-              art: { ...art, kind: 'mangaLash', aspect: w / h, lash: st.lash },
-              travel: ride, lidDrop: h * 1.15 });
-        continue;
-      }
 
       // THE BALL EYE takes its own road: three solids, no plates.
       if (st.orb) {
@@ -384,17 +307,11 @@ export const Eyes = {
         // not get to travel further up and slide out of its own eye.
         const roomY = h - ph;
         const park = roomY * E.pupilY;
-        // The bevel cannot be thicker than the smallest glint hole is
-        // wide, or the extrusion's bevel closes the hole at the face
-        // — the punched-out catchlight is the finest thing on this
-        // toy, and it gets to set the roundness.
-        const gmin = st.glints ? Math.min(...st.glints.map(g => g[2])) * pw : Infinity;
         add({ type: 'plate', id: id + 'Pupil',
-              outline: st.glints ? 'glint' : st.pupilOutline ?? 'ellipse',
-              g: st.glints,
+              outline: st.pupilOutline ?? 'ellipse',
               r: st.pupilR == null ? undefined : Math.min(pw, ph) * st.pupilR,
               p: a.p, n: a.n,
-              w: pw, h: ph, d: d * .55, bevel: Math.min(d * .26, gmin * .8),
+              w: pw, h: ph, d: d * .55, bevel: d * .26,
               proud: proud + d * .3, color: L.ink,
               offset: [0, park], anchorY: park,
               travel: [(w - pw) * .74, roomY * (1 - Math.abs(E.pupilY)) * .85] });
@@ -403,24 +320,13 @@ export const Eyes = {
         // it slides down as the toy blinks. It is the clearest thing
         // the separate-mesh face buys — a lid closing over a pupil
         // costs one translate and no geometry at all.
-        // A MANGA style wears its LASH instead: the same band, built
-        // in and thicker, and the two never stack — the lash IS the
-        // lid, and a style that has one does not roll the other.
-        if (E.lid && !st.lash) {
+        if (E.lid) {
           add({ type: 'plate', id: id + 'Lid', outline: 'band',
                 curve: 'arc', sag: -h * .34, tube: h * .3, h: h * .3,
                 p: a.p, n: a.n, w: w * 1.04,
                 d: d * .9, bevel: d * .3,
                 proud: proud + d * .42, color: L.ink,
                 offset: [0, h * .82], travel: ride, lidDrop: h * 1.05 });
-        }
-        if (st.lash) {
-          add({ type: 'plate', id: id + 'Lid', outline: 'band',
-                curve: 'arc', sag: -h * .34, tube: h * st.lash, h: h * st.lash,
-                p: a.p, n: a.n, w: w * 1.06,
-                d: d * .9, bevel: d * .3,
-                proud: proud + d * .42, color: L.ink,
-                offset: [0, h * .78], travel: ride, lidDrop: h * 1.08 });
         }
       }
 

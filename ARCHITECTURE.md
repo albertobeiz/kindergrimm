@@ -1283,6 +1283,34 @@ hem is the thick rounded rim every molded haircut has. Onto that:
 - boundaries are JITTERED off even spacing — the eye reads a repeat
   before it reads the hair.
 
+**It is combed from a WHORL, not from the top pole.** The first carving
+used plain azimuth, so every groove was a meridian and they all met at
+the geometric top of the head — a pumpkin, not a haircut. The grooves
+now follow a FLOW FIELD: each is a great-circle ray out of a placeable
+whorl point, set back off the crown by default, nudged per head, swung
+aside for parted styles and pulled to the front hairline for the
+upswept ones — so the fringe's grooves run forward-and-down over the
+forehead and the back's run down the nape, the way combed hair lies.
+The hem's scallop is indexed by the same field, so the tips and the
+grooves above them always agree about the combing.
+
+**The point strands.** A molded mass alone still looks like it came out
+of a mold; what reads as STYLED is the accent strands, and the
+decomposition is exactly how the reference figures are molded (a back
+piece, a front piece, and separate strands): the MOMIAGE hanging in
+front of each ear — built only where the ear region is exposed, because
+on a bob the mass already falls past the ear and a lock riding outside
+it reads as a ridge — and the FRINGE WISPS, strands that hang PAST the
+fringe's hem close to the skin. The wisps were flow-marched along the
+surface first and read as antennae at every length: a strand crossing
+the outer surface at an angle is a stick, wherever it points; HANGING
+is a direction that cannot be misread. Every root starts inside the
+mass. A third family — crown flyaways — was cut after three tuning
+rounds: a tube on the crown's convex silhouette never reads, and the
+one strand that belongs up there is the AHOGE, which is already its own
+deliberate feature. A wisp the tuning cannot save is a wisp the design
+does not want.
+
 The hem — front/side/back, by azimuth — is still the whole haircut, and
 the ORDERING is still the read: fringe high, temples lower, nape
 lowest.

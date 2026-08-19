@@ -202,6 +202,14 @@ file look like a phantom `SyntaxError`.
   and the ORDERING is the read: fringe high, temples lower, nape
   lowest. Jitter the clump boundaries; the eye reads a repeat before
   it reads the hair.
+- Hair is COMBED FROM A WHORL: grooves are rays out of a placeable
+  whorl point (back of crown; front hairline for upswept cuts), never
+  meridians from the pole — meridians meet at the top and make a
+  pumpkin. Point strands come in exactly two families, momiage (only
+  where the ear is exposed) and fringe wisps that HANG past the hem —
+  hanging is the one direction a strand cannot misread; flow-marched
+  wisps and crown flyaways both read as antennae and were cut. Every
+  strand's root starts INSIDE the mass.
 - But length alone is not STYLING: a blunt fringe ruled across the brow
   is a bowl cut, and a table of lengths gives you fourteen of them. The
   fringe's SHAPE is its own dimension — `part` (diagonal), `curtain`
