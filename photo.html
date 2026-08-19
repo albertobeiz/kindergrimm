@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>drawai — the photo</title>
+<style>
+  :root { --ink: #1f1d1a; --paper: #f6f1e5; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: var(--paper); color: var(--ink); font: 12px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
+  #stage { position: absolute; inset: 0; touch-action: none; }
+  #stage canvas { display: block; }
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding: 12px 18px 10px;
+    letter-spacing: .06em;
+    color: #241f19;
+    text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  }
+  #hud h1 { font-size: 14px; letter-spacing: .14em; }
+  #hud .hint { opacity: .5; }
+  #hud a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(36,31,25,.4); }
+  #hud a:hover { border-bottom-color: currentColor; }
+  #hud button {
+    font: inherit; font-size: 11px; letter-spacing: .08em;
+    color: #241f19; cursor: pointer;
+    background: transparent; border: 0; border-bottom: 1px solid rgba(36,31,25,.25);
+    padding: 1px 2px;
+  }
+  #hud button:hover { border-bottom-color: rgba(36,31,25,.7); }
+  #count {
+    position: absolute; bottom: 16px; left: 18px; z-index: 2;
+    opacity: .5; color: #241f19;
+  }
+  #cam {
+    position: absolute; bottom: 34px; right: 18px; z-index: 2;
+    opacity: .5; color: #241f19; font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="hud">
+    <h1>the photo</h1>
+    <button id="again">another · R</button>
+    <button id="save">save png · S</button>
+    <span class="hint">one seed, one class portrait — characters, weather and garden</span>
+    <a href="index.html">← menu</a>
+  </div>
+  <div id="count"></div>
+  <div id="cam"></div>
+  <script type="importmap">{ "imports": {
+    "three": "./vendor/three.module.js",
+    "three/examples/jsm/postprocessing/Pass.js": "./vendor/postprocessing/Pass.js",
+    "postprocessing": "./vendor/pp-stub.js"
+  } }</script>
+  <script type="module" src="./src/photo.js"></script>
+</body>
+</html>

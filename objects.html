@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>drawai — objects lab</title>
+<style>
+  :root { --ink: #1f1d1a; --paper: #f6f1e5; --paper2: #ece6d6; --line: #c4bba6; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    display: flex; overflow: hidden;
+    background: var(--paper); color: var(--ink);
+    font: 13px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  #stage { flex: 1; position: relative; min-width: 0; touch-action: none; }
+  #stage canvas { display: block; }
+  #count {
+    position: absolute; left: 16px; bottom: 14px;
+    opacity: .42; font-size: 11px; pointer-events: none;
+  }
+  #hint {
+    position: absolute; left: 16px; top: 14px;
+    opacity: .42; font-size: 11px; pointer-events: none;
+  }
+
+  #ui {
+    width: 300px; flex: none; overflow-y: auto;
+    padding: 14px 16px 40px;
+    background: var(--paper2);
+    border-left: 2px solid var(--ink);
+  }
+  #ui h1 { font-size: 15px; letter-spacing: .12em; margin-bottom: 2px; }
+  #ui .sub { opacity: .55; font-size: 11px; margin-bottom: 14px; }
+  #ui section { border-top: 1px solid var(--line); padding: 10px 0 12px; }
+  #ui h2 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .18em;
+    opacity: .6; margin: 10px 0 8px;
+  }
+  .row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .row label { flex: 1; opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .val { width: 34px; text-align: right; opacity: .5; font-size: 11px; }
+
+  button, select {
+    font: inherit; color: var(--ink);
+    background: var(--paper); border: 1.5px solid var(--ink);
+    border-radius: 3px; padding: 3px 8px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #fff6e2; }
+  button:active { transform: translateY(1px); }
+  select { max-width: 150px; }
+  input[type=range] { flex: 1.4; accent-color: var(--ink); }
+  input[type=checkbox] { accent-color: var(--ink); }
+  input[type=number] { font: inherit; color: var(--ink); background: var(--paper);
+    border: 1.5px solid var(--ink); border-radius: 3px; padding: 3px 8px; width: 105px; }
+
+  .chiprow { display: flex; flex-wrap: wrap; gap: 5px; margin: 2px 0 8px; }
+  .chiprow button { padding: 2px 8px; font-size: 12px; border-width: 1px; }
+  .chiprow button.sel { background: var(--ink); color: var(--paper); }
+
+  .chiprow button.swatch { display: flex; padding: 0; overflow: hidden; width: 52px; height: 18px; }
+  .chiprow button.swatch i { flex: 1; }
+  .chiprow button.swatch.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+  @media (max-width: 720px) {
+    body { flex-direction: column; }
+    #stage { height: 52vh; flex: none; }
+    #ui { width: 100%; border-left: none; border-top: 2px solid var(--ink); }
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="hint">drag to turn · wheel to zoom</div>
+    <div id="count"></div>
+  </div>
+  <div id="ui">
+    <h1>OBJECTS LAB</h1>
+    <div class="sub">grass, plant, tree, flower — the same recipe idea, grown. <a href="index.html">menu</a></div>
+    <section>
+      <h2>species</h2>
+      <div id="species" class="chiprow"></div>
+      <h2>soil + leaf palette</h2>
+      <div id="palette" class="chiprow"></div>
+      <h2>finish</h2>
+      <div id="material" class="chiprow"></div>
+      <div class="row"><button id="another">grow another · R</button></div>
+      <div class="row">
+        <label>seed</label>
+        <input id="seed" type="number">
+        <button id="dice" title="random seed">🎲</button>
+      </div>
+      <div class="row"><label>turntable</label><input id="turntable" type="checkbox" checked></div>
+    </section>
+    <section id="knobs"></section>
+  </div>
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+  <script type="module" src="./src/obj/objview.js"></script>
+</body>
+</html>

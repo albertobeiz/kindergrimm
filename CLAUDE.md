@@ -42,7 +42,8 @@ recipe idea built out of cubes instead of graphite, with its own hand,
 layout, parts and animator under `src/voxel/`; it shares nothing with
 the drawn generator but `rng.js`, and ARCHITECTURE.md §11 is its
 contract. `gloss.html` is the **gloss lab** — a THIRD generator, the
-same recipe idea poured as glossy vinyl designer toys instead of
+same recipe idea rendered as glossy 3d chibi characters — real
+characters, not figurines — instead of
 graphite or cubes, with its own hand (`gshape.js`), studio, layout and
 parts under `src/gloss/`; it shares nothing with the other two but
 `rng.js`, and ARCHITECTURE.md §12 is its contract. It is all SOLID
@@ -52,13 +53,13 @@ grid at eye scale. Two bodies — a sphere and a cube, which are
 one superellipsoid with a squareness knob — then a catalogue of faces,
 a colour from `gpalette.js` and one of the materials in `gmedia.js`. `glosscrowd.html` is its
 crowd, and it is the DRAWN crowd's page, not the voxel one: a flat 7×5
-grid straight on, toys hung on a wall close enough to catch their own
+grid straight on, characters hung on a wall close enough to catch their own
 shadows, and the animation entirely face — gaze, blink, expressions
 (see the end of §12).
 `voxelcrowd.html` is the voxel crowd: twenty of them on a
 midnight platform, the ONE scene in the project with real (moving,
 shadow-casting) lights, and characters that assemble voxel by voxel
-via `setDrawRange` — its rules are at the end of §11. `serve.py` sends `no-store` on purpose:
+via `setDrawRange` — its rules are at the end of §11. `objects.html` is the **objects lab** — a FOURTH generator, plastic plants off the nursery shelf: grass, plant, tree, flower, four SHAPES of thing rather than four skins, with its own hand (`oshape.js`), studio, layout and parts under `src/obj/`; it shares nothing with the other three but `rng.js`, and ARCHITECTURE.md §13 is its contract. Species are the gardener's four — `ospecies.js` casts `blade`/`rosette`/`crown`/`sprig` foliage and four blooms, the leaves and soil read role names from `opalette.js` (a green is only ever "the leaf green of this garden"), and the layout publishes the formation the parts root on (`rootY` soil, `crownY` perch, `leaf.size` unit). Its one word of caution is the same as every lab: geometry may never roll — counts, sizes, leans and the lump seeds are `gen()`'d and placed with a positional hash, so the same JSON grows the same plant. `photo.html` is **the photo** — a SCENE, not a fifth generator: one seed composes a toy-shelf class portrait out of the gloss characters and the plants (a giant centre, mediums beside, smalls out wide, a tiny front row, trees behind, grass filling gaps, head-only floaters clustered overhead). It is the one page with a POST STACK (`vendor/postprocessing/` + `vendor/n8ao.js` for SSAO) and it dresses its own set — real floor and wall, one colour, so the AO draws the corner. Two lessons live in `src/photo.js`: N8AO gamma-corrects by default and OutputPass converts again (double-corrected, the photo went up like chalk — `gammaCorrection: false`), and a steep overhead key pools every shadow exactly where the camera cannot see it, so the photo's key stands camera-side. `serve.py` sends `no-store` on purpose:
 browsers cache ES modules by URL, and a stale module makes an edited
 file look like a phantom `SyntaxError`.
 
@@ -159,9 +160,28 @@ file look like a phantom `SyntaxError`.
   have one), noses are ~25%, and the plain eye shapes carry the line
   so the odd ones stay odd. A uniform pick over eleven eye styles
   gives a sheet that is a third hearts and stars.
+- The objects lab is a **parallel** generator too, not a port. Adding a
+  part = one file in `src/obj/oparts/` + one line in its `index.js`;
+  a VARIANT = an entry in a part's `gen`/weighted table plus a
+  branch in its `build`; a species = one entry of weights in
+  `ospecies.js`; a palette = one entry in `opalette.js`; a finish =
+  `FINISHES` in `omedia.js`. Prefer the cheapest lever: a blade, a
+  crown and a rosette are all the one LEAVES part, not three parts.
+- In the objects lab **geometry may never roll.** Counts, sizes,
+  leans and the lump wobble seeds all live in `gen()`; `build()`
+  places them with `oshash(seed, i)` (the same stable-scatter trick
+  the voxel `h01` does). A plant built with `s.jr()`-style call
+  would shimmer on every rebuild — it does not, and that is the
+  contract. The one exception a shape may say is its own: the blade
+  BAKES lean/droop into the outline so a grass tuft is curvy, not
+  sticks.
+- In the objects lab **species are shapes, not skins**: a grass tuft
+  and a tree crown share almost no bodies, so species branch the
+  foliage and bloom parts hard on style. Never make a fifth species
+  that is just a recolour — that is a palette entry, not a species.
 - Adding a gloss **species** = one entry of weights in
   `src/gloss/gspecies.js` — the third copy of the casting idea, own
-  helper on purpose. A species loads the dice so the compound toys
+  helper on purpose. A species loads the dice so the compound characters
   arrive assembled (panda = bear ears + ink eye patches; pig = snout;
   robot = cube + screen face; humanoid = the modeled chibi SKULL +
   hair on the crown + skin, §12); it may bias the BODY form but never
@@ -178,7 +198,7 @@ file look like a phantom `SyntaxError`.
   falling away empty below it. Slung low it reads as a smiley drawn on
   a ball. And keep the proportion ranges WIDE: every body is the same
   normalised sphere, so eye size, eye spacing and mouth size are the
-  only variety the shelf has. They were ±6% once and every toy came
+  only variety the sheet has. They were ±6% once and every character came
   out the same circle.
 - The **humanoid inverts that rule**, and it is the only thing that
   does: *frente despejada, ojos a mitad de cara*. Its whole top half
@@ -188,7 +208,7 @@ file look like a phantom `SyntaxError`.
   the midline), each eye ~25% of the head's width, eye centres ~50% of
   the half-width out, the mouth ~77% down. Guessing put the face too
   high and too small twice. Measure with `__probe` in the lab console
-  and average over ~30 seeds — one toy is not a proportion.
+  and average over ~30 seeds — one character is not a proportion.
 - **Hair is ONE MOLDED MASS with the clumps carved in** — a closed
   thick shell (torus topology: outer surface up, inner surface back
   down hugging the head; the fold is the molded rim), with GROOVES
@@ -226,7 +246,7 @@ file look like a phantom `SyntaxError`.
   from roughness, never from dimming `envMapIntensity`, which just
   darkens every colour off its swatch. Tails and the ahoge are tubes;
   a tail's stand-off scales with the HEAD, never the hair's length —
-  scaled by length it doubled the toy's width and the sheet shrank the
+  scaled by length it doubled the character's width and the sheet shrank the
   face to half its neighbours' to fit the cell.
 - Hair colour is its own table in `gpalette.js`, never the body
   palette, and the LAYOUT owns the two facts that are about the PAIR:
@@ -259,7 +279,7 @@ file look like a phantom `SyntaxError`.
   three.js and never builds a material — it takes colours off `L`
   (`body / warm / ink`). That is what `F.media.*` is to a drawn part.
 - A feature may carry a **travel budget** (`spec.travel`, in its own
-  plane) saying how far it may slide when the toy looks somewhere. A
+  plane) saying how far it may slide when the character looks somewhere. A
   PUPIL gets most of its white and a white eye gets almost nothing, so
   `gface.js` drives a moving pupil without knowing what shape any eye
   is. Travel is scaled by the blink, or a pupil left out at the edge
@@ -287,13 +307,13 @@ file look like a phantom `SyntaxError`.
   lesson — *a shape you can name the parts of wants a cage, not an
   exponent*, since a chin-tuck knob on the superellipsoid failed in
   three different shapes — but keep the verdict too: this lab makes
-  TOYS, and an anatomically-argued skull looked like it had wandered
-  in off another shelf. A form that is right in isolation and wrong in
-  the line-up is wrong.
+  CHIBI CHARACTERS, and an anatomically-argued skull looked like it
+  had wandered in off another register. A form that is right in
+  isolation and wrong in the line-up is wrong.
 - Adding an **extra** — spectacles, a hat, a face mark — is a file in
   `gparts/` like any part, but deal it RARE (the three sit at 88/86/82%
-  none): an accessory on every toy is the house style, not a character.
-  They take their colour from `ACC_COLORS` via `L.acc`, never the toy's
+  none): an accessory on everyone is the house style, not a character.
+  They take their colour from `ACC_COLORS` via `L.acc`, never the character's
   five — on a humanoid every palette colour is a skin tone and the
   first beanie read as a bald head — and `pickAcc` scores on full RGB
   distance, not luma, or a terracotta lands on peach skin. They wear
@@ -325,6 +345,29 @@ file look like a phantom `SyntaxError`.
 - Give a rock FEW sides — twelve subdivide into a smooth pebble, eight
   keep facets. Put the lumps in the CAGE with fixed harmonics, so
   subdivision softens them into swells and they cannot boil.
+- A gloss character has a **stance** — `none` or `biped` (`recipe.stance`,
+  weighted per species like the body form; head-only carries the
+  sheet, the humanoid pins biped, and `quad` was built and cut — from
+  the front it read as a worse biped). The frame (`gparts/frame.js`)
+  is RAYMAN anatomy: an upright pill torso, and MITTS and SHOES
+  floating in air — modeled from cages like the rock, no limbs, no
+  neck — with the head sunk into the torso by a socket. Its
+  proportions scale off the HEAD, the layout calls `frameLayout` first
+  because the head's height depends on it, and the head is its own
+  GROUP in the rig so the gaze turns it while the feet stay planted.
+  A modeled form (rock, slime) never takes a frame — its base already
+  is its bottom — and `L.H` stays the HEAD's height so the sheet keeps
+  normalising faces. See ARCHITECTURE.md §12, "The stance".
+- A biped wears an **outfit** the LAYOUT resolves (`L.outfit`, colours
+  via `pickOutfit` — cloth clears skin and hair, gloves and shoes clear
+  the cloth). Gloves and shoes are always coloured; the torso is cloth
+  only when `dressed` rolls (humanoid pins 1, robot .1 — a robot's
+  torso is its chassis). A dressed torso may carry a screen-printed
+  motif: `clothPrint` in `gtexture.js` bakes cloth + ink into ONE map
+  and the factory sets the material colour white — print is the one
+  place a texture is the right tool for clothing; a painted hem never
+  is. `none` carries the motif table: a print on every chest is a
+  uniform, not a wardrobe.
 - A modeled form needs two things from the layout: `hwAt` must read its
   binned half-width (the peak of a drop is most of its height, and a
   feature guarded against `rx` there leaves the silhouette), and the
@@ -380,11 +423,15 @@ did not check.
 What is worth doing yourself is the cheap, decidable half:
 
 - load every page (`index.html`, `editor.html`, `crowd.html`,
-  `game.html`, `items.html`) and confirm the console is clean — a
+  `game.html`, `items.html`, `objects.html`, `photo.html`) and
+  confirm the console
+  is clean — a
   stale import or a renamed export is a real bug and takes one reload
   to find;
 - assert on **numbers**, not vibes, through `window.__game` /
-  `window.__orla`: drain rates, the shape of a draft hand, where the
+  `window.__orla` (and `window.__object` for the plants lab — same
+  recipe in → same plant out, checked by build spec + JSON
+  round-trip): drain rates, the shape of a draft hand, where the
   camera target lands;
 - **balance is measurable here, so measure it.** A recipe is cheap —
   no canvas is touched until a character is built — so thousands of

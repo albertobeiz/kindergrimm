@@ -1155,7 +1155,7 @@ other two (only `rng.js` crosses over, and it is arithmetic). A recipe
 goes in, parts are asked for their params, a layout measures once, and
 each part builds itself — except that what a part hands back here is
 neither strokes nor cells but a bag of SPECS, and what comes out is a
-glossy vinyl toy.
+glossy 3d chibi character — a real character, not a figurine.
 
 ```
 recipe ──► gen() ──► params ──► glayout.js ──► L (at(), radii, colours)
@@ -1170,15 +1170,15 @@ recipe ──► gen() ──► params ──► glayout.js ──► L (at(), 
 signed distance field and meshed it with surface nets, and that is
 gone. The reason is worth keeping: an eye is a thousandth of a body,
 so resolving one meant resolving the whole grid at eye scale — the
-sockets still came out faceted at 136 samples, a toy cost two seconds,
+sockets still came out faceted at 136 samples, a character cost two seconds,
 and the fine detail was exactly what the sampling could not afford.
 Solids have no resolution to trade. A sphere is a sphere at any zoom
-and a toy costs a few milliseconds.
+and a character costs a few milliseconds.
 
 ### Coordinates
 
 World units, **y up**, **+z toward the viewer** (so the face is on the
-+z side), origin at the **floor under the toy**. Same break from the
++z side), origin at the **floor under the character**. Same break from the
 drawn rig as the voxel lab, and for the same reason: a solid wants
 measuring from the ground it sits on.
 
@@ -1198,7 +1198,7 @@ makes exactly two things:
 The plate is the whole face system and it is one shape of thing on
 purpose. The bevel is the cartoon read: it is what catches the studio
 highlight around the edge of an eye, and it is why a feature looks
-moulded into the toy rather than printed on it.
+moulded into the character rather than printed on it.
 
 > **Authoring rule.** A plate's front crest sits at `z = 0` and its
 > body runs BACKWARD. Placed on the skin it is therefore flush, and
@@ -1242,12 +1242,13 @@ implicit formula cannot say *full cheeks here, chin this wide, face
 flat in front*. **A shape you can name the parts of wants a cage, not
 an exponent.** That is true and still worth knowing.
 
-The second is why it left anyway: this lab makes TOYS. A sphere or a
-cube with a face on it is one; an anatomically-argued skull is a
-different product, and it sat on the shelf looking like it had wandered
-in. Everything the skull was carrying — the hair, the face catalogue,
-the proportions — turned out to sit on a ball perfectly well. A form
-that is right in isolation and wrong on the shelf is wrong.
+The second is why it left anyway: this lab makes CHIBI CHARACTERS. A
+sphere or a cube with a face on it is one; an anatomically-argued skull
+is a different register, and it sat in the line-up looking like it had
+wandered in. Everything the skull was carrying — the hair, the face
+catalogue, the proportions — turned out to sit on a ball perfectly
+well. A form that is right in isolation and wrong in the line-up is
+wrong.
 
 ### The hair (`ghair.js`) — one molded mass, carved
 
@@ -1349,7 +1350,7 @@ failures of its own: a hard clearcoat (one travelling hotspot on a
 shape whose whole job is many soft clumps — a plastic wig) and then a
 strong whitened sheen (sheen is a rim lobe, so on a grooved surface it
 lit every groove edge as a glassy streak — cellophane). The reference
-hair is the flattest thing on the toy: the grooves read by occlusion
+hair is the flattest thing on the character: the grooves read by occlusion
 and the studio gradient, not by any highlight. Matte comes from
 ROUGHNESS, never from dimming `envMapIntensity` — that just makes every
 colour darker than its swatch.
@@ -1362,7 +1363,7 @@ hair's length. One generator covers the sphere and the cube, because
 both are the same superellipsoid and `surfT` carries the exponent.
 
 **Colour is its own table** (`HAIR_COLORS`), never the body's palette:
-the five-colour set is what makes a shelf one product line, and hair is
+the five-colour set is what makes a sheet one cast, and hair is
 what tells two heads apart. Two facts belong to the PAIR rather than to
 either colour, so the LAYOUT owns both: the brow is the head's own hair
 pulled toward ink, and hair within a sixth of the skin in luma is
@@ -1376,10 +1377,10 @@ but hair IS the head, and a second offset slides the cut off the skull.
 
 ### The extras — spectacles, hats, marks
 
-Three parts that are not what a toy IS but what it is WEARING, or what
-has HAPPENED to it: `specs.js`, `hat.js`, `mark.js`. All three are
+Three parts that are not what a character IS but what it is WEARING, or
+what has HAPPENED to it: `specs.js`, `hat.js`, `mark.js`. All three are
 dealt rare (88/86/82% none), for the reason the brows already record —
-an accessory on every toy stops being character and becomes the house
+an accessory on everyone stops being character and becomes the house
 style.
 
 Each one needed a fact it could not know, and in every case the part
@@ -1420,8 +1421,8 @@ measured off the lens centre's own x now, with an overlap that runs it
 into both frames. A join you can see is the only kind there is.
 
 **Accessories have their own colour table** (`ACC_COLORS`), for exactly
-the reason hair does. A toy's five are what make a shelf one product
-line, so an extra drawn from them cannot be seen — and on a humanoid it
+the reason hair does. A character's five are what make a sheet one
+cast, so an extra drawn from them cannot be seen — and on a humanoid it
 is fatal, because every colour in the `skin` palette IS a skin tone.
 The first beanie came out as a bald head. `pickAcc` then guarantees
 clearance from BOTH the body and the hair, scored on **full RGB
@@ -1429,7 +1430,7 @@ distance and not luma**: scored on lightness alone a terracotta beats a
 teal against peach skin, and then renders as another shade of face,
 because it is the same hue and the key light is warm.
 
-And they wear the `acc` finish rather than the toy's. Left to inherit
+And they wear the `acc` finish rather than the character's. Left to inherit
 it, a beanie on a humanoid is poured in `skin`. `acc`'s sheen is
 SELF-COLOURED — `rubber`'s white one washed a brick red out to pale
 pink under the overhead key, which is the same mistake the hair block
@@ -1441,7 +1442,7 @@ Nothing is carved and nothing is welded: each eye, brow, nose, mouth
 and cheek is its own mesh, returned from the rig as a `face` map. That
 map is the animation surface — a blink is `eyeL.scale.y`, a glance is
 a nudge in x, and neither costs a rebuild. `blinkScale(clock)` is the
-curve; feed it a PER-CHARACTER clock, because twenty toys blinking on
+curve; feed it a PER-CHARACTER clock, because twenty characters blinking on
 the same frame reads as a glitch in the renderer rather than as twenty
 things being alive.
 
@@ -1491,15 +1492,15 @@ The SPECIES is the third copy of the casting idea, and on purpose the
 third copy of the code (only `rng.js` crosses generators). A profile
 is a table of loaded dice per part id — object → weighted pick where
 what you leave out cannot happen, array → range, number → probability
-— and the compound toys arrive assembled: a panda is bear ears AND ink
+— and the compound characters arrive assembled: a panda is bear ears AND ink
 eye patches AND a pale muzzle, rolled together instead of once a
 thousand sheets. The humanoid is the same idea with the crest swapped
 for HAIR (`tuft` / `mop` / `curl` — ink plates standing on the crown,
 where everyone else's ears go) and the eyes loaded toward the orb.
 
 A species may bias the body form; it must **never** touch the palette
-or the material — what a toy is made of is a separate question, and a
-lavender panda is still a panda. The humanoid is the one exception the
+or the material — what a character is made of is a separate question,
+and a lavender panda is still a panda. The humanoid is the one exception the
 rule was waiting for, and it may name both: it is poured in the `skin`
 palette (four tones pale to deep plus a rosy fifth the blush always
 scores as the warm one) and finished in the `skin` material (a broad
@@ -1508,7 +1509,7 @@ doll sheen). A chrome humanoid is not a humanoid in another finish, it
 is a different object. `skin` is kept out of both random deals and
 reachable only by name or by a pinned filter — which is why
 `gmedia.js`'s reachability check now counts *named by a species* as a
-second legitimate way for a material to reach a toy.
+second legitimate way for a material to reach a character.
 
 Its face is deliberately **not** narrowed: the whole eye catalogue
 rolls, weighted with the orb in front. Casting three eye styles gave
@@ -1528,33 +1529,33 @@ the lab where the numbers were measured rather than judged —
 | mouth, down the head | **0.77** | small and close under the eyes |
 
 This inverts the lab's own upper-half rule, and that is correct: the
-rule is about a TOY, where a face slung low reads as a smiley drawn
-on a ball. A chibi head is not a ball with a face on it, it is a
+rule is about a CREATURE, where a face slung low reads as a smiley
+drawn on a ball. A chibi head is not a ball with a face on it, it is a
 skull, and the cranium above the eyes is the thing that makes it
 read as one.
 
 Guessing put the face too high and too small twice. `__probe` in the
 lab console reports all five off the built meshes; average it over
-~30 seeds, because one toy is not a proportion. And the mouth is cast
+~30 seeds, because one character is not a proportion. And the mouth is cast
 SMALL and as a line: the reference mouth is a stroke a fraction of an
 eye wide, and a big one also reaches further, so the layout's
 clear-the-eyes push drops it onto the chin. A species may bias the body form; it must never touch
-the palette or the material — what a toy is made of is a separate
+the palette or the material — what a character is made of is a separate
 question, and a lavender panda is still a panda. `wildcard` (no
 opinions at all) stays the biggest slice of the deal: the casting
 exists to make compounds arrive whole, not to shrink the generator to
 a fixed cast of eight.
 
 `gpalette.js` holds twelve five-colour sets sampled from the reference
-sheet. A toy takes its body colour from one set and its warm bits
-(blush, an open mouth) from **another colour in the same set**, which
-is what stops a shelf of twenty looking like twenty unrelated toys.
+sheet. A character takes its body colour from one set and its warm bits
+(blush, an open mouth) from **another colour in the same set**, which is
+what stops a sheet of twenty looking like twenty unrelated characters.
 `INK` is deliberately outside every palette: one warm near-black does
 every eye, brow and mouth in the lab, and that single shared value is
 most of the family resemblance.
 
 The two materials have to differ in more than one number or the
-toggle does nothing you can see across a shelf. Glossy is a hard
+toggle does nothing you can see across a sheet. Glossy is a hard
 clearcoat over smooth plastic — one tight travelling highlight.
 Rubber has no coat and a broad rough lobe, so it returns a soft even
 glow with no hotspot, and leans harder on the environment to keep
@@ -1568,6 +1569,8 @@ from going dead flat.
 - a **variant** of an existing part = one entry in that part's `STYLE`
   table. This is the cheap lever and it should be the usual answer.
 - a **palette** = one entry in `gpalette.js`.
+- a **stance** — head-only or biped — is `recipe.stance`; see "The
+  stance" below. Species weight it the way they weight the body form.
 - a **body** = a case in `formRad` and one entry in `BODY_WEIGHTS`.
   There are four. `sphere` and `cube` are the superellipsoid with its
   squareness knob; `rock` and `slime` are **profiled** — a surface of
@@ -1605,13 +1608,86 @@ from going dead flat.
   carry one.
 
   Dealt weighted, never uniformly: the ball and the block carry the
-  shelf and the two profiles are treats. Dealt evenly they were 40% of
+  sheet and the two profiles are treats. Dealt evenly they were 40% of
   a sheet, and a rock is a strong enough silhouette that four in a row
   stop being a surprise.
 
+### The stance (`gparts/frame.js`)
+
+A character is head-only or a **biped** — `recipe.stance`, dealt like
+the body form is: species weight it (`stance:` in a profile), head-only
+carries the sheet, the lump species pin `none` because a slime with
+legs contradicts what a slime is, and the humanoid pins `biped` — a
+floating humanoid head is a decapitation, not a character. A modeled form
+never takes a frame — its foot or base already IS its bottom — and a
+stance PINNED by the crowd's filter excludes the modeled forms from
+the body deal, so the filter never quietly un-filters itself. A `quad`
+stance — four shoes under a slung horizontal pill — was built and cut:
+seen from the front, the only angle the sheet has, it read as a worse
+biped.
+
+The frame is **Rayman anatomy**: no arms, no legs, no neck. The torso
+is an upright pill — a superellipsoid taller than wide, squared just
+enough (`belly` ≈ 2.4–3.2) that its sides run straight — the hands are
+MITTS floating beside it, the feet are SHOES floating under it, and
+the air in the gaps is load-bearing: it is what says "cartoon" instead
+of "figurine". The head still sinks into the torso by a socket overlap —
+the one joint that is a socket, not a gap. The head stays the character: the
+whole frame adds about half a head of height, and the proportions are
+measured off the HEAD's radius so the frame can never grow away from
+the face it carries.
+
+The frame wears an **outfit**, and the layout resolves it (`L.outfit`)
+because it is all agreements: `pickOutfit` in `gpalette.js` deals cloth,
+glove and shoe colours from `ACC_COLORS`, each scored to clear the skin,
+the hair and the pieces already picked. Gloves and shoes are ALWAYS
+coloured (`acc` finish — a bare biped in white gloves and red shoes is
+the oldest character design there is); the torso is cloth only when
+`dressed` rolls true — half the creatures, the humanoid pinned to 1 (a
+skin torso on a person reads as naked), the robot at .1 (its torso is
+its own chassis, chrome and all). A dressed torso may carry a **print**
+— `clothPrint` in `gtexture.js`, the one place a texture is the right
+tool for clothing, because a screen-printed star on a vinyl blank IS
+print. The map carries the whole diffuse (cloth ground + motif ink, the
+ink flipped light or dark against the cloth's luma) and the factory
+sets the material colour to white — a map that only multiplied could
+never put light ink on dark cloth. The chest sits at u = .25, v ≈ .55
+of the sphere parametrisation; `none` carries the motif table, because
+a print on every chest is a uniform, not a wardrobe.
+
+The mitt and the shoe are MODELED — small control cages through
+Catmull-Clark, the same verdict as the rock and the slime, because *a
+shape you can name the parts of wants a cage*: a mitten has a palm and
+one thumb swell (a cage vertex pushed out, so subdivision softens it —
+no fingers), a shoe has a flat sole (two near-full rings at the
+bottom, the rock's sitting-flat trick), a full toe and a lower heel.
+Both are authored ONCE as the left one and mirrored (rewind the faces
+or the normals face in), with no rng anywhere — a frame is rebuilt per
+recipe and must never boil.
+
+The split of labour is the muzzle rule again. `frameLayout` (in the
+part, because the part knows what a frame is) returns plain numbers;
+the LAYOUT calls it first, because the head's own height depends on the
+answer, and publishes `L.frame` for the part's build() to stamp. The
+face catalogue survives untouched — every face part places through
+`L.at`, which simply sits higher.
+
+> **The floor and the bottom of the head used to be the same y**, and
+> the chin clamps in `glayout.js` leaned on that. With a frame they
+> split (`botY`), and a clamp still measuring off the floor would run a
+> maw down onto the chest.
+
+In the rig the head is **its own group**, pivoted at its centre: the
+gaze spring writes yaw/pitch to `built.head`, so a character with a torso
+keeps its feet planted while it looks. `L.H` stays the HEAD's height —
+the sheet normalises faces by it, and a head that shrank because it
+grew a body would defeat the point — while the whole character's height lives
+in `bounds`. Breathing stays what it was: the pages' volume-preserving
+squash on the whole group.
+
 ### The face life (`gface.js`)
 
-The autonomic half of `anim.js`, ported to a toy with no bones. The
+The autonomic half of `anim.js`, ported to a character with no bones. The
 drawn rig's life is blink, gaze, sway and breath; only one of those
 needs a skeleton, so the rest come over intact — and gaze is the one
 that matters:
@@ -1625,7 +1701,7 @@ that matters:
 > is followed by its opposite, so a page of them never reads as
 > everyone scanning the same room.
 
-Here the toy IS the head, so the spring drives the whole body, and the
+Here the character IS the head, so the spring drives the whole body, and the
 page decides where to add `life.head` — the lab puts it on the group,
 the sheet adds it to the cell position.
 
@@ -1645,26 +1721,26 @@ nothing accumulates drift.
 
 The lab's opposite number, and the same page the other two generators
 already have — but built like the DRAWN crowd, not the voxel one: a
-flat grid seen straight on, seven across and five down, every toy the
-same size in its own cell.
+flat grid seen straight on, seven across and five down, every character
+the same size in its own cell.
 
-It was a floor shelf first, receding into depth, and that was the
+It was a floor first, receding into depth, and that was the
 wrong page. Depth costs the two things a contact sheet is for — the
 back row is smaller than the front so you cannot compare them, and a
-toy that moves is moving away from you where it barely reads.
+character that moves is moving away from you where it barely reads.
 
-- **a wall, not a floor.** The toys hang on a plane about half a unit
-  behind them, and that wall is what makes the light work: each toy
+- **a wall, not a floor.** The characters hang on a plane about half a
+  unit behind them, and that wall is what makes the light work: each one
   throws a short shadow onto it, so the sheet has depth without the
   camera needing any. The key is nearly head-on, only a little up and
   to the left — rake it harder and every shadow lands on the
   neighbour instead of reading as depth.
 - **a real lens.** A long-ish 26° perspective, so the grid barely
-  converges but the toys out at the edges still turn a few degrees
+  converges but the characters out at the edges still turn a few degrees
   toward you. An orthographic box was tried and reads as a printed
   page rather than objects on a wall.
-- **the animation is all FACE.** There is no body-move director. A toy
-  hopping in its cell is a screensaver; the thing worth watching is
+- **the animation is all FACE.** There is no body-move director. A
+  character hopping in its cell is a screensaver; the thing worth watching is
   thirty-five faces looking around a room and reacting to it. The
   vocabulary is entirely `gface.js`, and this page only decides who
   feels what and when — exactly the job `crowd.js`'s director does for
@@ -1686,3 +1762,168 @@ field there uses `??=`, so it only ever rolls what it was not told.
 `__gcrowd` exposes `slots / stats / frame / pump / refill / filter`.
 Measure with `pump`, never by watching a hidden panel — a throttled
 tab reports build times an order of magnitude out.
+
+## 13. The plants generator (`objects.html`, `src/obj/`)
+
+A FOURTH generator, on the same idea and sharing no runtime with the
+other three (only `rng.js` crosses over). A recipe goes in, parts
+roll their params, a layout measures once, and each part pushes SPECS
+— except that a spec here is a leaf, a blade, a trunk or a blob, and
+what comes out is a plastic plant on a cream nursery shelf.
+
+```
+recipe ──► gen() ──► params ──► olayout.js ──► L (rootY, crownY, leaf unit)
+                                    │
+        oparts/index.js ────────────┴──► build(add, P, L, C) → specs
+                                             │
+                                 orig.js ─┴─► oshape.js ──► meshes
+                                            omedia.js ──► materials
+```
+
+It is the first generator whose species are SHAPES, not skins: a grass
+tuft and a tree crown share almost no geometry, so the parts branch
+hard on the style the species loads (`blades`, `rosette`, `crown`,
+`sprig`, and the four blooms). The species table is `ospecies.js` —
+the fourth copy of the casting idea, on purpose the fourth copy of
+the code.
+
+### Coordinates
+
+World units, y up, +z toward the viewer, origin at the FLOOR under
+the plant — the same break the voxel and gloss labs already made, for
+the same reason: a solid wants measuring from the ground it sits on.
+
+### The hand (`oshape.js`)
+
+`sketch` draws, `carve` carves, this WARPS CURVES:
+
+- **leaf / petal** — a flat outline extruded with a rim (the plastic
+  read the gloss plates give the toys). The whole leaf family is one
+  superellipse exponent `n`: 2.2 is the potted fern, 3.2 the shield.
+  A `curl` in the spec cups the plate along its length (a flat leaf
+  is a paddle; a cupped one is moulded) — and the bend re-welds its
+  normals by position, because an extrude is non-indexed and a bent
+  one facets without the weld.
+- **blade** — a leaf that LEANS: the outline is a spine offset to
+  each side by a width that dies at the tip, so the bend is BAKED
+  INTO the geometry. The spine is INTEGRATED from a bend angle —
+  march a fixed arc length along a monotonically bending heading —
+  never offset in y: an offset spine folds back at a hard droop, the
+  two edge curves cross, and the triangulator fills the loop as a
+  slab (a tuft used to grow a few of those).
+- **trunk** — a profile lathed around y, with the top sheared
+  sideways by `lean` afterwards so a tree can grow toward the light
+  instead of standing at attention. `taper` blends the cone toward a
+  capped pole: 0 is the tree, ~.7 the flower's stalk — the cone
+  version read as a traffic cone wearing a daisy.
+- **blob** — a sphere pushed to an ellipsoid with FIXED harmonics
+  (same seed, same lump). The crown, the mound, the blossom balls.
+
+A part never touches three.js: it names a shape and hands over
+numbers, exactly the `gshape.js` contract. SPEC colours are ROLE
+names (`ground`, `leaf`, `leafD`, `bloom`, …) resolved once by the
+palette, so a green only ever means "the leaf green of this garden".
+
+### The formation
+
+The layout publishes a tiny hierarchy of anchors — the soil surface,
+the crown, the leaf unit — and each part roots on the one above it.
+
+| anchor | who owns it | who reads it |
+|---|---|---|
+| `rootY` — the soil surface | the mound | blades, rosettes, stems root here |
+| `crownY` — the top of the stem | the stem | the leaves hang off it; the bloom perches here |
+| `leaf.size` | the leaves | the one size every leaf is built from |
+
+That is the muzzle lesson, fourth time: parts never reach into each
+other's params, they read the anchor the owner published.
+
+### Determinism
+
+The build may never call the rng. Every count, size, lean and seed is
+rolled in `gen()` and the geometry uses a positional hash
+(`oshash(seed, i)`) to place a blade among a ring of blades — the
+same stable-scatter trick the voxel hand's `h01` does. Same recipe,
+same plant, on any machine.
+
+### Species, the gardener's four
+
+`grass` (a tuft, no trunk), `plant` (a rosette on a short stalk),
+`tree` (a crown on a mighty trunk), `flower` (a daisy on a thin neck)
+— plus `wildcard`, the free roll. Palettes are role-named leaf-beds
+(meadow/lime/fern/bloom/desert/tundra) of soil, trunk, leaf and bloom;
+the finishes are gared `matte` (dry), `glaze` (rain) and `fuzz`.
+
+### Adding things
+
+- a **shape** = a new case in `SHAPES` in `oshape.js` — a new family
+  only with a new kind of outline (a palm, a cactus, a fruit).
+- a **variant** = an entry in a part's gen/weighted table plus a
+  branch in its `build`. This is the cheap lever.
+- a **species** = one entry of weights in `ospecies.js` named after a
+  plant.
+- a **palette** = one entry in `opalette.js`.
+- a **finish** = `FINISHES` in `omedia.js` (remember the weight table
+  in the same file, or the reachability check throws).
+
+`__object` exposes `recipe / P / stats / bounds / rebuild / frame /
+pump(n) / set(patch) / reroll(id)`. Measure with `pump`, never by
+watching a hidden panel.
+
+## 14. The photo (`photo.html`, `src/photo.js`)
+
+A SCENE, not a fifth generator: it grows nothing itself. It deals
+recipes to the gloss rig and the plants rig and only decides who
+stands where — the two generators still share no runtime with each
+other; they share this page the way they share the menu. One seed
+composes the whole shot, so a shot number IS the shot, faces and all.
+
+### The composition grammar
+
+Copied from the reference render it chases, and dealt in this order
+off the shot's rng:
+
+- **the main line** — one giant dead centre, then mediums down to
+  smalls in strictly falling size. The line packer places each sitter
+  against the edges the earlier ones actually claimed (using the
+  BUILT width, never a plan), centre-out, just past touching; a
+  sitter that would leave the frame is pulled back to the boundary
+  and pushed FORWARD, so the line folds round its own ends.
+- **the tiny front row** — pocket-sized ones loose across the whole
+  width. The tiny tier is what makes the giant giant.
+- **the garden** — trees are BIG and stand BEHIND the crowd like
+  backdrop; grass, flowers and houseplants are small, at the feet,
+  filling gaps. One knee-high everything read as a shelf of samples.
+  The garden wears dead-matte only; the lab's glaze roll next to the
+  characters' pour read as cheap plastic.
+- **the weather** — head-only floaters (spheres more often than not:
+  a cube floating on nothing is a glitch, a ball is a balloon) in
+  CLUSTERS: an anchor with satellites on spread ring angles, anchors
+  re-rolled until they clear each other and the pyramid's crown,
+  plus a stray tiny one or two. Floaters cast no shadows — theirs
+  could only land halfway up the wall, a stain attached to nobody.
+
+### The post stack
+
+The one page with real postprocessing: `vendor/postprocessing/`
+(three's EffectComposer chain) plus `vendor/n8ao.js` for SSAO, wired
+in `photo.html`'s importmap (`n8ao` also statically imports the
+pmndrs `postprocessing` package — `vendor/pp-stub.js` satisfies it).
+The set is real geometry — floor running into a back wall, both the
+same paint — because an AO pass can only shade what is in the depth
+buffer, and a cyc corner disappears when the only thing marking it
+is the AO gradient. Two hard-won rules:
+
+- **one gamma conversion, at the end, only.** N8AO gamma-corrects
+  its output by default and OutputPass converts to sRGB again; the
+  double pass washed the whole photo to chalk. `gammaCorrection:
+  false` on the pass, no tone mapping on the renderer.
+- **the key stands camera-side.** The labs hang it steeply overhead,
+  which pools every shadow UNDER the body — exactly where a level
+  camera cannot see it, occluded by the very thing that cast it. The
+  photo's key is up front and left, so shadows fall back-right into
+  the gaps between sitters, which is where the reference keeps its
+  occlusion.
+
+`__photo` exposes `seed / actors / reshoot(seed) / frame / pump(n) /
+stats()`. Same recipe in, same photo out — check `stats().xs`.
