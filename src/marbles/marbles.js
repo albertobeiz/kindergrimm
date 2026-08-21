@@ -116,8 +116,18 @@ const benchX = (i, n = S.hand.length) =>
 // Press anywhere, pull back, let go. The dotted line is what tells you
 // where it is going, and it has to be, which is why it simulates the
 // real integrator.
-const PULL_MIN = .07;             // of the short screen edge, before a throw exists
+const PULL_MIN = .07;             // of the pull basis, before a throw exists
 const PULL_MAX = .30;             // …and where full power is reached
+// THE PULL BASIS IS THE SHORT SCREEN EDGE, CAPPED. Uncapped it scaled
+// the gesture to the monitor: on a phone the short edge is ~390px and
+// full power is a 117px pull, but on a 1440×900 desktop it is 900px and
+// full power became a 270px pull — while the marble you naturally press
+// on sits at ~76% of the window's height, leaving ~215px of screen
+// below it. Full power was not hard on desktop, it was UNREACHABLE:
+// the cursor hit the bottom of the screen at ~0.74. Capped, a phone is
+// untouched (its short edge is under the cap) and a desktop pull tops
+// out at 168px, inside the room that actually exists under the bench.
+const PULL_BASIS = 560;           // px — a pull is a wrist gesture, not a monitor-sized one
 // The sheet is nine wide and thirty-six long, so a wide aim is a
 // wide aim into the boards. Forty degrees still banks off both sides
 // and still reaches every lane; ninety only wasted half the gesture.
@@ -1669,6 +1679,11 @@ stage.addEventListener('pointerdown', ev => {
   ev.preventDefault();
   if (S.phase === 'menu') { start(); return; }
   if (S.phase !== 'play') return;
+  // a mouse drag that leaves the window keeps reporting: without the
+  // capture, desktop aim froze at whatever power it had at the sill.
+  // Failure is fine (a synthetic event has no capturable pointer) —
+  // losing the capture must never cost the throw itself.
+  try { stage.setPointerCapture(ev.pointerId); } catch {}
   pointerDown = { x: ev.clientX, y: ev.clientY };
 
   const onBench = benchHit(ev.clientX, ev.clientY);
@@ -1693,7 +1708,7 @@ function updateAim(cx, cy) {
   // needed, and none WANTED: an unprojected drag changes its meaning
   // with the perspective under it.
   const px = aim.ox - cx, py = aim.oy - cy;
-  const unit = Math.min(stage.clientWidth, stage.clientHeight);
+  const unit = Math.min(stage.clientWidth, stage.clientHeight, PULL_BASIS);
   const d = Math.hypot(px, py) / unit;
   if (d < .004) { aim.power = 0; return; }
   // it may only be thrown UP THE TABLE: a marble aimed at your own
