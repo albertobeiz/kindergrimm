@@ -28,7 +28,17 @@ who stop to fight whatever they can SEE, and a lamp that competes with
 a weapon for the same hand. Its rules are in ARCHITECTURE.md §6b and
 they are not the ones an older version of this file described — no
 beds, no toys, no play, and light no longer slows anything.
-`editor.html` is the face editor,
+`marbles.html` is **Marbles**: a long sheet of ice, a tide of hundreds
+walking down it toward a line, and three living marbles in your hand.
+You pull one back and let go — direction and force are the ONLY things
+you choose, the HOOK belongs to the marble — and it crushes what it
+rolls over, bounces off the boards and the brutes, and wherever it
+stops it PLANTS and fights on its own until it melts. Strike your own
+marbles on the way and they fire their one big move ALONG the blow and
+go sliding themselves: that is the chain and it is the only skill in
+the game. Its rules are ARCHITECTURE.md §15 and its files are
+`src/marbles/`. It affords hundreds of enemies for one reason: a small
+enemy is not a physics body, only the marbles are. `editor.html` is the face editor,
 `crowd.html` a 7×5 page of live characters, `items.html`
 the object contact sheet. `how.html` is the **guide**: eleven steps
 from a pencil stroke to a posed creature, and every demo on it runs
@@ -121,6 +131,62 @@ file look like a phantom `SyntaxError`.
 - **Keep a game small.** A 2500-line turn-based build was thrown away
   for being too complex; `src/orla.js` is the shape to copy. If an
   idea needs a second subsystem, say what it would cost and wait.
+- In `marbles.html` adding a **marble** is one entry in `mkinds.js`
+  and adding an **enemy** is one entry in `mfoes.js`, and both have a
+  rule that decides whether the entry earns its place. A marble pins a
+  gloss recipe and the recipe IS its stat block — hue says what it
+  does, finish says how far it slides, form says what it weighs,
+  silhouette says how it fights — and it gets exactly two behaviours,
+  an idle and a burst, which must be the same idea at two sizes. An
+  enemy has to be answerable by a DIFFERENT DECISION from every enemy
+  already there; two that both mean "throw harder" are one enemy with
+  two models.
+- The numbers that hold that game up: the melt clock (a marble has
+  TIME on the ice and nothing else — enemies cannot damage marbles at
+  all, they walk around them; only the two thief kinds touch the clock,
+  stealing seconds, and the time cards buy it back), and the crush mark
+  (one crush per marble per enemy, or the damage scales with the frame
+  rate). Both were found by MEASURING — `__marbles.headless(true)` plus
+  an auto-player — not by playing, and the measurements are in §15.
+- The third is the REFILL, and it is the difficulty knob: the run opens
+  on a FULL HAND — three marbles at frame one — and a long clock, 7.5
+  seconds a slot, one slot at a time. Stock up front, price behind it.
+  Together with the melt clock it is the only thing setting how big the
+  standing army gets (`life / REFILL`, measured at 2.8 marbles), so
+  moving either moves the whole game — a 17% change to it moved run
+  length by 24%. Small steps, measure both ends, table in §15.
+- And the fourth is the CLASH: a full-power ram is worth about a
+  QUARTER of a big enemy, so the first boss falls to four of them with
+  any starting kind. Ram damage is `impact` alone — it was
+  `impact * mass` and those are the same fact twice (every kind is
+  authored at `impact ≈ 1.4 × mass`), which squared the weight axis and
+  made the roster's spread 11.5× instead of 3.8×. If a stat multiplies
+  another stat, check they are not two names for one thing.
+- **Toughness is the WAVE, speed is the LEVEL** — two escalation
+  clocks, and `applyPace()` is called from both. Anything computed
+  from a clock has to be re-applied on that clock's tick: speed keyed
+  to the level but pushed into the tide only by `beginWave` is right
+  in `pressure()` and stale everywhere it matters.
+- **`TEMPO` is the knob for "it feels slow"; `REFILL` and `hp` are the
+  knobs for "it feels easy."** Don't reach for one when the complaint
+  is the other. Turning `TEMPO` is safe because the gap is a DISTANCE
+  and not a duration — speed cancels out of `population = size ×
+  crossing ÷ gap`, so `ON_ICE` holds at 136 whatever the tempo and
+  whatever `size` does. Expressed in seconds it drifted with both.
+  And a number tuned at one tempo may not be carried over to another:
+  re-measure it, don't translate it.
+- **A level-up is only ever an improvement. A BOSS pays in marbles.**
+  The three unlocks live in `RECRUITS`, not `BOOSTERS`, and killing a
+  boss deals them — so the roster is complete by wave four whatever the
+  dice say instead of being a gamble. The last one is a banner, not a
+  one-card modal.
+- **A boss walks on at the walk-on line with the parade, at the
+  parade's speed** — it arrives with the wave's theme formation and
+  lumbers only once it is in frame. Its banner fires on the SIGHTING,
+  the lull ends on the sighting too (never a timer — on a timer the
+  thin formations start half a minute early and silently add two blocks
+  to every wave), and its death is checked in every stage, because it
+  can now die before the boss stage owns it.
 - In `orla.html` the scoring vocabulary may only name things you can
   SEE. Two traps are already written down in `src/orla.js`: gear is
   `base:['biped']`, so "carries something" secretly means "is not a
@@ -420,8 +486,8 @@ did not check.
 What is worth doing yourself is the cheap, decidable half:
 
 - load every page (`index.html`, `editor.html`, `crowd.html`,
-  `game.html`, `items.html`, `objects.html`, `photo.html`) and
-  confirm the console
+  `game.html`, `marbles.html`, `items.html`, `objects.html`,
+  `photo.html`) and confirm the console
   is clean — a
   stale import or a renamed export is a real bug and takes one reload
   to find;
@@ -430,7 +496,13 @@ What is worth doing yourself is the cheap, decidable half:
   recipe in → same plant out, checked by build spec + JSON
   round-trip): drain rates, the shape of a draft hand, where the
   camera target lands;
-- **balance is measurable here, so measure it.** A recipe is cheap —
+- **balance is measurable here, so measure it.** `marbles.html` is the
+  furthest this has been taken: `__marbles.headless(true)` drops every
+  part of the frame that only exists on a screen, so a four-minute
+  auto-played run costs a couple of seconds and the whole difficulty
+  curve can be read off a table of `[t, lives, level, foes, marbles,
+  kills]`. Three real bugs came out of it that no amount of playing
+  would have named. A recipe is cheap —
   no canvas is touched until a character is built — so thousands of
   scoring passes can be run in the console against the real code.
   That is how `TARGETS` in `src/orla.js` was set, and a guessed

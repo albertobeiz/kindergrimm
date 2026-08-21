@@ -10,12 +10,17 @@ games.
 python3 serve.py
 ```
 
-- `index.html` — the menu. The five scenes, and the only place they
-  are linked from: no scene links to another. The two games get the
-  same card on it.
+- `index.html` — the menu, and the only place the scenes are linked
+  from: no scene links to another. The three games get the same card
+  on it.
 - `orla.html` — **the class photo**: pick five children of ten and the
   photo is scored like a poker hand.
 - `game.html` — **Kindergrimm**: a baby school in the dark.
+- `marbles.html` — **Marbles**: a long sheet of ice with a tide walking
+  down it. Pull one of your three living marbles back and let go — it
+  crushes what it rolls over, hooks the way that marble hooks, and
+  wherever it stops it fights on its own until it melts. Hit your own
+  marbles on the way and they go off, and go flying.
 - `editor.html` — one face, click a part to tune it, reroll or lock
   parts, seed and medium selectors, animation toggles.
 - `crowd.html` — a 7×5 page of living faces, no editing. Click a face

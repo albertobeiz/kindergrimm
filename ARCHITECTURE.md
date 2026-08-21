@@ -1927,3 +1927,716 @@ is the AO gradient. Two hard-won rules:
 
 `__photo` exposes `seed / actors / reshoot(seed) / frame / pump(n) /
 stats()`. Same recipe in, same photo out — check `stats().xs`.
+
+## 15. Marbles (`marbles.html`, `src/marbles/`)
+
+The third game, and the first one made out of the molded characters.
+
+**THE LOOP.** A tide of small dark things walks down a long sheet of ice
+toward a red line. You hold three living marbles. You pull one back and
+let go: it slides, it CRUSHES everything small it rolls over, it BOUNCES
+off the boards and off the brutes, and wherever it comes to rest it
+PLANTS and fights on its own, for ever, like a turret you threw. If it
+strikes one of YOUR marbles on the way, that marble fires its one big
+move — along the blow — and is sent sliding itself, which can strike a
+third. That is the chain, it is the only skill in the game, and
+everything else exists to make it legible. Kill enough and you level:
+three cards, take one. Let twenty over the line and the run is over.
+
+```
+marbles.js   the rules, the run, the hand, the HUD — and nothing else
+mtable.js    the sheet: ice, boards, house, camera, world→screen
+mfoes.js     the tide — eight kinds, parallel arrays, one grid
+mphys.js     momentum, the hook, the chain
+mcombat.js   the four verbs an ability is written in
+mkinds.js    the roster — stats and drawing, one object
+mboost.js    the level-up cards
+mfx.js       the juice
+msound.js    the toybox
+```
+
+### The one idea that makes it possible
+
+**A small enemy is not a physics body.** It is a position, a hit point
+count and an instance. It never pushes anything, never resolves a
+contact and never asks the solver a question — a marble rolling over it
+simply kills it. Only the marbles are dynamic and there are never more
+than a couple of dozen, which is why five hundred enemies cost about as
+much as an idle contact sheet: 473 of them, 9 marbles, 625 particles
+and 238 draw calls measured at **2.9 ms a frame**.
+
+The BRUTE is the exception on purpose — the only enemy a marble bounces
+off, so the only one that changes a shot. Brutes are also the only
+enemies wearing real molded characters (five rigs, re-worn); everything
+else is one `InstancedMesh` per kind with the eyes welded into the body
+geometry and the whites baked as vertex colours. That is legal only
+because every enemy walks the same way, toward the camera, so a face on
++z always faces the player.
+
+### The sheet is long, and that is the design
+
+Thirty-six units of ice, nine wide. A walker crosses it in the better
+part of a minute, which is where the density comes from: at three
+spawns a second and a forty-second walk, a hundred and twenty of them
+are out there without anything ever arriving in a rush. Speed the tide
+up and you have to slow the spawns, and then the ice is empty.
+
+A nearly square table was built first and was wrong for one reason: with
+the far end ten units away a thrown marble arrives before its curve has
+done anything, and the curve is the game.
+
+The camera frames the NEAR section only (`FIELD.view`) — thirty-six
+units in a phone-shaped window puts the near end at the size of a coin.
+The rest runs away up the screen and the fog takes the far end before
+the geometry runs out, so nothing is cropped and nothing has an edge.
+
+### The hook belongs to the marble
+
+You choose a direction and a force. The CURVE is a property of the
+thing in your hand — `curl`, positive breaks right — and a big one is
+not a drawback: it is the only way to reach behind a brute.
+
+It is a **turn rate that goes as 1/speed**, which is a constant sideways
+acceleration expressed as a rotation. Constant turn rate was the first
+attempt and is wrong twice: on a sheet this long a full-power throw is
+airborne for four seconds, so any rate big enough to see turned the
+shot through a hundred and sixty degrees. Going as 1/v the marble runs
+almost true while it is fast and BREAKS at the end — what a curling
+stone does, and what makes the shot readable.
+
+Rotate the velocity, never add to it: a shot that gets faster as it
+curves reads as a bug even when the numbers are right.
+
+**Every marble can reach the far end** on clear ice at full power, and
+that is a floor the roster has to respect: a kind that physically
+cannot be thrown the length of the sheet is a kind whose whole far half
+of the board is missing. The sheet is 36.5 units from the hand to the
+walk-on line and a throw leaves at 26, so `v²/(2·gripBase·friction)`
+caps friction at about 1.7 — Boulder was at 2.7 and stopped two thirds
+of the way up. What friction still decides is everything BETWEEN: at
+half power a Bolt runs three times as far as a Boulder, and a lane full
+of bodies takes its cut of both.
+
+**And it SLIDES — it does not roll.** The first build tumbled the
+marble end over end at v/r, which is what a ball on grass does and is
+not what anything on ice does; it also put the face underground twice a
+second, and the faces are the cast. A marble now turns slowly about its
+own vertical axis, the way it hooks — which is where the word "curl"
+comes from — with a small lean into the travel selling the momentum.
+The turn unwinds to face the player as it settles: a stone has no front
+and may stop anywhere, but a marble with a face on it has to end up
+looking at the thing it is about to fight.
+
+`previewPath` is the same integrator run forward on an empty sheet, so
+the dotted line is drawn by the code that will move the marble.
+
+**But it only LEADS.** Drawn all the way to the resting place it
+answered the entire question — direction, hook and distance — and a
+throw with nothing left to judge is a throw you are executing rather
+than making. It stops after about eight units, a fifth of a full-power
+shot: enough to aim by, nowhere near enough to plan by, and it fades
+out rather than ending so it makes no promise about the spot it stops
+at. The reach ring stays home under the marble in your hand for the
+same reason.
+
+### The crush is a kill, once per marble per enemy
+
+**If a marble goes over something small, that thing dies** — whatever
+its hit points say. The crush was a damage number scaled by momentum,
+and in play that meant a slow marble visibly rolled straight over a
+walker and the walker got up, which reads as the game refusing a hit
+you can see landing. What speed buys is not lethality, it is REACH: a
+marble sheds a fraction of its speed for every body it ploughs, so how
+deep a lane goes is still decided by how hard you threw.
+
+**The plough is a run of notes, not a stutter.** Each body is a `crush`
+and consecutive ones climb a couple of semitones over a full lane, with
+a low `mow` swelling under every fourth. Twenty identical squashes in a
+second fuse into gravel and the biggest thing a throw does goes unheard
+— and the duck table made it worse, fading the sound out exactly as the
+plough got good. Measured: silence to −14 dBFS peak while ploughing.
+
+It fires ONCE per marble per enemy. It used to fire once per SUBSTEP,
+and the substep count is derived from the frame time — so a 120 Hz
+machine dealt 1.6× the damage and 1.6× the plough drag of a 60 Hz one.
+The tide carries a `mark` array stamped with the marble's `uid`.
+
+Anything a marble REBOUNDS off is exempt, because that is a bounce and
+not a crush: a brute is a wall, and a carapace is a lighter one. The
+carapace used to soak 78% of the crush instead, and that was the wrong
+shape — the marble ploughed over it and it shrugged. Now the marble
+skids off and pays for the line it lost, while the shell takes the
+impact. Still the enemy a throw cannot simply answer; it just says so
+with the shot instead of with a number.
+
+### They melt, and the clock is not damage
+
+A planted marble has `life` seconds and then it is gone. This is the
+single most important rule in the game and it went through two wrong
+versions:
+
+- **as a fraction of its own maximum** every marble lived the same
+  twenty seconds however tough it was, so hit points meant nothing;
+- **as flat damage per second** `+35% hit points` became `+35% marbles
+  on the sheet`, and an auto-played run compounded that into forty-seven
+  of them standing at once, at which point the tide was annihilated at
+  the far hog line and nothing could happen any more.
+
+A clock no booster touches is the only version where the army has a
+ceiling. Heavy kinds last longer, and the marble visibly shrinks by
+whichever is worse — the clock or the damage — so it needs no bar.
+
+### Five may bite one marble
+
+Without a cap every enemy that touched a marble stopped and stayed: six
+hundred of them stacked behind eight marbles at a dead front line, one
+life lost in three and a half minutes. A marble was not a turret, it was
+a plug. Five can reach it; the rest flow around it and keep walking, so
+gaps in the screen leak and the question every throw answers becomes
+*what is not covered*.
+
+For the same reason only a **bomber** hunts. Everything else walks at
+the line and bites what is in its way on the road.
+
+### The roster contract (`mkinds.js`)
+
+The stats ARE the drawing, third time. A kind does not have a colour
+AND a set of stats — it pins a gloss recipe, and the recipe is the
+readout: hue says what it does, finish says how far it slides, form says
+what it weighs, silhouette says how it fights. Every marble is a
+different character of that kind, because only the recipe's identity
+fields are pinned and the rest rolls.
+
+Two behaviours and no more:
+
+- **idle** — what it does planted, on a cooldown, for ever;
+- **burst** — its one big move. A collision fires BOTH parties' bursts
+  (one hit, one chain link, two bursts — "I smash these two together,
+  they both do their thing" is the player's model and it wins), along
+  the blow `(nx, nz)` with the down-sheet component FLIPPED: there are
+  no enemies behind your own line, and a cone firing backwards reads as
+  a bug even when the vector is honest. Radial bursts (Frost, Boulder)
+  are radial on purpose — the ones you fire with no angle.
+
+`range` is a single number read by the ability itself and by both rings
+the game draws with it. It was a label beside a literal buried in
+`idle.fire` — the two-parallel-tables pattern, and it had already
+drifted by a factor of two. Adding a kind is one entry; a startup check
+rejects one missing a burst, an idle, a range, a life or a blurb.
+
+### The tide's contract (`mfoes.js`)
+
+Every kind must be answerable by a DIFFERENT decision — two enemies that
+both mean "throw harder" are one enemy with two models. Mote is
+material; walker is the baseline; runner reaches the line first; spitter
+shoots from outside your range; bomber walks into a marble and takes
+half its life; splitter makes three more problems where it dies;
+carapace has a shell that only stops the CRUSH, so a throw cannot answer
+it; mender undoes everybody's work.
+
+Hit points are deliberately not uniform. A mote is cheap — it is the
+material a lane is made of, and a throw that cannot mow one does not
+feel like anything. The weight sits on the big ones. Inflating
+everything evenly was measured and it killed the plough.
+
+### They arrive in formations
+
+The tide is not a hose. A formation walks on every `gap` seconds — a
+SHAPE (`block`, `wedge`, `line`, `files`, `ring`, `arrow`) crossed with
+a MARCH (`straight`, `zigzag`, `drift`, `open`) — and between them
+there is quiet ice. The quiet is the point: it is the only time the
+player gets to look at the board, decide what is uncovered and place a
+throw on purpose rather than at whatever is nearest. A continuous
+trickle at the same enemies-per-second has no such moment in it, and
+the sheet read as one long undifferentiated smear.
+
+A formation stays rigid because its members share a LATERAL rule
+(`mvx`, or one zigzag phase) rather than each wandering off its own
+seed. Driving the zigzag off each enemy's own z instead of a shared
+clock would shear a block into a wave. `open` is the deliberate
+exception: there the rule is a function of where the member stands,
+which is what makes it open.
+
+The kind is SINGLE per formation. A square of carapaces is a question —
+*your throws cannot answer this* — while a square of one of everything
+is the average of eight questions, which is no question at all. A
+quarter of them carry a few of something tougher tucked inside, which
+is how a mender gets to be a thing you have to dig out of a crowd.
+
+### A wave is three or four formations and then a boss
+
+That is the whole run structure, and it repeats with tougher and faster
+enemies. Nothing about the tide is keyed to the CLOCK — the units are
+the ones the player experiences: "I am on wave five" and "I am level
+nine" are things you know, "I am at two minutes forty" is not.
+
+**Toughness is the wave; speed is the LEVEL.** Two clocks, on purpose.
+`hp` climbs half a wave's worth each time. Speed runs off `paceOf(lv)`
+— 5.5% a level, one multiplier for the whole roster, so a runner is
+always about twice a walker. Both used to hang off the wave, and a wave
+is three or four levels long: the tide walked at *exactly* the same
+speed for minutes at a time, so an escalation that was real on paper
+was invisible in the hand. The level is the finer clock, it is already
+ticking in the corner of the HUD, and putting speed on it means every
+draft visibly costs you something — you come out of it stronger and so
+does the sheet.
+
+The trap it sets, and it bit immediately: `setPace`/`setParade` are the
+only two calls that push the number into the tide and they lived in
+`beginWave` alone. Keyed to the level and applied on the wave, the
+value would have been right in `pressure()` and stale everywhere it
+mattered. **Anything computed from a clock has to be re-applied on
+that clock's tick, not on a different one's** — hence `applyPace()`,
+called from both.
+
+### The tempo, and the two invariants that let you turn it
+
+`TEMPO` is one multiplier over every walking speed in the game — the
+parade, the brutes, the boss. **Difficulty and TEMPO are not the same
+complaint**: difficulty is the refill and the hit points, tempo is how
+much happens a second, and "it feels slow" is answered here and
+nowhere else. It sits at **1.8**: a walker crosses the sheet in 48
+seconds, where at 1 it took 86. The file next door called that "the
+better part of a minute" and had been wrong about it for a long time;
+1.5 made the sentence true at 57 seconds and still read slow.
+
+Turning it is only safe because two numbers are pinned against it:
+
+**The gap is a DISTANCE, not a duration.** `population = size ×
+crossing ÷ gap`, so once the gap is expressed as a span of ice the
+SPEED cancels out of that entirely and `ON_ICE` (136) is an invariant
+the tempo cannot touch. In seconds the gap was coupled to both ends
+and drifted with either — speed the tide up and the same blocks per
+minute spread over more ground until the ice went empty; grow `size`
+and the count crept up as a side effect of a number that was only ever
+about a block's shape.
+
+**`size` escalates a formation's SHAPE, not the count** — a bigger
+question arriving less often. Which is what makes "the escalation is
+toughness, not count" true by construction rather than by hoping.
+
+Measured across the run, and all three hold at once:
+
+| | w1 lv1 | w3 lv7 | w6 lv15 | w8 lv20 |
+| --- | --- | --- | --- | --- |
+| parade speed | .76 | 1.01 | 1.34 | 1.55 |
+| crossing | 48s | 36s | 27s | 23s |
+| block | 6×3 | 7×4 | 8×4 | 8×5 |
+| gap | 6.7s | 6.6s | 6.7s | 6.8s |
+| rail transit of one block | 3.3s | 3.3s | 2.5s | 2.7s |
+| **on the sheet** | **136** | **136** | **136** | **136** |
+| boss approach | 21s | 15s | 12s | 10s |
+
+The quiet holds near seven seconds, the blocks get bigger and further
+apart, and the sheet's population never moves.
+
+**The ceiling on `TEMPO` is the RAIL, not the tide.** A block may not
+arrive faster than the one in front of it can clear the walk-on line,
+or the parade silts into a smear at the far end — and that comparison
+is the last two rows above: a 6.8-second gap against a 2.7-second
+transit at wave eight. There is room above 1.8. (The old "five arrivals
+a second" figure was measured from a continuous hose and does not
+describe a parade; the transit is the number that does.)
+
+One consequence worth stating: a number tuned at one tempo cannot be
+carried over to another. `REFILL` 5.4 was measured against a tide
+walking at .42 and read as an infinite hand; 6 against a tide walking
+at .76 is a much *shorter* fraction of a crossing than that was.
+Re-measure, do not translate.
+
+And turning `TEMPO` up does cost difficulty even though it is not a
+difficulty knob — a faster tide is simply harder. Measured on the
+auto-player, 1.5 → 1.8 took a run from 4m 56s to 3m 05s. The fix for
+that is `REFILL`, not the tempo: at 1.8 with `REFILL` 5 instead of 6 a
+run comes back to about 4m 25s with none of the speed given up. That
+separation is the whole reason the two knobs are separate.
+
+**It is a PARADE.** One formation shape — an EXACT rectangle of n×m
+(the requested size rounds to a full rectangle: a block of fifteen used
+to end in a half-row of three, and the eye finds the straggler before
+it finds the shape), ranks
+wider than files — two marches (straight, one shared zigzag), and ONE
+forward speed for every small kind in the wave, set per wave
+(`tide.setParade`). Six shapes and four marches were built first and
+cut: with mixed per-kind speeds the wave smeared into a crowd inside
+twenty seconds as formations caught each other up, and the extra
+silhouettes read as disorder, not variety. Uniform speed means the gaps
+between blocks HOLD (measured: a 4.4-unit gap unchanged after forty
+seconds of walking), uniform gait means everyone bobs to the same beat,
+and every status effect — slow, stun, haste — reads against the parade,
+which makes each more visible, not less. Variety lives in the kind, the
+variant, the size and the march. The big kinds (brute, boss) are exempt
+and lumber on their own clock; the swift/heavy variants no longer touch
+speed, only size and toughness.
+
+A wave is FIVE to SEVEN formations, about eleven seconds apart — the
+gap is what the player has to look at the board with, and it is the
+scarcest thing in the game. The LAST formation of a wave is the wave's
+THEME — one kind, in bulk,
+with a name on it, drawn only from kinds the run has already met — so a
+wave ends on its hardest question and then on its boss.
+
+The BOSS closes it: a `boss` enemy wearing its own molded body (crazed
+ceramic over a bruised violet, and the rig is rolled until the cast
+gives it HORNS — at forty pixels the silhouette is all that survives,
+and a hornless boss reads as "large" rather than as "dangerous"). Its
+movement is ROLLED, not chosen from a shelf: a pattern, an amplitude, a
+phase and a direction, so the boss on wave four does not move like the
+one on wave three. Formations keep arriving while it is up, thinner —
+a boss alone on empty ice is a damage race with no board in it. The
+wave ends when it dies.
+
+It is the only health bar in the game. Everything else on the ice dies
+too fast to have a state worth showing.
+
+**A boss is a WALL, and that took a fix worth recording.** `bounceOf`
+tested `=== BRUTE_IX`; the boss sits at `BRUTE_IX + 1`, so it fell
+straight through to the crush path and died to a single marble rolling
+over it — a wave's whole closing act, answered by throwing anything at
+it once. The moment there was a second big kind, every `===` against
+the first one became a latent bug.
+
+The second half of the same bug was `MAX_FOE_R`, the slop every grid
+query adds. It was typed as .95 — the brute's radius — and the boss
+arrived at 1.5, *bigger than the margin meant to cover it*, so the
+sweep could not see a boss until the marble was already most of the way
+inside it. It is derived from the table now: a constant that means "the
+biggest one" must be computed, or the next kind bigger than it silently
+breaks every query in the game. Measured after both: a marble stops
+dead at the contact distance and rebounds at about 72% of its speed.
+
+### A clash is worth about a quarter of a big one
+
+The FIRST boss (1040 hp — `800 × pressure(1).hp`) goes down in **four
+full-power rams** to any of the four kinds the bag starts with, three
+to a Spike. That is the number the ram constant is set from, and it is
+a real cost at a 9-second refill: four clashes is your whole hand and
+one more. Measured down a clear lane from the hand:
+
+| | Popper | Ember | Frost | Spike | Bolt | Goo | Boulder |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| % of the first boss | 32 | 30 | 26 | 44 | 24 | 19 | 69 |
+| clashes | **4** | **4** | **4** | 3 | 5 | 6 | 2 |
+
+Bolt, Goo and Boulder are the tier-2 unlocks — you only meet the first
+boss with the other four. A brute (975) is the same rule, 3–4.
+
+**`mass` was in that damage line and it was the same fact twice.**
+Every kind is authored at `impact ≈ 1.4 × mass`, so `impact * mass`
+SQUARED the weight axis and the Goo-to-Boulder spread came out 11.5×.
+That is why this document used to claim ~12% and 2.3% per ram in two
+different paragraphs and *both were honest measurements* — of different
+ends of a spread nobody meant to be that wide. Damage is `impact` alone
+now, a 3.8× spread, the one `impact` was written to have. Weight still
+does its job in the rebound and in the clack that shoves your own
+marble, which is what the `denser` card was always really buying.
+
+Speed is linear in that line, so a ram through traffic is worth
+proportionally less than one down a clear lane — measured at about 70%
+when the marble ploughs a formation on the way in. That is the trade
+and it is the right one: the clash you set up beats the clash you
+happened to make.
+
+**The escalation is toughness, not count.** The sheet is nine units
+wide and a walker covers less than half a unit a second, so it can
+physically carry about five arrivals a second before the walk-on line
+jams: measured at three and a half a second, the whole tide silted into
+one solid mass at the far end and the rest of the ice was empty. The
+count therefore tops out around two a second — still a hundred and
+seventy on the ice at once — and everything after that is hit points.
+
+### Balance was measured, not guessed
+
+`__marbles` exposes `frame / pump / headless(on) / place / throwFrom /
+stats / dps(kind)`. `headless(true)` skips every part of the frame that
+only exists on a screen, so a naive auto-played run — throw whenever a
+slot is ready, aim down a random lane — costs about 0.4 ms a frame and
+four minutes of game time runs in seconds. The roster's damage numbers
+were set that way: measured against a dense field, the spread was 19 to
+201 damage a second before it was 68 to 175.
+
+Three things that only a measured run would have found, all recorded in
+the code: the melt clock shadowed by a `life: null` placeholder later in
+the same object literal (every marble melted on its first planted
+frame — the `exp`/`n` collision again); `table.place()` moved after
+`fx.update`, which silently discarded every camera shake in the game;
+and `deep cold` stacking past 1.0, at which point `mul = 1 - slowK` went
+negative and the tide walked backwards up the sheet.
+
+### Enemies cannot touch a marble
+
+A marble has TIME on the ice and nothing else. The tide gives marbles
+a visible berth — a pre-emptive swerve plus the hard walk-around push —
+and keeps walking at the line; marble hit points do not exist any more.
+The history is worth one line each: stop-and-chew made marbles plugs, a
+chew cap made queues, bite-in-passing made hit points matter again and
+split the player's attention across two clocks. One resource, one
+clock.
+
+The only enemies that interact with a marble at all are the THIEVES: a
+spitter's bolt steals 2 seconds, a bomber's blast up to 5 — the same
+currency the cards buy. Time is a STAT now (`mods.time`, `mods.
+timeFlat`, and the gilded `last word`, which fires a melting marble's
+burst as it goes — measured taking fourteen walkers with it).
+
+The BOSS steers AROUND planted marbles — it reads the ice ahead and
+walks the gap, so the fight is herding: where it goes is decided by
+where you have NOT planted.
+
+### The boss walks on with the parade
+
+It enters at `FIELD.far`, the same walk-on line as every formation, at
+the same moment the wave's THEME formation does, and it comes down the
+sheet at the **parade's own speed** — dropping to its lumber only once
+it is in frame. It arrives with its own last block, which is what
+"follows the parade" means literally.
+
+It used to spawn at `FIELD.far + 6` — six units *inside* the line, the
+only thing in the game that entered anywhere else — and then hustle at
+2.8×, which is 2.3× the parade. So it overtook the procession it exists
+to close, and crossed the most foreshortened band on the screen (z −30
+to −14.5 is 14% of the screen's height) in nine seconds. That reads as
+APPEARING rather than arriving, which is the one thing this game
+promises never to do — and the comment above it claimed it came "from
+the fog like everything else" the whole time.
+
+The forty-second commute that drove it inside is paid for by moving the
+SPAWN earlier rather than the speed higher: the approach is spent
+fighting the block it walked on with. Measured: **37.4 seconds** from
+the rail to the frame at wave-one pace, all of it visible.
+
+Three things follow from it, and each was a bug first:
+
+- **The banner is the SIGHTING, not the spawn.** It fires when the boss
+  crosses `FIELD.view`. Fired at spawn it announced a thing nobody
+  could see for half a minute. The name and health bar are on the HUD
+  from the spawn, so the approach is not a secret — it is a countdown.
+- **The lull ends on the sighting, not on a clock.** Nothing new walks
+  on while the boss is coming: the player has the theme formation to
+  grind and a shape in the haze to read the board against. Left on its
+  old timer the thin formations started a full half-minute before the
+  boss arrived and quietly added two blocks to every wave — an
+  escalation nobody asked for, hidden inside a change about where the
+  boss walks on. Measured, that alone cost a seed 160 seconds of run.
+- **The boss's death is checked in every stage.** It used to be tested
+  only inside the boss branch, which was safe exactly as long as a boss
+  could not exist before that branch owned it. It can now, and a boss
+  killed on the approach left the lull waiting for a sighting that was
+  never coming.
+
+**Nothing is ever born on camera.** A formation is shifted so its
+leading edge sits at the walk-on line, the seeder never pushes past
+`FIELD.view`, and the boss comes out of the fog like the rest.
+Measured: zero non-mote spawns inside the frame over a sixty-second
+run. (A brood's motes are the exception by design — it is visibly
+laying them.)
+
+Every kind's idle must be something you can POINT AT. Frost was the
+lesson: it chilled by query, mechanically perfect and visually nothing
+— it now lays a visible frost pool and the pool does the chilling.
+Ten swarm kinds now: `brood` lays motes as it walks (kill it early or
+meet everything it laid), `herald` is the drum — everything near it
+walks half again as fast; the inverse of the mender, stealing time
+instead of undoing damage.
+
+**The reaper runs LAST, and the dead are never dressed.** The stray
+grey dashes a playtest screenshot caught were orphaned time bars: the
+melt loop ran after `reapMarbles`, so a marble that melted was still in
+the array when `dressMarbles` ran that same frame — and `barFor`
+quietly rebuilt a bar for the corpse, which the next frame's reap
+orphaned on the ice for ever. Two fixes, both kept: the reaper moved
+after the melt loop, and dressing skips `!m.alive` regardless. A
+lazily-created presentation object plus a "dead but still in the array"
+window is a resurrection bug by construction.
+
+A formation is ONE kind, no exceptions — a quarter used to carry a few
+"guests" of something tougher, and it blurred the read: a formation is
+a question, and a question with a footnote is two questions badly
+asked. There is no opening seed either: the run begins on empty ice and
+the first formation walks out of the fog like every other — the empty
+opening is the tutorial. Twelve clear seconds separate a dead boss from
+the next wave's first formation, which is the only time deliberate play
+happens. And the camera raked up from 44–30° to 55–42°: at the old
+angle everything drawn flat on the ice — bars, pools, the saw — was
+seen nearly edge-on and collapsed to a sliver.
+
+The MELT is legible: a marble on its way out shrinks to 40%, wobbles,
+vents frost and ticks like a kettle for its last three seconds. The
+shrink used to stop at 62% and then the marble vanished in a puff —
+the single most-reported confusion in playtesting ("balls just
+disappear").
+
+### A level-up is only ever an improvement; a BOSS pays in marbles
+
+Every card in `BOOSTERS` makes a number you already have bigger. The
+three `unlock:` cards are not in that table any more — they are
+`RECRUITS`, and they are dealt by killing a boss.
+
+A new marble is a different kind of decision from "+5% damage": it
+changes what is IN your hand rather than what your hand does. Dealt
+into the same three-card draft it had to compete with an improvement on
+a level-up that had nothing to do with it, and worse, it was a GAMBLE —
+a run could reach its end without ever being offered Boulder. Now:
+kill a boss, take a marble. Three bosses, three marbles, and the roster
+is complete by the fourth wave whatever the dice say, so the unlock
+stops being luck and becomes the reward for the one fight the game
+builds up to. Verified: 27,000 level-up cards dealt across levels 1–30,
+zero unlocks among them.
+
+All the remaining locked kinds are offered, so it is 3 → 2 → and then
+the last one **is not a draft at all**: a modal with a single button on
+it is a pause with a button on it, so the final marble simply arrives
+with its name over the ice, like every other announcement in the game.
+
+They keep their `unlock:` ids, because `needs:` still reads them out of
+`taken` and `takeBooster` still applies them — this is a different
+DEAL, not a different kind of card. What `showDraft` had to learn is
+that a recruit's SUBJECT is `unlock`, not `kind`: with no `kind` it
+rendered "everyone · BOLT joins" and no portrait, on the one card in
+the game that is entirely about which marble you are looking at. The
+display reads `b.kind ?? b.unlock`; the apply path still does not, and
+must not.
+
+### A card has a target
+
+`mods` split in two. Global mods keep what has no owner — the hand, the
+recharge, the throw arm, the chain, the line. Everything else lives in
+`W.kmods[kind]`, one object per marble type, and a `scope: 'kind'` card
+is dealt WITH a target attached: "+25% damage — EMBER" touches every
+Ember on the ice and nothing else. An ability reads its OWNER's mods
+(`m.mods`, the kind's object by reference), never a global — which is
+also what makes a card taken mid-run reach every standing marble of its
+type for free. The card's takenKey tracks the (card, kind) pair, so
+sharpening your Embers does not step down the odds of sharpening your
+Frosts. The aim preview integrates with the kind's own mods too: a
+polished Bolt and a stock Bolt draw different lines.
+
+The crush card had died silently when the crush became a kill — "+30%
+crush damage" multiplied a number nobody read any more. It came back as
+`plow`: speed KEPT per body ploughed, which is reach through a crowd —
+the only thing left for a crush card to buy.
+
+### One recharge clock
+
+Three empty slots used to refill in parallel, so dumping the whole hand
+cost the same recovery as spending one marble — and the recharge is the
+throw's only price, so a price that does not stack is not a price.
+`S.refillT` is THE clock: marbles come back one at a time, the progress
+bar shows on the next slot in line, and the rest wait their turn empty.
+
+**The run opens on a FULL HAND and a LONG clock** — three marbles
+standing at frame one, `REFILL` at 7.5 seconds. It was one marble at
+5.4 for a while, on the argument that the first thing the game teaches
+should be the thing it charges for all run; what it actually taught was
+that the opening is a wait, with empty ice, nothing to decide and two
+slots ticking. The refill teaches itself the moment you spend, so the
+stock goes up front and the price goes up behind it. Measured over
+three seeds of a max-rate auto-player (throw the instant a slot is
+ready, aim down a random lane):
+
+| | 1 marble · 5.4 | 3 marbles · 9 | · 7.5 | · 6, tempo 1.5 |
+| --- | --- | --- | --- | --- |
+| run length | 8m 08s | 6m 24s | 7m 18s | 4m 56s |
+| first life lost | 2m 32s | 3m 14s | 3m 35s | 2m 30s |
+| throws | 92 | 47 | 64 | 52 |
+| marbles standing | 3.2 | 2.3 | 2.8 | 3.3 |
+
+(The last column is not comparable to the others as a difficulty
+reading — the tide walks 50% faster in it. It is here because the
+refill and the tempo have to be read together.)
+
+The shape is the point, not the totals: the opening got *safer* and the
+back half got shorter — first blood moved later while the run moved
+earlier, so a run now holds and then breaks instead of leaking steadily
+from two minutes in. The standing army follows straight from the two
+clocks, `life / REFILL` × nothing else: about 22 seconds of melt over a
+7.5-second refill is 2.9 marbles, and it measured 2.8.
+
+**IT IS THE MOST SENSITIVE NUMBER IN THE GAME, so move it in small
+steps and measure both ends.** 9 → 7.5 is a 17% shorter clock and it
+bought back 24% of the run length — a full minute and a half. The first
+difficulty knob to turn is also the easiest one to turn too far, in
+either direction: 5.4 was an infinite hand, 9 was a wait.
+
+And `REFILL` is a STARTING number, not a fixed one. `quick hands` is a
+plain card at `w: 14`, so a run that wants its hand back buys it back —
+the three runs above averaged 6.8 seconds a throw against a nominal 7.5.
+
+### The cascade
+
+Every link of a chain is louder, slower and bigger than the last, and
+each of those is small on its own:
+
+- **bullet time** — `S.chainSlow`, separate from the two-frame
+  `hitstop`, deepens with the chain so a five-marble cascade plays at a
+  third speed and you get to WATCH it instead of hearing that it
+  happened. It decays in REAL time, not in the dilated time it is
+  creating, or a deep chain would take most of a minute to come back;
+- an ascending chime up the pentatonic — a chain is a PHRASE, in the
+  key the whole game is written in;
+- a shockwave sized by depth, growing shake, and a counter over the
+  middle of the sheet rather than down by the player's thumb, which is
+  a counter nobody reads during a cascade;
+- from the third link a blast at the struck marble and a drum hit under
+  the chime; from the fifth a nova and the red line itself flashes gold;
+- a burst's AREA grows with the chain (`bloom` in mkinds.js, up to
+  double) — the damage multiplier alone was invisible: a ×4 chain dealt
+  four times the number and looked exactly like a ×1;
+- and a PAYOFF when the ice goes quiet: the whole chain scored in one
+  lump, with the level-up fanfare from ×4 up. Scored silently, a point
+  at a time while the screen is shaking, a cascade never lands as an
+  achievement.
+
+### The score
+
+`msound.js` is the toybox — every effect is a sound a plastic toy could
+make — but the MUSIC is a score rather than furniture. The first version
+was three quiet layers built to be ignorable (a pad, a sparse pluck, a
+heartbeat), which is right for a game about a pencil and wrong for a
+sheet of ice with a tide walking down it.
+
+It is generative, in D minor at 84 BPM — the relative minor of the F
+major pentatonic every pitched effect is written in, so the score and
+the sound effects share seven notes and cannot clash. Eight bars, four
+chords (i–VI–III–VII; the boss swaps in iv and a major V, and that
+raised seventh is the entire reason the harmonic minor sounds like
+something is coming). Layers enter with intensity: a gliding string pad
+(it retunes rather than retriggering — restarting eight oscillators
+every two bars reads as a synth patch changing, not as strings moving),
+an octave bass, a sixteenth OSTINATO which is the engine of the thing,
+drums from about a third of the way up, and a brass motif rationed to
+high intensity or a boss so it stays an event.
+
+**It never goes silent.** `over` is a musical STATE, not a stop: it
+used to fade the bed out and leave the game-over screen in dead air,
+which is the one moment the player is sitting still reading a number
+and the worst possible moment for the room to go quiet. The score just
+loses everything that was driving it — no drums, no ostinato, no brass,
+the filter shut to a murmur — and the harmony keeps turning over with
+one low note every other bar. The only thing that may leave the game
+silent is a tab nobody is looking at.
+
+Measured on the music bus: peak −12 dBFS with no clipping, and average
+level rising monotonically with intensity (0.006 → 0.015 → 0.0165 RMS
+from calm to boss). The one number to turn if it fights the game is
+`musicBus.gain`.
+
+### The look
+
+Ice is not white. Painted at the value it "should" be, the whole sheet
+blew out and took the effects with it — an additive explosion over white
+is a slightly brighter white. It sits about two thirds up the range,
+with sweep streaks and a pebble normal map, the house at the far end and
+the boards down both sides. Every effect that lands on it is smaller,
+dimmer and shorter than it wants to be for the same reason.
+
+One bug worth keeping: the title veil is a SIBLING of the stage, not a
+child of it, so a tap on "TAP TO PLAY" landed on the veil and the
+stage's own listener never heard about it — the button did nothing.
+Every automated test missed it, because they all dispatched pointer
+events straight at the stage instead of letting the browser hit-test
+them. If a test bypasses the DOM, it is not testing the thing the
+player touches.
+
+`?shot=N` auto-plays N seconds synchronously at load, for the headless
+screenshot that makes the menu thumbnail. The command is in `marbles.js`.

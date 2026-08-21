@@ -25,6 +25,29 @@ import * as THREE from 'three';
 
 const SEG = 44;
 
+// THE DETAIL KNOB — one number, set once by the page, that every
+// segment count here is scaled by.
+//
+// It exists because the lab and a GAME want opposite things and both
+// are right. On `gloss.html` a character is the subject, there is exactly
+// one of it, and it is four hundred pixels across: every segment is
+// worth having. In `marbles.html` there are a dozen on a table at
+// sixty pixels each, and at full detail one of them was a quarter of a
+// million vertices and twenty-eight milliseconds to build — which is
+// half a frame's budget, per marble, for a resolution that lands
+// entirely between two pixels.
+//
+// It is a SCALE rather than a set of alternative numbers, so the lab's
+// proportions survive it, and every count keeps a floor: a body below
+// about fourteen segments stops being round, and a bevel below two
+// stops being a bevel, which is the whole cartoon read.
+let DETAIL = 1;
+
+/** 1 is the lab. A game asks for less; nothing else should. */
+export function setGlossDetail(k) { DETAIL = Math.max(.2, Math.min(1, k)); }
+export const glossDetail = () => DETAIL;
+const seg = (n, min) => Math.max(min, Math.round(n * DETAIL));
+
 // ---- outlines ---------------------------------------------------------
 // Every one is centred on the origin and takes HALF-extents.
 
@@ -241,9 +264,21 @@ export function plateGeometry(spec) {
   // to give up, or ExtrudeGeometry folds the shape inside out
   const bevel = Math.max(1e-5, Math.min(spec.bevel ?? depth * .55, depth * .9));
 
+  // A POLYLINE NEEDS NO CURVE SEGMENTS. `ExtrudeGeometry` subdivides
+  // EVERY curve of an outline by `curveSegments`, and a `LineCurve`
+  // subdivided is the same straight line carrying forty times the
+  // vertices. The whole BAND family — every mouth, brow, closed lid and
+  // blush stripe — is built by `ribbon` out of straight segments, so it
+  // was paying that toll for nothing: one mouth came to seven thousand
+  // vertices, four times what the body cost. Detecting it here rather
+  // than flagging it per outline means a new polyline outline gets the
+  // saving without knowing this function exists.
+  const straight = shape.curves.every(c => c.isLineCurve)
+    && shape.holes.every(h => h.curves.every(c => c.isLineCurve));
+
   const g = new THREE.ExtrudeGeometry(shape, {
-    depth, steps: 1, curveSegments: SEG,
-    bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 6,
+    depth, steps: 1, curveSegments: straight ? 1 : seg(SEG, 8),
+    bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: seg(6, 2),
   });
   g.translate(0, 0, -(depth + bevel));            // front crest to z = 0
   g.computeBoundingBox();
@@ -318,9 +353,9 @@ export function surfN(x, y, z, rx, ry, rz, n) {
  */
 export function solidGeometry(rx, ry, rz, n = 2, dome = 0, domeFrom = 0) {
   const g = dome
-    ? new THREE.SphereGeometry(1, 72, 40, 0, Math.PI * 2,
+    ? new THREE.SphereGeometry(1, seg(72, 16), seg(40, 10), 0, Math.PI * 2,
                                Math.PI * domeFrom, Math.PI * (dome - domeFrom))
-    : new THREE.SphereGeometry(1, 72, 54);
+    : new THREE.SphereGeometry(1, seg(72, 16), seg(54, 12));
   const pos = g.attributes.position, nor = g.attributes.normal;
   for (let i = 0; i < pos.count; i++) {
     // a sphere vertex is already a unit direction

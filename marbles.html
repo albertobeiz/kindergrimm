@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#b9b1a1">
+<title>drawai — marbles</title>
+<meta name="description" content="A tide of hundreds walks down a long sheet of ice. You hold three living marbles: pull one back and let go — it crushes what it rolls over, bounces off the big ones, and where it stops it plants and fights until it melts. Strike your own marbles on the way and they go off, and go sliding. Free, in the browser.">
+<meta name="author" content="Alberto Beiz">
+<link rel="canonical" href="https://kindergrimm.vercel.app/marbles">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="kindergrimm">
+<meta property="og:title" content="Three marbles against the tide">
+<meta property="og:description" content="Pull a living marble back and let go: it crushes, it bounces, and wherever it stops it plants and fights until it melts. The chain is the only skill in the game.">
+<meta property="og:url" content="https://kindergrimm.vercel.app/marbles">
+<meta property="og:image" content="https://kindergrimm.vercel.app/assets/marbles-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="a long sheet of ice seen from above — blocks of small dark creatures marching down it, glossy marbles with faces standing in their way">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@albertobeicas">
+<meta name="twitter:creator" content="@albertobeicas">
+<meta name="twitter:title" content="Three marbles against the tide">
+<meta name="twitter:description" content="A tide of hundreds, a sheet of ice, three living marbles in your hand. The chain is the only skill in the game.">
+<meta name="twitter:image" content="https://kindergrimm.vercel.app/assets/marbles-og.jpg">
+<meta name="twitter:image:alt" content="a long sheet of ice seen from above — blocks of small dark creatures marching down it, glossy marbles with faces standing in their way">
+<style>
+  :root {
+    --ink: #221f1c;
+    --paper: #f6f1e5;
+    --line: #E85A3C;
+    --gold: #D8A33C;
+    --round: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --safe: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: #b9b1a1; color: var(--ink);
+    font: 14px/1.4 var(--round);
+    user-select: none; touch-action: none;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; }
+
+  /* ---------- the HUD ---------- */
+  #hud {
+    position: fixed; inset: calc(var(--safe) + 10px) 12px auto 12px;
+    display: flex; align-items: flex-start; gap: 10px;
+    pointer-events: none; z-index: 5;
+  }
+  .pill {
+    background: rgba(28,25,22,.72); color: #F6F1E5;
+    border-radius: 999px; padding: 6px 13px;
+    font-weight: 700; letter-spacing: .02em;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 2px 0 rgba(0,0,0,.18);
+  }
+  #lives { display: flex; align-items: baseline; gap: 6px; }
+  #lives b { font-size: 19px; color: #FFD9C8; font-variant-numeric: tabular-nums; }
+  #lives span { font-size: 10px; text-transform: uppercase; letter-spacing: .16em; opacity: .62; }
+  #lives.low b { color: #FF7A55; animation: pulse .7s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  #mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  #barwrap {
+    width: min(46vw, 260px); height: 9px; border-radius: 999px;
+    background: rgba(28,25,22,.5); overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.3);
+  }
+  #bar {
+    height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, #F2E08D, #F2A03C);
+    transition: width .18s ease-out;
+  }
+  #mid .row { display: flex; gap: 6px; }
+  #lvl, #wave {
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    padding: 3px 10px;
+  }
+  /* the surge clock. It is the ONLY thing on screen that says anything
+     about the future, which is what makes holding a marble back a
+     choice instead of a mistake. */
+  #wave.soon { background: rgba(216,110,50,.9); }
+  #wave.now { background: rgba(216,70,40,.95); animation: pulse .5s 4; }
+  #lives.hit { animation: knock .26s; }
+  @keyframes knock {
+    0% { transform: scale(1); } 30% { transform: scale(1.18); background: rgba(190,50,32,.9); }
+    100% { transform: scale(1); }
+  }
+  #score { font-variant-numeric: tabular-nums; font-size: 17px; }
+  /* a phone has no M key, and a game that can only be silenced from a
+     keyboard cannot be silenced on the device it is built for */
+  .pill.icon {
+    pointer-events: auto; cursor: pointer; border: none;
+    font: inherit; font-size: 15px; line-height: 1;
+    padding: 7px 11px; color: #F6F1E5;
+  }
+  .pill.icon.off { opacity: .45; text-decoration: line-through; }
+
+  /* ---------- the boss ---------- */
+  /* the ONLY health bar in the game. Everything else on the ice dies
+     too fast to have a state worth showing; a boss is on screen for a
+     minute and is the one thing you are measuring progress against. */
+  #boss {
+    position: fixed; left: 50%; top: calc(var(--safe) + 62px);
+    transform: translateX(-50%);
+    display: none; flex-direction: column; align-items: center; gap: 5px;
+    width: min(76vw, 460px); z-index: 5; pointer-events: none;
+  }
+  #bossname {
+    font-size: 11px; font-weight: 800; letter-spacing: .22em;
+    color: #FFD2BC; text-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
+  #bosswrap {
+    width: 100%; height: 11px; border-radius: 999px;
+    background: rgba(28,25,22,.6); overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.45), 0 0 0 1.5px rgba(255,180,140,.28);
+  }
+  #bossfill {
+    height: 100%; width: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #FF6A48, #FFB05A);
+    transition: width .12s linear;
+  }
+
+  /* ---------- the hand labels ---------- */
+  #hand { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
+  .slot {
+    position: absolute; top: 0; left: 0; width: 124px;
+    text-align: center; transition: opacity .2s;
+  }
+  .slot b {
+    display: inline; font-size: 12px; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase;
+    text-shadow: 0 1px 0 rgba(255,250,238,.5), 0 2px 6px rgba(0,0,0,.28);
+  }
+  .slot i {
+    display: block; font-style: normal; font-size: 10.5px; line-height: 1.25;
+    opacity: 0; height: 0; overflow: hidden;
+    color: #1e1a17; text-shadow: 0 1px 0 rgba(255,250,238,.75);
+    transition: opacity .18s;
+  }
+  /* WHAT IT DOES, on the one you are about to throw. Fourteen abilities
+     used to hide behind seven nouns and the only way to find out what a
+     Frost was, was to throw one. */
+  .slot.sel i { opacity: .9; height: auto; }
+  .slot .curl { font-size: 13px; opacity: .75; margin-left: 3px;
+    text-shadow: 0 1px 0 rgba(255,250,238,.6); }
+  /* THE BAR IS THE REFILL CLOCK AND IT MAY NOT LIE. It was `width:
+     0→100%` of the 124px slot with `max-width: 54px` over the top, so
+     it reached its visible end at 43% of the wait and then sat there
+     full while the clock ran on — and the lie grew with the clock:
+     three seconds of it at REFILL 5.4, five at 9, which is where it
+     finally got reported. The TRACK's width lives here, once, and the
+     script only ever says how FULL it is. A number in the CSS and the
+     same number in the script is the two-parallel-tables bug wearing a
+     progress bar. */
+  .slot u {
+    display: block; height: 3px; margin: 3px auto 0;
+    width: calc(54px * var(--fill, 0));
+    border-radius: 2px; background: rgba(40,34,28,.55);
+    text-decoration: none;
+  }
+  .slot.sel b { font-size: 13.5px; }
+  .slot.sel u { background: var(--gold); }
+  .slot.empty { opacity: .8; }
+  .slot.empty u { background: rgba(40,34,28,.4); }
+
+  /* ---------- the combo ---------- */
+  /* It sits ABOVE the middle of the sheet rather than over the hand:
+     during a cascade the player is watching where the marbles are, and
+     a counter down by their thumb is a counter nobody reads. */
+  #combo {
+    position: fixed; left: 50%; top: 26%;
+    transform: translate(-50%,-50%);
+    display: none; text-align: center; z-index: 6; pointer-events: none;
+    color: #FFE9A8;
+    text-shadow: 0 3px 0 rgba(90,40,10,.55), 0 6px 22px rgba(0,0,0,.45);
+  }
+  #combo b { display: block; font-size: 54px; font-weight: 800; line-height: .9; }
+  #combo i {
+    font-style: normal; font-size: 11px; font-weight: 800;
+    letter-spacing: .34em; opacity: .8;
+  }
+  #combo.go { animation: comboPop .34s cubic-bezier(.16,1.1,.3,1.1); }
+  #combo.big { color: #FFD54A; }
+  #combo.big b { font-size: 76px; }
+  @keyframes comboPop {
+    0%   { transform: translate(-50%,-50%) scale(.5) rotate(-7deg); opacity: 0; }
+    45%  { transform: translate(-50%,-50%) scale(1.22) rotate(2deg); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(1) rotate(0); opacity: 1; }
+  }
+
+  /* ---------- overlays ---------- */
+  /* CENTRED WHEN IT FITS, SCROLLED WHEN IT DOES NOT. The finale grew a
+     share card and stopped fitting a 320×568 phone: measured, the worst
+     case (long boss name, NEW BEST, a six-figure score) overflowed by
+     15px at BOTH ends and left `throw again` off the bottom with no way
+     to reach it — `body` is `overflow:hidden` and `touch-action:none`,
+     so a veil that overruns is simply gone.
+     `justify-content:center` cannot be combined with scrolling — the
+     overflow goes out of the top where no scrollbar can reach it — so
+     the auto margins on the first and last child do the centring
+     instead, which degrades into a normal scroll the moment there is
+     not enough room. `--safe` is in the padding because a notch takes
+     its bite out of exactly the space this was 1px clear of. */
+  .veil {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 14px;
+    padding: max(24px, calc(var(--safe) + 14px)) 24px
+             max(24px, env(safe-area-inset-bottom, 0px)) 24px;
+    overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+    background: radial-gradient(ellipse at 50% 42%, rgba(28,25,22,.42), rgba(20,17,15,.82));
+    backdrop-filter: blur(2px);
+    color: #F6F1E5; text-align: center;
+  }
+  .veil > :first-child { margin-top: auto; }
+  .veil > :last-child { margin-bottom: auto; }
+  .veil h2 {
+    font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    opacity: .7; font-weight: 700;
+  }
+  .big { font-size: clamp(28px, 7vw, 44px); font-weight: 800; letter-spacing: -.01em; }
+  .sub { font-size: 13px; opacity: .72; }
+  .score {
+    font-size: clamp(38px, 11vw, 68px); font-weight: 800;
+    color: var(--gold); font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  button.quiet {
+    margin-top: 10px; font: inherit; font-weight: 700;
+    color: #221f1c; background: #F6F1E5;
+    border: none; border-radius: 999px; padding: 11px 26px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.3); cursor: pointer;
+  }
+  button.quiet:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.3); }
+
+  /* ---------- the finale ---------- */
+  /* The two pills are ONE ROW and must read as one control each. The
+     row centres them and cancels the stray top margin `button.quiet`
+     carries for its solo use on the title card: left to stretch, the
+     link grew to the button's margin box and the blue pill came out
+     10px taller than the cream one, sharing a bottom edge and nothing
+     else. Same padding for the same reason — a pair that differs in
+     shape reads as two different kinds of thing. */
+  .overrow { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .overrow .quiet { margin-top: 0; }
+  /* The share is an APPEAL, not a utility button: a card with the ask
+     spelled out, one big blue action, and the follow as a small line
+     under it. It outranks "throw again" on purpose — the replay costs
+     the player nothing, the share is the favour being asked for. */
+  .plea {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; margin-top: 14px; padding: 16px 22px;
+    border: 1px solid rgba(246,241,229,.18); border-radius: 16px;
+    background: rgba(246,241,229,.06);
+    max-width: 340px;
+  }
+  .plea p { font-size: 13px; line-height: 1.45; opacity: .85; margin: 0; }
+  a.share {
+    font: inherit; font-weight: 800; font-size: 17px;
+    text-decoration: none;
+    color: #F6F1E5; background: #1d9bf0;
+    border-radius: 999px; padding: 14px 34px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.3);
+  }
+  a.share:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.3); }
+  a.follow {
+    font-size: 12px; font-weight: 700;
+    color: #F6F1E5; opacity: .75; text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  a.follow:hover { opacity: 1; }
+  .tally {
+    display: flex; gap: 22px; margin: 12px 0 4px;
+    animation: dealIn .4s .3s cubic-bezier(.18,.9,.3,1.2) backwards;
+  }
+  .tally div { text-align: center; }
+  .tally b {
+    display: block; font-size: 24px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .tally span {
+    font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; opacity: .6;
+  }
+  .newbest {
+    font-size: 13px; font-weight: 800; letter-spacing: .3em;
+    color: var(--gold); animation: pulse 1s infinite;
+  }
+  .boast { color: #FFD9A8; opacity: .9; }
+
+  /* ---------- the draft ---------- */
+  .cards {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    justify-content: center; max-width: 720px;
+  }
+  .card {
+    position: relative; width: min(31vw, 208px); min-width: 148px;
+    padding: 16px 14px 18px; border: none; cursor: pointer;
+    border-radius: 16px; text-align: left; font: inherit;
+    background: linear-gradient(170deg, #FBF7EC, #EDE5D2);
+    color: #221f1c;
+    box-shadow: 0 4px 0 rgba(0,0,0,.32), 0 10px 24px rgba(0,0,0,.3);
+    border-top: 4px solid var(--rank);
+    animation: dealIn .34s cubic-bezier(.18,.9,.3,1.2) backwards;
+  }
+  @keyframes dealIn {
+    from { transform: translateY(26px) scale(.94); opacity: 0; }
+  }
+  .card:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.32); }
+  /* the marble the card is about, rendered from the real generator */
+  .card .orb {
+    position: absolute; right: 10px; top: 10px;
+    width: 54px; height: 54px; pointer-events: none;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.25));
+  }
+  .card em {
+    font-style: normal; font-size: 9px; font-weight: 800;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--rank);
+  }
+  /* the STAT is the headline — the draft is read in two seconds against
+     a paused fight, and the number is the decision */
+  .card .stat {
+    display: block; font-size: 16.5px; font-weight: 800;
+    line-height: 1.25; margin: 6px 0 7px; padding-right: 56px;
+  }
+  .card b {
+    display: block; font-size: 11px; font-weight: 700;
+    opacity: .55; letter-spacing: .04em;
+  }
+
+  /* ---------- the title ---------- */
+  #title .word {
+    font-size: clamp(46px, 15vw, 104px); font-weight: 800;
+    letter-spacing: -.03em; line-height: .92;
+    color: #F6F1E5; text-shadow: 0 6px 0 rgba(0,0,0,.25);
+  }
+  #title .how {
+    max-width: 340px; font-size: 13.5px; line-height: 1.55; opacity: .84;
+  }
+  #title .how b { color: var(--gold); }
+  #title .tap {
+    margin-top: 6px; font-size: 11px; letter-spacing: .26em;
+    text-transform: uppercase; opacity: .65; animation: pulse 1.6s infinite;
+  }
+  #title a { color: #F6F1E5; opacity: .5; font-size: 11px; }
+
+  @media (max-width: 560px) {
+    .cards { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; }
+    .card { width: 100%; }
+    .card span { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage"></div>
+
+  <div id="hud">
+    <div class="pill" id="lives"><b>12</b><span>line</span></div>
+    <div id="mid">
+      <div id="barwrap"><div id="bar"></div></div>
+      <div class="row">
+        <div class="pill" id="lvl">lv 1</div>
+        <div class="pill" id="wave">surge</div>
+      </div>
+    </div>
+    <div class="pill" id="score">0</div>
+    <button class="pill icon" id="mute" aria-label="sound">♪</button>
+  </div>
+
+  <div id="boss">
+    <b id="bossname"></b>
+    <div id="bosswrap"><div id="bossfill"></div></div>
+  </div>
+
+  <div id="combo"><b></b><i>chain</i></div>
+
+  <div id="hand"></div>
+
+  <div class="veil" id="draft"></div>
+  <div class="veil" id="over"></div>
+
+  <div class="veil" id="title" style="display:flex">
+    <div class="word">MARBLES</div>
+    <div class="how">
+      pull a marble back and let go. it <b>crushes</b> whatever it rolls over,
+      <b>bounces</b> off the big ones, and wherever it stops it <b>fights on its own</b>.
+      hit your own marbles on the way — they go off, and they go flying.
+    </div>
+    <div class="tap">tap to play</div>
+    <a href="index.html">menu</a>
+  </div>
+
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+  <script type="module" src="./src/marbles/marbles.js"></script>
+</body>
+</html>
